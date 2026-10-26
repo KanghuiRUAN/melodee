@@ -61,6 +61,18 @@ static void fm1_ble_rf_section(uint32_t g){record(12,g,0);}
 static uint32_t fm1_ble_rf_burst(uint32_t pc,uint32_t end,const uint8_t *const rec[4]){
     (void)end;(void)rec;return pc; /* same writes, without the timing-only SRAM burst */
 }
+/* the measured calibration (hal/fm1_rf_cal.h) off, as with a stored calibration: the replay must be the upstream one */
+static uint8_t fm1_rf_cal_on, fm1_rfc_scanned, fm1_rfc_trimmed, fm1_rfc_x187[68];
+static int fm1_rfc_scan_rc;
+static struct { uint8_t bank121; } fm1_rfc;
+static uint32_t fm1_wl_vco_band;
+#define FM1_WL_VCO_BAND fm1_wl_vco_band
+static int fm1_rfc_is187(const uint8_t *t,uint32_t n){(void)t;(void)n;return 0;}
+static void fm1_rfc_before_187(void){}
+static uint32_t fm1_rf_cal_reg(uint32_t a,uint32_t v,const uint8_t *x){(void)a;(void)x;return v;}
+static uint32_t fm1_rf_cal_win(uint32_t w,uint32_t e,uint32_t v,const uint8_t *x){(void)w;(void)e;(void)x;return v;}
+static uint32_t fm1_rfc_lut(uint32_t e,uint32_t c,uint32_t w){(void)e;(void)c;return w;}
+static int fm1_rf_cal_scan(void *c){(void)c;return 0;}
 '''
 MAIN = r'''
 int main(void) {

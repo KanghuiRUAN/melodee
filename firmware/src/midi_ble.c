@@ -129,6 +129,14 @@ static void mel_ble_boot(void) /* CPU1 held, IRQs off; does not start the radio 
     int complete = ble_vm_scan(mel_ble_flash_read, 0, &info, &vm, 0, 0);
     mb.cal = (uint8_t)(ble_rf_choose(complete, &vm, info.area, mb_saved.rf, &mb.trims, &save) != BLE_RF_NONE);
     if (save) mb_dirty();
+    if (!mb.cal) {
+        /* No stored calibration: the radio measures its own at start (hal/fm1_rf_cal.h, JieLi's SDK calibration
+         * in C). 106 / 107 / 108 are the SDK board's constants; 187 is measured, about 160 ms. */
+        static const struct ble_rf_trims sdk = {{0x0B, 0x0B}, {1, 7, 4, 7, 11, 1, 7}, {0}, {0}};
+        mb.trims = sdk;
+        fm1_rf_cal_on = 1;
+        mb.cal = 1;                           /* (a saved calibration imported later still replaces it) */
+    }
     ble_store_load(&mb.store, mb_saved.dev);
     ble_scan_clear(&mb.found);
     ble_hw_wl82_attach(); fm1_ble_crumb_boot();
@@ -290,10 +298,11 @@ static uint32_t mel_ble_import_cal(const uint8_t copy[BLE_RF_COPY_SIZE])
 {
     if (!ble_rf_copy_ok(copy)) return 1;
     if (mb.on || mb.closing) return 4;
-    if (mb.cal && memcmp(mb_saved.rf, copy, BLE_RF_COPY_SIZE)) return 2;
-    if (mb.cal) return 0;
+    if (mb.cal && !fm1_rf_cal_on && memcmp(mb_saved.rf, copy, BLE_RF_COPY_SIZE)) return 2;
+    if (mb.cal && !fm1_rf_cal_on) return 0;
     memcpy(mb_saved.rf, copy, BLE_RF_COPY_SIZE);
     ble_rf_copy_get(copy, &mb.trims);
+    fm1_rf_cal_on = 0;                        /* (the saved one instead of the measurement) */
     mb.cal = 1; mb_dirty(); mb.generation++;
     return 0;
 }
