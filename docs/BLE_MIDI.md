@@ -63,14 +63,18 @@ extension remains disabled pending measurements on Melodee hardware.
 
 ## Calibration and persistence
 
-The radio requires the device's valid factory trims (VM records 106, 107, 108,
-187). Initialization reads the stock VM candidates without writing them and
-keeps a CRC-checked copy in Melodee's own settings. **NO CAL** means no complete
-valid set exists; the radio stays off. Some earlier Melodee preset writes may
-have replaced the stock VM sectors. The port does not invent calibration or
-overwrite presets to reconstruct it. Recovery on such units requires the
-unit's original calibration from a full-flash backup or a separately validated
-recalibration procedure; installing this port alone cannot recover lost trims.
+The radio uses the device's trims (VM records 106, 107, 108, 187).
+Initialization reads the stock VM candidates without writing them and keeps a
+CRC-checked copy in Melodee's own settings. Some earlier Melodee preset writes
+may have replaced the stock VM sectors. When no complete valid set exists, the
+radio measures its own calibration each time it starts (`firmware/hal/fm1_rf_cal.h`,
+about 160 ms): records 106, 107 and 108 are the SDK board's constants, the same
+values stock firmware stores, and record 187 (the TX LO, RX DC and RX filter
+trims, with the VCO bank table) is measured as JieLi's SDK library measures it.
+Checked on an FM-1 whose VM was overwritten: the scan, the filter codes and the
+PLL registers equal those the JieLi SDK build measures on the same unit, TX LO
+and RX DC within noise, and BLE-MIDI connects and plays. A saved calibration,
+imported below, replaces the measurement.
 
 With this device's own full 1 MiB backup, inspect it first, then import just the
 calibration through the connected FM-1 USB MIDI port:
