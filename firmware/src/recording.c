@@ -679,11 +679,11 @@ static int recording_note(track_t *t, uint32_t note, uint32_t vel, uint32_t step
     if (on > 65535u) on = 65535u;
     for (uint32_t i = 0; i < RECORD_MAX; i++) {
         recorded_note_t *r = &recording[i];
-        if (recorded_owner(r) == owner && (recording_flags[i] & 1u) && r->note == note) recording_finish(i);
+        if (recorded_owner(r) == owner && (recording_flags[i] & 1u) && recorded_note(r) == note) recording_finish(i);
         /* Repeated passes replace the same pitch at the same captured time.
          * Distinct hits in one step remain separate events. */
         uint32_t same_time = r->on == on;
-        if (r->vel && recorded_owner(r) == owner && r->note == note && recorded_step(r) == actual && same_time) free = i;
+        if (r->vel && recorded_owner(r) == owner && recorded_note(r) == note && recorded_step(r) == actual && same_time) free = i;
         else if (free == RECORD_MAX && (!r->vel || (!recording_present(r) && !recording_sounding(i) && !(recording_flags[i] & 1u)))) free = i;
     }
 #endif
