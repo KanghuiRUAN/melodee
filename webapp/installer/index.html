@@ -972,8 +972,12 @@ const BACKUP_IDS_OWN = Array.from({length:21},(_,i)=>i);
 const BACKUP_IDS_NATIVE = Array.from({length:23},(_,i)=>i);
 const BACKUP_IDS_SHARED = Array.from({length:29},(_,i)=>i);
 const BACKUP_IDS_P5 = Array.from({length:28},(_,i)=>i);
-const maxSize = id => id >= 32 ? 81920 : (id === 0 || (id >= 2 && id <= 5)) ? 27904 : 3840;
-const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : n===29?BACKUP_IDS_SHARED:null);
+// 64..91: projects 5..32 (firmware with the project pool by slot); 32..63 stay the retired sample slots
+const BACKUP_IDS_PROJECTS = [...BACKUP_IDS_SHARED, ...Array.from({length:28},(_,i)=>64+i)];
+const isProject = id => id === 0 || (id >= 2 && id <= 5) || (id >= 64 && id < 92);
+const isSample = id => id >= 32 && id < 64;
+const maxSize = id => isProject(id) ? 27936 : id >= 32 ? 81920 : 3840;
+const idsOf = (n) => (n === BACKUP_IDS.length ? BACKUP_IDS : n === BACKUP_IDS_V1.length ? BACKUP_IDS_V1 : n === 9 ? BACKUP_IDS_BANKS : n === 17 ? BACKUP_IDS_CZ : n === 21 ? BACKUP_IDS_OWN : n === 23 ? BACKUP_IDS_NATIVE : n === 28 ? BACKUP_IDS_P5 : n===29?BACKUP_IDS_SHARED:n===57?BACKUP_IDS_PROJECTS:null);
 const BACKUP_CMD = { LIST: 65, GET: 66, PUT: 67 };
 const BACKUP_CHUNK = 256;
 const bkU32 = (n) => Array.from({ length: 5 }, (_, i) => (n >>> (i * 7)) & (i === 4 ? 15 : 127));
@@ -1057,7 +1061,7 @@ function readBackup(file) {
       if(v.getUint32(0,true)!==0x42435a43 || ![1,2].includes(v.getUint16(4,true)) || v.getUint16(6,true)!==16 || used>>>16 || !bytes[12] || Array.from(bytes.slice(12,28)).some(x=>x>126 || x>0&&x<32))throw new Error("Invalid CZ bank");
       for(let i=0;i<16;i++)if(used>>i&1){const b=bytes.subarray(28+i*144,28+(i+1)*144);if((b[0]&240)||(b[0]>>2)>2||b[1]>1||(b[2]&3)||b[3]>47||[0,57].some(j=>(b[16+j]&15)>9||(b[16+j]>>4)>14||b[18+j]>9||[20,37,54].some(k=>b[k+j]&8)))throw new Error("Invalid CZ bank tone");}
     }
-    if (o.id >= 32 && o.size) {
+    if (isSample(o.id) && o.size) {
       if (o.size < 512) throw new Error("Short sample backup");
       const view = new DataView(bytes.buffer), length = view.getUint32(16, true), count = bytes[6];
       if (view.getUint32(0, true) !== 0x504d5346 || view.getUint16(4, true) !== 1 || !count || count > 16 ||
@@ -1099,14 +1103,15 @@ async function restoreBackup(request, file, onProgress = () => {}) {
   const ask = async (r, o = {}) => request(r, { timeout: 4000, retries: 0, ...o });
   const supported = bkManifest(await ask([BACKUP_CMD.LIST, []]));
   const liveSize = supported.find(o => o.id === 0)?.size || 0;
-  for (const o of archive.objects) if ((o.id === 0 || o.id >= 2 && o.id <= 5) && o.size > liveSize && !(liveSize >= 19008 && [19084,19092,20224].includes(o.size)))
+  // firmware with the project pool by slot (57 objects) stores compact records: sizes say nothing about capacity
+  if (supported.length !== 57) for (const o of archive.objects) if (isProject(o.id) && o.size > liveSize && !(liveSize >= 19008 && [19084,19092,20224].includes(o.size)))
     throw new Error("This backup needs firmware with larger recording storage");
   for (const o of archive.objects) if (!supported.some(x => x.id === o.id) && o.size) throw new Error("This firmware does not support a nonempty object in this backup");
   const put = async (args) => { const a = await ask([BACKUP_CMD.PUT, args]); bkCheck(a[2]); return a; };
   // Validate every object's supported size before replacing any saved object.
   // Project preflight may erase an unpublished inactive copy; abort leaves
   // the current committed project intact. Older archives restore on 1.2 first.
-  for (const o of archive.objects) if (o.id < 32 && o.size && supported.some(x => x.id === o.id)) {
+  for (const o of archive.objects) if (!isSample(o.id) && o.size && supported.some(x => x.id === o.id)) {
     const a = await ask([BACKUP_CMD.PUT, [0, o.id, ...bkU32(o.size), ...bkU32(o.crc)]]);
     await ask([BACKUP_CMD.PUT, [3, o.id]]);
     if (a[2] === 1) throw new Error("This backup holds an older format. Restore it with Melodee 1.2 first.");
@@ -1118,7 +1123,7 @@ async function restoreBackup(request, file, onProgress = () => {}) {
   // Restore live music last. Other objects commit individually; a disconnect can leave a partial restore.
   for (const o of [...archive.objects.slice(2), archive.objects[1], archive.objects[0]]) {
     if (!supported.some(x => x.id === o.id)) continue;
-    if (o.id >= 32) {
+    if (isSample(o.id)) {
       const slot = o.id - 32;
       const check = (a) => { if (a[0] !== slot) throw new Error("Unexpected sample reply"); bkCheck(a.at(-1)); };
       if (!o.size) check(await ask([14, [slot]]));
@@ -1171,6 +1176,42 @@ class BackupConnection {
     this.closed = true; this.input.onmidimessage = null;
     if (this.pending) { const p = this.pending; this.pending = null; clearTimeout(p.timer); p.reject(new Error("Backup connection closed")); }
   }
+}
+
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Kerem Kilic (Ellic Studio)
+// The resource region (firmware/src/res.c): Rubik, the factory sounds and the radio program, written after an
+// update through editor command 82. The file is build/melodee-res.bin: a 32-byte header, then the payload.
+
+const RES_COMMAND = 82;
+const r35 = (a, at) => (a[at] | a[at + 1] << 7 | a[at + 2] << 14 | a[at + 3] << 21 | a[at + 4] << 28) >>> 0;
+
+function resStatus(reply) {
+  if (!reply || reply.length !== 12) throw new Error("This firmware has no resource command");
+  return { rc: reply[0], installed: !!reply[1], length: r35(reply, 2), crc: r35(reply, 7) };
+}
+
+// request([cmd, args], {timeout}) -> reply bytes (fm1backup.js BackupConnection). Resolves "current" when the
+// device already has these resources, "written" after a verified write.
+async function installResources(request, region, onProgress = () => {}) {
+  const head = new DataView(region.buffer, region.byteOffset, 32);
+  if (head.getUint32(0, true) !== 0x3153524d) throw new Error("Not a Melodee resource file");
+  const length = head.getUint32(4, true), crc = head.getUint32(8, true), payload = region.subarray(32, 32 + length);
+  const ask = async (args, timeout = 3000) => resStatus(await request([RES_COMMAND, args], { timeout }));
+  const now = await ask([0]);
+  if (now.installed && now.crc === crc) return "current";
+  if (now.length !== length || now.crc !== crc) throw new Error("These resources belong to another firmware build");
+  const begin = await ask([1], 30000);                 /* old project copies moved out, 14 sectors erased */
+  if (begin.rc === 4) throw new Error("Stop playback and switch Bluetooth off, then retry");
+  if (begin.rc) throw new Error(`Resource write refused (${begin.rc})`);
+  for (let off = 0; off < length; off += 256) {
+    const r = await ask([2, off & 127, off >> 7 & 127, off >> 14 & 127, ...bkPack(payload.subarray(off, off + 256))]);
+    if (r.rc) throw new Error(`Resource write failed at ${off} (${r.rc})`);
+    onProgress(Math.min(length, off + 256), length);
+  }
+  const end = await ask([3], 10000);
+  if (end.rc || !end.installed) throw new Error(`Resource check failed (${end.rc})`);
+  return "written";
 }
 
 const {progressModel, remaining, afterFailure, describeDevice, planFor} = (() => {
@@ -2102,7 +2143,7 @@ function fakeAccess(options = {}) {
 return {fakeAccess};
 })();
 
-const meta = {"version": "1.5.1", "product": "FM-1_91051", "pkg": {"dual": "../../firmware/melodee-1.5.1.fwsc"}, "sha256": {"dual": "172afb5b000f093bbe060922e76e11cd9334b12895a7e659bd20da515fb2d640"}, "nightly": {"version": "next-3ce232e", "product": "FM-1_900", "branch": "nightly", "commit": "3ce232e6b6acdac6f2d5b3068a8b1f9d516abf12", "builtAt": "2026-10-25T20:16:42Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc"}, "sha256": {"dual": "b5819d4052f3e6eb64a2e6a04aa22b76e32f1c800bf3f729fe801df39a00998e"}}, "rc": {"version": "1.6.0-rc.4", "product": "FM-1_91060", "branch": "next", "commit": "f40dd70fd8b497b5372ee5de886e4dfae1cd8062", "builtAt": "2026-10-26T15:12:31.677826+00:00", "pkg": {"dual": "../../firmware/melodee-1.6.0-rc.4.fwsc"}, "sha256": {"dual": "274a16dd06986010343c0386abccd0a1d2796d06bd5664f3164356a0514b80f6"}}, "releases": [{"version": "1.5.1", "product": "FM-1_91051", "pkg": {"dual": "../../firmware/melodee-1.5.1.fwsc"}, "sha256": {"dual": "172afb5b000f093bbe060922e76e11cd9334b12895a7e659bd20da515fb2d640"}}, {"version": "1.5.0", "product": "FM-1_91050", "pkg": {"dual": "../../firmware/melodee-1.5.0.fwsc"}, "sha256": {"dual": "2bde63b60767bd98ca1688f58a9b200c81e1aab4e6b2ca8de57ed41a6f705e4d"}}, {"version": "1.4.5", "product": "FM-1_91045", "pkg": {"dual": "../../firmware/melodee-1.4.5.fwsc"}, "sha256": {"dual": "a18f40d6f8c8087b25f115ab11286f85c7f04383de836227c463c6ce4745ce20"}}, {"version": "1.4.4", "product": "FM-1_91044", "pkg": {"dual": "../../firmware/melodee-1.4.4.fwsc"}, "sha256": {"dual": "d349a44dc5c29c2af2ad14b6fc76071fc9e218ad4a83dcd25948bd8479aa3607"}}, {"version": "1.4.3", "product": "FM-1_91043", "pkg": {"dual": "../../firmware/melodee-1.4.3.fwsc"}, "sha256": {"dual": "efa44743be492278e25261f012b02425f373b8f31e9e396ef5e47b240a79be80"}}, {"version": "1.4.1", "product": "FM-1_91041", "pkg": {"dual": "../../firmware/melodee-1.4.1.fwsc"}, "sha256": {"dual": "fe14e72f231fea45d3b10519846db3c733d7f175a88993a1f12853c3f5ba3c3d"}}, {"version": "1.4.0", "product": "FM-1_91040", "pkg": {"dual": "../../firmware/melodee-1.4.0.fwsc"}, "sha256": {"dual": "fc3a06a8e65b8a0a473e24229540fd43d2b666a9312cd5584264fc06f007b7f3"}}, {"version": "1.3.6", "product": "FM-1_91036", "pkg": {"dual": "../../firmware/melodee-1.3.6.fwsc"}, "sha256": {"dual": "abfb786611e1bbdf2b00952b0f65a0009682853544ab94450a5c0d6bccad8d5f"}}, {"version": "1.3.5", "product": "FM-1_91035", "pkg": {"dual": "../../firmware/melodee-1.3.5.fwsc"}, "sha256": {"dual": "5c49547826806445f6b72c6ad88a6bcff1a9d348dcd3794ec917363f4322e6b7"}}, {"version": "1.3.4", "product": "FM-1_91034", "pkg": {"dual": "../../firmware/melodee-1.3.4.fwsc"}, "sha256": {"dual": "8018b967aeffcd648b9c2b9fd114108a1fe8f1884097310bc9357031c753bb1b"}}, {"version": "1.3.3", "product": "FM-1_91033", "pkg": {"dual": "../../firmware/melodee-1.3.3.fwsc"}, "sha256": {"dual": "1cc2d5562c7c44717c4f1e468157089f5672a528d94be85e06b03bdaa75e65e5"}}, {"version": "1.3.2", "product": "FM-1_91032", "pkg": {"dual": "../../firmware/melodee-1.3.2.fwsc"}, "sha256": {"dual": "41b51d38724d89d286c6af327c93b4bdad0dcba243b9df92b9bd1d6e150b60e1"}}, {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc"}, "sha256": {"dual": "65d1c5dcd76b40560b8495a9974f391dcbc32d07471e9391568519fd57e56680"}}, {"version": "1.3.0", "product": "FM-1_91030", "pkg": {"dual": "../../firmware/melodee-1.3.0.fwsc"}, "sha256": {"dual": "b4f13d418c5e408e26a2af0ea7fbda2c3dfadf56f7a07624262196718a6924ad"}}, {"version": "1.2.1", "product": "FM-1_91021", "pkg": {"dual": "../../firmware/melodee-1.2.1.fwsc"}, "sha256": {"dual": "1ba8116a44485ddc62741b13553bc01fa021bbfea4c5df22aa8c358ed23c1515"}}, {"version": "1.1.0", "product": "FM-1_91010", "pkg": {"dual": "../../firmware/melodee-1.1.0.fwsc"}, "sha256": {"dual": "105269153b2aa1e20f633d302ba028d505462f1521a3348867e09b39bd69b5e8"}}, {"version": "1.0.2", "product": "FM-1_91002", "pkg": {"dual": "../../firmware/melodee-1.0.2.fwsc"}, "sha256": {"dual": "6f1a6077f5620f97e4e7e821536244284b5b508dd5df94ef70b1e9a4866c0627"}}, {"version": "1.0.1", "product": "FM-1_91001", "pkg": {"dual": "../../firmware/melodee-1.0.1.fwsc"}, "sha256": {"dual": "db7e0c8f4a4e245ea7ad58f14d4d5d9387dc86eb9f3a780d61982c0544af2c18"}}, {"version": "1.0.0", "product": "FM-1_91000", "pkg": {"dual": "../../firmware/melodee-1.0.0.fwsc"}, "sha256": {"dual": "4b8421127fa9101897e4fccdf5f3004990efc4984d5753bf896f2c1c55bda65b"}}], "boot": {"version": "1.2", "pkg": "../../firmware/m-bootloader-1.2.fwsc", "sha256": "0e89141f52d1f2d62198d4f69147a2c15c8360806e64d48002990a6fdab6d6dd", "license": "MIT", "source": "https://github.com/jvitkauskas/m-bootloader/releases/tag/v1.2", "commit": "22e2559906f9fc4e077f2d6aee20bf332300439e"}};
+const meta = {"version": "1.5.1", "product": "FM-1_91051", "pkg": {"dual": "../../firmware/melodee-1.5.1.fwsc"}, "sha256": {"dual": "172afb5b000f093bbe060922e76e11cd9334b12895a7e659bd20da515fb2d640"}, "nightly": {"version": "next-afbdef0", "product": "FM-1_900", "branch": "nightly", "commit": "afbdef0d9e75ea6fd6ee773c9999f56a3cfcc887", "builtAt": "2026-10-27T18:51:22Z", "pkg": {"dual": "../../firmware/melodee-nightly.fwsc"}, "sha256": {"dual": "e75b2a1044fd37ad283c248543ff53424562fe19621d3dfb3dd17f23b64c16f8"}}, "rc": {"version": "1.6.0-rc.4", "product": "FM-1_91060", "branch": "next", "commit": "f40dd70fd8b497b5372ee5de886e4dfae1cd8062", "builtAt": "2026-10-26T15:12:31.677826+00:00", "pkg": {"dual": "../../firmware/melodee-1.6.0-rc.4.fwsc"}, "sha256": {"dual": "274a16dd06986010343c0386abccd0a1d2796d06bd5664f3164356a0514b80f6"}}, "releases": [{"version": "1.5.1", "product": "FM-1_91051", "pkg": {"dual": "../../firmware/melodee-1.5.1.fwsc"}, "sha256": {"dual": "172afb5b000f093bbe060922e76e11cd9334b12895a7e659bd20da515fb2d640"}}, {"version": "1.5.0", "product": "FM-1_91050", "pkg": {"dual": "../../firmware/melodee-1.5.0.fwsc"}, "sha256": {"dual": "2bde63b60767bd98ca1688f58a9b200c81e1aab4e6b2ca8de57ed41a6f705e4d"}}, {"version": "1.4.5", "product": "FM-1_91045", "pkg": {"dual": "../../firmware/melodee-1.4.5.fwsc"}, "sha256": {"dual": "a18f40d6f8c8087b25f115ab11286f85c7f04383de836227c463c6ce4745ce20"}}, {"version": "1.4.4", "product": "FM-1_91044", "pkg": {"dual": "../../firmware/melodee-1.4.4.fwsc"}, "sha256": {"dual": "d349a44dc5c29c2af2ad14b6fc76071fc9e218ad4a83dcd25948bd8479aa3607"}}, {"version": "1.4.3", "product": "FM-1_91043", "pkg": {"dual": "../../firmware/melodee-1.4.3.fwsc"}, "sha256": {"dual": "efa44743be492278e25261f012b02425f373b8f31e9e396ef5e47b240a79be80"}}, {"version": "1.4.1", "product": "FM-1_91041", "pkg": {"dual": "../../firmware/melodee-1.4.1.fwsc"}, "sha256": {"dual": "fe14e72f231fea45d3b10519846db3c733d7f175a88993a1f12853c3f5ba3c3d"}}, {"version": "1.4.0", "product": "FM-1_91040", "pkg": {"dual": "../../firmware/melodee-1.4.0.fwsc"}, "sha256": {"dual": "fc3a06a8e65b8a0a473e24229540fd43d2b666a9312cd5584264fc06f007b7f3"}}, {"version": "1.3.6", "product": "FM-1_91036", "pkg": {"dual": "../../firmware/melodee-1.3.6.fwsc"}, "sha256": {"dual": "abfb786611e1bbdf2b00952b0f65a0009682853544ab94450a5c0d6bccad8d5f"}}, {"version": "1.3.5", "product": "FM-1_91035", "pkg": {"dual": "../../firmware/melodee-1.3.5.fwsc"}, "sha256": {"dual": "5c49547826806445f6b72c6ad88a6bcff1a9d348dcd3794ec917363f4322e6b7"}}, {"version": "1.3.4", "product": "FM-1_91034", "pkg": {"dual": "../../firmware/melodee-1.3.4.fwsc"}, "sha256": {"dual": "8018b967aeffcd648b9c2b9fd114108a1fe8f1884097310bc9357031c753bb1b"}}, {"version": "1.3.3", "product": "FM-1_91033", "pkg": {"dual": "../../firmware/melodee-1.3.3.fwsc"}, "sha256": {"dual": "1cc2d5562c7c44717c4f1e468157089f5672a528d94be85e06b03bdaa75e65e5"}}, {"version": "1.3.2", "product": "FM-1_91032", "pkg": {"dual": "../../firmware/melodee-1.3.2.fwsc"}, "sha256": {"dual": "41b51d38724d89d286c6af327c93b4bdad0dcba243b9df92b9bd1d6e150b60e1"}}, {"version": "1.3.1", "product": "FM-1_91031", "pkg": {"dual": "../../firmware/melodee-1.3.1.fwsc"}, "sha256": {"dual": "65d1c5dcd76b40560b8495a9974f391dcbc32d07471e9391568519fd57e56680"}}, {"version": "1.3.0", "product": "FM-1_91030", "pkg": {"dual": "../../firmware/melodee-1.3.0.fwsc"}, "sha256": {"dual": "b4f13d418c5e408e26a2af0ea7fbda2c3dfadf56f7a07624262196718a6924ad"}}, {"version": "1.2.1", "product": "FM-1_91021", "pkg": {"dual": "../../firmware/melodee-1.2.1.fwsc"}, "sha256": {"dual": "1ba8116a44485ddc62741b13553bc01fa021bbfea4c5df22aa8c358ed23c1515"}}, {"version": "1.1.0", "product": "FM-1_91010", "pkg": {"dual": "../../firmware/melodee-1.1.0.fwsc"}, "sha256": {"dual": "105269153b2aa1e20f633d302ba028d505462f1521a3348867e09b39bd69b5e8"}}, {"version": "1.0.2", "product": "FM-1_91002", "pkg": {"dual": "../../firmware/melodee-1.0.2.fwsc"}, "sha256": {"dual": "6f1a6077f5620f97e4e7e821536244284b5b508dd5df94ef70b1e9a4866c0627"}}, {"version": "1.0.1", "product": "FM-1_91001", "pkg": {"dual": "../../firmware/melodee-1.0.1.fwsc"}, "sha256": {"dual": "db7e0c8f4a4e245ea7ad58f14d4d5d9387dc86eb9f3a780d61982c0544af2c18"}}, {"version": "1.0.0", "product": "FM-1_91000", "pkg": {"dual": "../../firmware/melodee-1.0.0.fwsc"}, "sha256": {"dual": "4b8421127fa9101897e4fccdf5f3004990efc4984d5753bf896f2c1c55bda65b"}}], "boot": {"version": "1.2", "pkg": "../../firmware/m-bootloader-1.2.fwsc", "sha256": "0e89141f52d1f2d62198d4f69147a2c15c8360806e64d48002990a6fdab6d6dd", "license": "MIT", "source": "https://github.com/jvitkauskas/m-bootloader/releases/tag/v1.2", "commit": "22e2559906f9fc4e077f2d6aee20bf332300439e"}};
 (() => {
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (C) 2026 Kerem Kilic (Ellic Studio)
@@ -2778,6 +2819,29 @@ async function resumeWrite(up, image, product, step) {
   if (ota.id.text !== MELODEE_LOADER) throw fail("wrongloader",`This package requires ${MELODEE_LOADER}; found ${ota.id.text}`,ota.id.text);
   if (!await up.resume(image,step,product,MELODEE_LOADER)) throw fail("stopped","The update did not finish");
 }
+/* the resource region (firmware/src/res.c) after the firmware: <package>-res.bin through editor command 82.
+ * Never fails the install: without it the FM-1 runs Melodee Pixel and INIT sounds and says to finish here. */
+async function pushResources(up) {
+  let region;
+  try { region = await fetchBytes(st.meta.pkg.dual.replace(/\.fwsc$/, "-res.bin")); }
+  catch (e) { log(`resources: ${e.message}`); return; }
+  for (let tries = 0; tries < 20; tries++) {
+    const dev = await up.find(id => id.model === "FM-1");
+    if (dev) {
+      const input = dev.link.input, output = dev.link.output; dev.link.close();
+      const link = new BackupConnection(input, output);
+      try {
+        log(`resources: ${await installResources((r, o) => link.request(r, o), region,
+          (done, total) => { if (done === total || done % 8192 < 256) log(`resources ${done}/${total}`); })}`);
+      } catch (e) { log(`resources: ${e.message}`); }
+      finally { link.close(); }
+      return;
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  log("resources: the FM-1 did not answer after the update");
+}
+
 async function start(isStock = false) {
   if (st.running || finding) return;
   const plan = isStock ? { firmware: true, resume: st.dev?.kind === "loader", boot: false } : currentPlan();
@@ -2817,6 +2881,7 @@ async function start(isStock = false) {
       }
       phase = "done";
       mark(false);
+      if (!isStock) await pushResources(up);
     }
     if (plan.boot) { phase = "boot"; await up.installBoot(st.boot.image, product, step); }
   } catch (e) {
