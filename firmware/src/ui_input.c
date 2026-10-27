@@ -1990,13 +1990,13 @@ static void ui_confirm_accept(void)
     } else if(kind==CF_IMPORT){preset_old_allow(1);sysex_commit();preset_old_allow(0);
     } else if(kind==CF_BULK_ERASE){bulk_erase();
     } else if (kind == CF_OVR_PROJ) {                  /* overwrite: the NAME screen writes it */
-        name_open(NK_PROJ_SAVE, ui.confirm_trk & 3u);
+        name_open(NK_PROJ_SAVE, ui.confirm_trk % PROJ_SLOTS);
     } else if (kind == CF_OVR_USER) {
         name_open(NK_USER_SAVE, ui.confirm_trk);
     } else if (kind == CF_ERASE_USER) {
         up_ui_named(1u, ui.confirm_trk, 0);
     } else if (kind == CF_ERASE_PROJ) {
-        project_erase(ui.confirm_trk & 3u);
+        project_erase(ui.confirm_trk % PROJ_SLOTS);
     } else if (kind == CF_CLEAR_SHARED) {                /* the shared slots as a new project's */
         for (uint32_t i = G_MFXTYPE; i <= G_MFX3CHAR; i++)
             song.g[i] = GP[i].def;
