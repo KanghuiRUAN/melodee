@@ -493,28 +493,34 @@ static int st_small_save(uint32_t obj, const void *src, uint32_t len)
  * 0 when every bank's current record is in the pool */
 static int st_small_migrate(void *buf, uint32_t max)
 {
+    int err = 0;
     for (uint32_t o = 0; o < OBJ_COUNT; o++) {
         if (!st_small(o)) continue;
         st_hdr_t h; int copy = st_current(o, &h);
         if (copy < 0 || st_small_index(o, (uint32_t)copy) >= 0) continue;
-        if (h.len > max || st_read_range(o, (uint32_t)copy, 0, buf, h.len)) return -7;
-        int rc = st_small_save(o, buf, h.len);
-        if (rc) return rc;
+        int rc = h.len > max || st_read_range(o, (uint32_t)copy, 0, buf, h.len) ? -7 : st_small_save(o, buf, h.len);
+        if (rc) err = rc;                    /* (a 3,816-byte pre-UPB2 bank stays put until up_boot converts it) */
     }
-    return 0;
+    return err;
 }
+static int st_pair_save(uint32_t obj, const void *src, uint32_t len);
 static int st_save(uint32_t obj, const void *src, uint32_t len)
 {
 #if defined(MELODEE_AUDIO_PROFILE) && MELODEE_AUDIO_PROFILE
     if(AUDIO_LAB_GUARDED())return -9;
 #endif
-    uint32_t seq, base, off;
-    int cur, rc;
-    st_hdr_t h;
     if (!st_obj_ok(obj) || st_retired(obj) || len > st_capacity(obj))
         return -1;
     if (st_banked(obj)) return st_project_save(obj, src, len);
     if (st_small(obj)) return st_small_save(obj, src, len);
+    return st_pair_save(obj, src, len);
+}
+/* the fixed A/B pair: settings (and a preset bank's old home, where host tests build pre-pool fixtures) */
+static int st_pair_save(uint32_t obj, const void *src, uint32_t len)
+{
+    uint32_t seq, base, off;
+    int cur, rc;
+    st_hdr_t h;
     cur = st_current(obj, &h);
     seq = cur < 0 ? 0u : h.seq;
     base = st_sector(obj, cur == 0 ? 1u : 0u);       /* write the other copy */

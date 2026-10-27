@@ -29,6 +29,9 @@ _Static_assert(sizeof(persist_t) == 604u, "the record's layout: new settings tak
 static int16_t settings_glo[4];                     /* ext.glo: project.c GLO_KEPT (glo_restore, glo_poll) */
 #define RECORD_PREF_TAG 0x52500000u /* RP, high half of the old zoom word */
 #define A4_TAG 0x41340000u                          /* "A4": old spare contents are not tuning */
+#ifndef PROJ_SLOTS
+#define PROJ_SLOTS 32u                              /* (core.h) */
+#endif
 #define AUTOSAVE_OFF_TAG 0xA1u                     /* CZ row byte 28: only this tag disables autosave */
 #define WORK_BUDGET_TAG 0x57420000u /* WB: high bits of usb_off; low two bits retain USB mode */
 /* GLO > WEIGHTS in favorites.c row 8 bytes 8..15: 'W', version 1, the five points (0 AUTO, 1..15), bit 0 of the
