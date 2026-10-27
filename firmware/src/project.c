@@ -586,7 +586,7 @@ static uint32_t proj_saved_hash[PROJ_SLOTS] __attribute__((section(".pool")));
 #if MELODEE_FLASH
 static void proj_space(void) { int n = flash_ok ? st_project_free() : -1; proj_free = (uint8_t)(n < 0 ? 0xFF : n); }
 /* the project pool's free share, 0..100 (-1 unknown): the SLOTS card */
-static int project_free_pct(void) { return proj_free == 0xFFu ? -1 : (int)(proj_free * 100u / (ST_POOL_SECTORS - ST_POOL_RES_N)); }
+static int project_free_pct(void) { return proj_free == 0xFFu ? -1 : (int)(proj_free * 100u / ST_POOL_SECTORS); }
 #else
 static void proj_space(void) {}
 static int project_free_pct(void) { return -1; }
@@ -1432,6 +1432,7 @@ static void persist_boot(void)                    /* before settings_init / pane
         return;
     fl_plain_window_init();                        /* flash above 0x93000 reads as plaintext through XIP
                                                     * (user sample sets are played from there) */
+    st_small_migrate(wire_take(), sizeof proj_wire_u);   /* preset banks still in old pairs: into the preset pool */
     res_check();                                   /* the resource region (res.c) installed? */
 #if MELODEE_SLICE
     slc_store_boot();                              /* (the scans read each slot's stored slices) */

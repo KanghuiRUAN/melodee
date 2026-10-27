@@ -342,7 +342,7 @@ def build_app(stub):
     return bytes(img), syms, dis, rt
 
 
-RES_BASE, RES_SECTORS, RES_HEAD = 0xEA000, 14, 32     # firmware/src/res.c
+RES_BASE, RES_SECTORS, RES_HEAD = 0xCB000, 21, 32     # firmware/src/res.c
 
 
 def resources(img, symv):

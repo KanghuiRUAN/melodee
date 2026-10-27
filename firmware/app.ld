@@ -15,7 +15,7 @@
 MEMORY
 {
     XIP    (rx)  : ORIGIN = 0x02001000, LENGTH = 0x8C000   /* body ends before commit-marker sector 0x91000 */
-    RES    (r)   : ORIGIN = 0x020E6020, LENGTH = 0xDFE0    /* flash 0xEA020..0xF7FFF: the resource region (res.c),
+    RES    (r)   : ORIGIN = 0x020C7020, LENGTH = 0x14FE0   /* flash 0xCB020..0xDFFFF: the resource region (res.c),
                                                          * installed after an update, not part of the image */
     RAMTEXT (rwx): ORIGIN = 0x01C00000, LENGTH = 0x7F00
     RAM    (rwx) : ORIGIN = 0x01C08000, LENGTH = 96K
