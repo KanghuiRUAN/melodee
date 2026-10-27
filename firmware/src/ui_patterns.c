@@ -199,8 +199,12 @@ static void pt_row(uint32_t k)
         } else {                                        /* empty: an outline */
             cv_rrect(x, y, w, 32, r, dst ? T_BG : T_LINE, dst ? T_THEME : T_BG);
             cv_rrect(x + 1, y + 1, w - 2, 30, r - 1, T_BG, dst ? T_BG : T_LINE);
-            if (dst)                                    /* (Copy to: an empty place) */
+            if (dst && w > 12)                          /* (Copy to: an empty place) */
                 cv_text_c(x + w / 2, ty_y(y + 16, TY_LB), TY_LB, "+", T_THEME, T_BG);
+            else if (dst) {                             /* (a narrow cell: the glyph is wider than its inside) */
+                cv_rect(x + 2, y + 16, 7, 1, T_THEME);
+                cv_rect(x + 5, y + 13, 1, 7, T_THEME);
+            }
         }
         if (b == t->pattern_next)                       /* waiting for the bar: dashed */
             cv_dashed(x, y, w, 32, r, tc);
