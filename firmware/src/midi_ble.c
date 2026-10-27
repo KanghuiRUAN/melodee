@@ -144,7 +144,7 @@ static void mel_ble_boot(void) /* CPU1 held, IRQs off; does not start the radio 
 
 static int mel_ble_set(int on)
 {
-    if (on && !mb.cal) return 0;
+    if (on && (!mb.cal || !RES_OK())) return 0;     /* (RES_OK: the radio program, res.c) */
     if (on && !mb.started) {
         if (!mb_saved.valid) {
             for (uint32_t i = 0; i < 6u; i++) mb_saved.addr[i] = (uint8_t)fm1_ble_rng32();

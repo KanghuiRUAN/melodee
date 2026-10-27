@@ -29,7 +29,7 @@ static void ble_page_input(uint32_t oct)
         if (ble_row == 0) {
             int on = turn ? turn > 0 : !mb.on;
             if (on && !ble_start_quiet()) ui_message("STOP AUDIO TO START BLE");
-            else if (!mel_ble_set(on)) ui_message("RADIO CALIBRATION MISSING");
+            else if (!mel_ble_set(on)) ui_message(RES_OK() ? "RADIO CALIBRATION MISSING" : "FINISH SETUP IN WEB APP");
             mel_ble_scan(1);
         } else if (ble_row == 1) {
             mel_ble_disconnect(); mel_ble_scan(1);

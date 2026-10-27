@@ -24,13 +24,17 @@
 #define ST_BANK_BASE_MAX (5u * ST_SECTOR - ST_PAYLOAD_OFF)
 #define ST_BANK_EXT_LO 0xEA000u
 #define ST_BANK_EXT_MAX (2u * ST_PAYLOAD_MAX)
-#define ST_PROJECT_SECTORS 11u
+#define ST_PROJECT_SECTORS 8u                 /* a 27,904-byte record (pattern_store.c) */
 #define ST_POOL_PAYLOAD_OFF 32u
 #define ST_POOL_PAYLOAD_MAX (ST_SECTOR - 256u - ST_POOL_PAYLOAD_OFF)
 #define ST_PROJECT_MAX (ST_PROJECT_SECTORS * ST_POOL_PAYLOAD_MAX)
 #define ST_POOL_SECTORS 56u
 #define ST_POOL_TAG 0xA7000000u
-_Static_assert(ST_PROJECT_SECTORS * 5u <= ST_POOL_SECTORS, "four full projects plus a shared save area");
+/* pool sectors 40..53 (0xEA000..0xF7FFF) are the resource region (res.c): read, never allocated */
+#define ST_POOL_RES_LO 40u
+#define ST_POOL_RES_N 14u
+#define ST_POOL_RES_MASK1 (((1u << ST_POOL_RES_N) - 1u) << (ST_POOL_RES_LO - 32u))
+_Static_assert(ST_PROJECT_SECTORS * 5u <= ST_POOL_SECTORS - ST_POOL_RES_N, "four full projects plus a shared save area");
 
 /* The Prophet user banks: 0x93000..0x9CFFF. The old banks at 0x89000 are retired and never migrated.
  * The current banks occupy the legacy single-pattern projects' place: those objects are retired (2026-10-10, Kerem: not
@@ -304,6 +308,7 @@ static int st_project_allocate(uint32_t obj, uint32_t len, st_hdr_t *h)
     h->rsv[0] = 0; h->rsv[1] = ST_POOL_TAG;
     uint32_t need = len ? (len + ST_POOL_PAYLOAD_MAX - 1u) / ST_POOL_PAYLOAD_MAX : 1u;
     int first = -1;
+    used[1] |= ST_POOL_RES_MASK1;
     for (uint32_t i = 0; i < ST_POOL_SECTORS && need; i++) if (!((used[i / 32u] >> (i % 32u)) & 1u)) {
         h->rsv[i / 32u] |= 1u << (i % 32u); need--; if (first < 0) first = (int)i;
     }
