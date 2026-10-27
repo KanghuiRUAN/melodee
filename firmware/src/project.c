@@ -322,7 +322,11 @@ static int proj_pack(project_store_t *out, const project_t *q)
     for(i=0;i<FX_SLOTS*FX_PARAMS;i++){uint32_t id=G_MFXTYPE+i;if(q->g[id]<GP[id].min || q->g[id]>GP[id].max)return 0;b[PROJ_MASTER_WIRE+i]=(uint8_t)q->g[id];} b[62] = q->sel; b[63] = q->parts; b[64] = q->phys; b[66] = P_COUNT;
     for(i=0;i<FX_SLOTS;i++){int32_t v=q->g[G_MFXTONE+i];if(v<-FX_TONE_MAX || v>FX_TONE_MAX)return 0;b[PROJ_TONE_WIRE+i]=(uint8_t)(v+64);}
     uint32_t banks = 0;
-    for (t = 0; t < PROJ_TRK; t++) { if (q->pattern[t] >= NPAT) return 0; banks |= q->pattern[t] << (3u * t); }
+    _Static_assert(PROJ_TRK <= 4u && NPAT <= 16u, "active banks: 3 low bits a track, bit 3 in 12 + track");
+    for (t = 0; t < PROJ_TRK; t++) {
+        if (q->pattern[t] >= NPAT) return 0;
+        banks |= (q->pattern[t] & 7u) << (3u * t) | (uint32_t)(q->pattern[t] >> 3) << (12u + t);   /* (old: 12..15 zero) */
+    }
     b[65] = (uint8_t)banks; b[67] = (uint8_t)(banks >> 8);
     for (t = 0; t < PROJ_TRK; t++) {
         for (i = 0; i < P_COUNT; i++) {
@@ -404,8 +408,7 @@ static int proj_unpack(project_t *q, const uint8_t *b)
     q->sel = b[62]; q->parts = b[63]; q->phys = b[64];
     {
         uint32_t banks = b[65] | (uint32_t)b[67] << 8;
-        if (banks & 0xF000u) return 0;
-        for (t = 0; t < PROJ_TRK; t++) q->pattern[t] = (uint8_t)((banks >> (3u * t)) & 7u);
+        for (t = 0; t < PROJ_TRK; t++) q->pattern[t] = (uint8_t)((banks >> (3u * t) & 7u) | (banks >> (12u + t) & 1u) << 3);
     }
     for (t = 0; t < PROJ_TRK; t++) {
         int16_t values[PROJ_CUT_NP], def[P_COUNT];
@@ -616,12 +619,12 @@ static int proj_read_slot(uint32_t slot)
     } else { n = sizeof proj_slot[slot]; memcpy(proj_wire_u.raw, &proj_slot[slot], sizeof proj_slot[slot]); }
 #endif
 #if !MELODEE_FLASH
-    bank_wide = 0;
+    bank_wide = bank_p16 = 0;
     int valid = bank_full((uint32_t)n) ? bank_valid(proj_wire_u.raw, n) : proj_import(&proj_scratch, proj_wire_u.raw, n);
 #endif
 #if MELODEE_FLASH && !defined(FM1_IRQ_TARGET)
     if (valid) {
-        if (n == BANK_STORE_SIZE) { st_read_range(st_proj_obj(slot), (uint32_t)copy, 0, proj_bank_slot[slot], BANK_STORE_SIZE); memcpy(&proj_slot[slot], proj_bank_slot[slot] + 8u, sizeof proj_slot[slot]); }
+        if (n == BANK_STORE_SIZE) { pj_read(st_proj_obj(slot), (uint32_t)copy, 0, proj_bank_slot[slot], BANK_STORE_SIZE); memcpy(&proj_slot[slot], proj_bank_slot[slot] + 8u, sizeof proj_slot[slot]); }
         else { memset(proj_bank_slot[slot], 0, sizeof proj_bank_slot[slot]); proj_bound(&proj_scratch); proj_pack(&proj_slot[slot], &proj_scratch); }
     }
 #endif
@@ -668,7 +671,8 @@ static int proj_publish_slot(uint32_t slot,st_stream_t *w)
     slot %= PROJ_SLOTS;
     proj_space();
 #if !defined(FM1_IRQ_TARGET)
-    if(st_read_range(w->obj,w->head.slot,0,proj_bank_slot[slot],BANK_STORE_SIZE))return 2;
+    pj.on=!st_read_range(w->obj,w->head.slot,0,&pj.h,PJ_HEAD)&&pj.h.magic==PJ_MAGIC;   /* (the record as read, not as stored) */
+    if(pj_read(w->obj,w->head.slot,0,proj_bank_slot[slot],BANK_STORE_SIZE))return 2;
     memcpy(&proj_slot[slot],proj_bank_slot[slot]+8u,sizeof proj_slot[slot]);
 #endif
     proj_meta[slot].used=1;proj_meta[slot].old=0;
@@ -705,8 +709,8 @@ static void project_capture(project_t *p)
         p->chain.row[r] = chain_config.row[r];
         if (p->chain.row[r].slot >= NPAT) p->chain.row[r].slot = 0;
     }
-    for (uint32_t r = 0; r < p->chain.count && cap_map(0) != 0u && cap_map(0) < NTRK; r++)
-        p->chain.row[r].slot = chain_patterns[r][cap_map(0)] < NPAT ? chain_patterns[r][cap_map(0)] : 0u;   /* (track 1 removed: a row's slot, the new 1's there) */
+    for (uint32_t r = 0; r < p->chain.count && cap_map(0) < NTRK; r++)   /* a row's slot: the song's (track 1 removed: the */
+        p->chain.row[r].slot = chain_patterns[r][cap_map(0)] < NPAT ? chain_patterns[r][cap_map(0)] : 0u;   /* new 1's), as FBKP's song has it */
     for (i = 0; i < PROJ_TRK; i++) {
         uint32_t src = cap_map(i), own = src < NPART ? src : i;   /* the patches: a part's own, else the place's */
         if (src < NTRK) {
