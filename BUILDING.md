@@ -757,11 +757,6 @@ Host register-model tests cannot establish physical audio quality or CPU savings
 
 ## Bluetooth MIDI
 
-For the separate SDK radio-calibration helper and web recovery tool, see
-[Bluetooth radio recovery](docs/BLE_CALIBRATION.md). It is built separately by
-`tools/build_ble_calibration.py`; normal firmware does not link the SDK radio
-library.
-
 The default build includes Optimist's bidirectional BLE MIDI stack, with
 peripheral and central roles. The radio starts OFF each boot. Settings >
 Bluetooth controls discovery, connection and pairings. `MELODEE_BLE=0 ./build.sh`

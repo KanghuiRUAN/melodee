@@ -93,11 +93,6 @@ protected against replacement. This is radio calibration, separate from the
 knob/button calibration menu. The connected firmware must support USB editor
 command 81 (version 1); earlier experimental BLE builds need updating first.
 
-The [radio recovery tool](BLE_CALIBRATION.md) adds a browser workflow and a
-separate SDK-based calibration helper for devices without an old backup. It
-includes bounded watchdog service, retained diagnostics, and return-to-Melodee
-handling. See its hardware-validation status before distributing the helper.
-
 PER5 stays 604 bytes, and the optional template keeps its existing offset.
 A tagged 212-byte BLE trailer stores address, calibration, incoming bond and
 the outgoing device/bond. Settings with a template use the previously unused

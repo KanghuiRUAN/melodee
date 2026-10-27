@@ -75,13 +75,6 @@ class NightlySite(unittest.TestCase):
         self.assertIn('          tests/run_tests.sh', workflow)
         self.assertNotIn('uses: keremimo/melodee/.github/workflows/nightly.yml@nightly', workflow)
 
-    def test_calibration_page_carries_only_the_packages_own_helper(self):
-        # No helper beside the package: the page ships without a pair, whatever this checkout's build/ holds.
-        editor = self.site / "webapp/editor"
-        self.assertIn("globalThis.MELODEE_CALIBRATION_BUNDLE=null;", (editor / "ble-calibration-bundled.js").read_text())
-        for name in ("ble-calibration.html", "install/installer.css"):
-            self.assertTrue((editor / name).exists(), name)
-
     def test_history_preserves_dual_core_releases_without_requiring_pairs(self):
         old = package(self.site / "firmware/melodee-1.2.1.fwsc", "FM-1_91021", 2)
         original = old.read_bytes()

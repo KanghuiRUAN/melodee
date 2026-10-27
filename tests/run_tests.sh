@@ -172,7 +172,6 @@ web_tests() {                                     # the editor mock's tables mus
         step "installer safety: tab locks, wake/leave guards, throttled MIDI, preflight and interrupted resumes" node web/test_install_safety.mjs
         step "TransitFM1: verified package, backup, loader isolation and resume" node web/test_transit.mjs
         step "web backup: capture, validation before writes, restore order" node web/test_backup.mjs
-        step "BLE recovery: calibration validation, import and interrupted return" node web/test_ble_calibration.mjs
         step "stock restore: the unmodified official V15 file is the image, CHECK HEAD range" node web/test_stock_restore.mjs
         if [ -f FM-1_v15.fwsc ]; then
             build v15_ldr ldr_test &&
@@ -336,7 +335,6 @@ if core; then
     run "boot packages: constant entry sector and valid directory CRCs" python3 tests/boot_stub_pkg_test.py
     t "power cuts: every erase/page, resume and unchanged boot sector" loader_powercut_test -O2 -- powercut_tests
     t "M-UPGRADE entry (own loader and pinned boot installer)" ota_test -DOWN_PKG=1 -- "$OUT/ota_test" build/melodee.fwsc web/m-bootloader/fm1-uboot.fwsc
-    t "M-UPGRADE entry from the BLE calibration helper (page-sized flash driver)" ota_helper:ota_test -DOWN_PKG=1 -DOTA_HELPER_HOOKS=1 -- "$OUT/ota_helper" build/melodee.fwsc web/m-bootloader/fm1-uboot.fwsc
     t "installer crash report (read only)" installer_report_test
     t "update loader: other app -> this build" ldr_test -- old_to_new
     run "installer CLI (fm1_install.py) against a simulated FM-1" python3 tests/install_test.py

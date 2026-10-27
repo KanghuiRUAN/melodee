@@ -25,8 +25,6 @@ CASES = [
     ('ble_store_test', []),
     ('ble_settings_test', []),
     ('ble_cal_editor_test', ['-Itests/ble_fake', '-Ibuild/gen', '-Ifirmware/src', '-lm']),
-    ('ble_recalibration_bridge_test', []),
-    ('ble_cal_watchdog_test', []),
     ('ble_ui_render', ['-Itests/ble_fake', '-Ibuild/gen', '-Ifirmware/src', '-lm']),
     ('ble_ui_render', ['-DMELODEE_USB_HOST=1', '-Itests/ble_fake', '-Ibuild/gen', '-Ifirmware/src', '-lm']),
     ('melodee_ble_test', ['-Itests/ble_fake', '-Ibuild/gen', '-Ifirmware/src', '-lm']),
@@ -47,7 +45,6 @@ def run(case):
 if __name__ == '__main__':
     subprocess.run(['python3', 'tests/ble_rf_replay_test.py'], check=True)
     subprocess.run(['python3', 'tests/ble_calibration_test.py'], check=True)
-    subprocess.run(['python3', 'tests/ble_recalibrate_test.py'], check=True)
     OUT.mkdir(parents=True, exist_ok=True)
     # Compile the actual shipping editor decoder, not a fixture substitute.
     editor = Path('firmware/src/editor.c').read_text()

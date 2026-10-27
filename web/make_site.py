@@ -35,7 +35,6 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from make_ble_calibration import write_bundle
 
 HERE = Path(__file__).resolve().parent
 BLOCKS, BLK, KEEP = 20, 0x30, 0x2F
@@ -273,18 +272,12 @@ def main(pkg, version, out, nightly=None, installer_only=False, rc=None, manual=
     if not installer_only:
         publish_manual(man_src, man, version, preserve_nightly=True)
         shutil.copy(HERE / "editor.html", ed / "index.html")
-        for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js", "fm1pkg.js", "fm1ota.js",
-                  "blecalibration.js", "ble-calibration.html", "ble-calibration-page.js", "ble-calibration-demo.js"):
+        for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js", "fm1pkg.js", "fm1ota.js"):
             if (HERE / f).exists():
                 shutil.copy(HERE / f, ed / f)
         (ed / "install").mkdir(exist_ok=True)
         for f in ("transfer.js", "keepalive.js", "progress.js", "fakefm1.js", "installer.css"):
             shutil.copy(HERE / "install" / f, ed / "install" / f)
-        # only the helper built with this package travels beside it (release.yml's release-assets); a helper
-        # from this checkout's build/ is not the published firmware's pair
-        calibration = pkg.parent / "melodee-ble-calibration.fwsc"
-        write_bundle(ed / "ble-calibration-bundled.js",pkg if calibration.exists() else None,
-                     calibration if calibration.exists() else None,version)
         (out / "index.html").write_text(
             '<!doctype html><meta charset="utf-8"><title>Melodee</title>'
             '<meta http-equiv="refresh" content="0; url=webapp/installer/">'

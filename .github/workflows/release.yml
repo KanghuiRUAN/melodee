@@ -80,10 +80,8 @@ jobs:
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then test "$GITHUB_REF_NAME" = "v$version"; fi
         ./build.sh --release "$version"
         cp "build/melodee-$version.fwsc" build/melodee.fwsc
-        python3 tools/build_ble_calibration.py
         mkdir -p build/release-assets
         cp "build/release-$version/"*.fwsc "build/release-$version/"*-app.bin build/release-assets/
-        cp build/rf-calibration/melodee-ble-calibration.fwsc build/release-assets/
       test: |
         set -euo pipefail
         export PARALLEL=2 MELODEE_DUAL_CORE=1 MELODEE_CORE1_FALLBACK=0

@@ -114,11 +114,6 @@ static int ota_frame_get(const uint8_t **p, uint32_t *n)
 static void ota_frame_done(void) { rx_full = 0; }
 static uint32_t ota_now_ms(void) { return now_ms; }
 static void ota_idle(void) { now_ms += 1; }
-#if OTA_HELPER_HOOKS                     /* the simulated NOR below becomes the RAM driver under the helper's hooks */
-#define ota_erase nor_erase
-#define ota_prog nor_prog
-#define ota_fread nor_fread
-#endif
 static int ota_erase(uint32_t off)
 {
     if (off < 0xE0000u || off >= 0xE5000u || (off & 0xFFFu)) { bad_erase++; return -8; }
@@ -137,21 +132,6 @@ static int ota_prog(uint32_t off, const void *src, uint32_t n)
     return 0;
 }
 static int ota_fread(uint32_t off, void *dst, uint32_t n) { if(cleanup_read_error)return -1;memcpy(dst, nor + off, n); return 0; }
-#if OTA_HELPER_HOOKS
-#undef ota_erase
-#undef ota_prog
-#undef ota_fread
-/* firmware/hal/fm1_flash.h's contract: one 4 KiB sector; one NOR page per program (at most 256 B, no wrap) */
-static int fl_erase4k_ram(uint32_t off, uint32_t *took) { *took = 0; return nor_erase(off); }
-static int fl_prog_ram(uint32_t off, const uint8_t *src, uint32_t n, uint32_t *took)
-{
-    *took = 0;
-    if (!n || n > 256u || (off & 0xFFu) + n > 256u) { bad_erase++; return -1; }
-    return nor_prog(off, src, n);
-}
-static int fl_read_ram(uint32_t off, uint8_t *dst, uint32_t n) { return nor_fread(off, dst, n); }
-#include "../firmware/calibration/ota_flash.h"
-#endif
 static void ota_show(uint32_t step, int32_t code)
 {
     /* Progress may overwrite transient draw work. Neither staged package data
