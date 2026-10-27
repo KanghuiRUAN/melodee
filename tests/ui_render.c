@@ -17,7 +17,7 @@
  * operator boxes overlapping or touching, no route, loop, bus or label inside a box or touching one it does not
  * connect, no two nets (one gap's routes that share an operator, the output, the loop, the label) sharing or
  * touching a pixel, everything inside the panel.
- * Legacy PIXEL_<screen>.ppm names remain as aliases; every capture now uses Melodee Pixel.
+ * Every screen and the page/value sweep again in Melodee Pixel (Settings > FONT PIXEL, NIGHT): PIXEL_<screen>.ppm.
  * Output: OUTDIR/ppm/<PALETTE>_<screen>.ppm for MONO GREEN PAPER, OUTDIR/report.txt (findings, ellipsised free
  * text, the draw cost), OUTDIR/text_audit.tsv (MONO, per screen: texts, icons and keycaps with their ink-box px, the
  * ellipsised ones, the texts closer than 2 px to their cell's edge, the words).
@@ -394,11 +394,11 @@ static void write_ppm(const char *dir, const char *pal, const char *name)
 }
 
 /* ------------------------------------------------------------------ the screens --- */
-static int render_pixel;                         /* legacy capture name; all renders use Melodee Pixel */
+static int render_pixel;                         /* Settings > FONT PIXEL for what pal() sets up next */
 static void pal(uint32_t p)
 {
     settings.palette = p;
-    /* Compatibility render names all use the sole Melodee Pixel face. */
+    PREF_BITS = (uint8_t)(render_pixel ? PREF_BITS | PREF_PIXEL : PREF_BITS & ~PREF_PIXEL);
     palette_set(p);
 }
 static void state(void)                          /* a playing song with steps on every track */
@@ -2341,12 +2341,12 @@ int main(int argc, char **argv)
         state(); pal(0); cur_name = "self-test";
         nscr = npend = 0;
         cv_begin(COL_W, COL_H, T_BG);
-        cv_text(0, 0, &AP_LB, "AAAA", T_TEXT);
-        cv_text(10, 4, &AP_LB, "BBBB", T_TEXT);
-        cv_text_fit(0, 12, &AP_TX, "WWWWWWWW", T_THEME, T_BG, COL_W);
-        cv_text(40, 20, &AP_TX, "CUT", T_THEME);
+        cv_text(0, 0, &AF_LB, "AAAA", T_TEXT);
+        cv_text(10, 4, &AF_LB, "BBBB", T_TEXT);
+        cv_text_fit(0, 12, &AF_TX, "WWWWWWWW", T_THEME, T_BG, COL_W);
+        cv_text(40, 20, &AF_TX, "CUT", T_THEME);
         cv_rrect(2, 28, 20, 17, 3, T_SURF, T_BG);          /* a cell narrower than its word */
-        cv_text(4, 27, &AP_LB, "SPILL", T_TEXT);
+        cv_text(4, 27, &AF_LB, "SPILL", T_TEXT);
         cv_blit(4, Y_LABEL);
         lint();
         if (nfind < 4u || !nspill) { fprintf(stderr, "ui_render: the lint missed its self-test (%u)\n", nfind); return 1; }

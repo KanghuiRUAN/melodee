@@ -4680,7 +4680,7 @@ static int test_large_face(void)
     const char *s;
     for (i = 0; i < NB + NE + sizeof FIXED / sizeof FIXED[0]; i++)                              /* ui_input.c setup_show: the control names */
         for (s = i < NB ? B_NAME[i] : i < NB + NE ? E_NAME[i - NB] : FIXED[i - NB - NE]; *s; s++)
-            missing += glyph_at(&AP_HR, (uint8_t)*s) < 0;
+            missing += glyph_at(&AF_HR, (uint8_t)*s) < 0;
     return check("the HR face holds every glyph of the strings drawn in it", !missing);
 }
 

@@ -274,7 +274,7 @@ place status cards over knobs, lists, waveforms, or notes.
   The live FX layer retains its own HOLD / LOCK / MEMORY context and names the selected key.
 - **Optional context:** octave, song row, page dots, and the low-battery glyph use the remaining header space in
   the normal layout. Never overlap or truncate a status to preserve optional context. Use a concise, documented
-  label that fits Melodee Pixel; `WAIT LOOP` is the header label for “waiting for loop”.
+  label that fits both Rubik and Melodee Pixel; `WAIT LOOP` is the header label for “waiting for loop”.
   The signed octave pill (`+2`, `-1`) shows the selected track's MPC bank octave while QNT is MPC;
   otherwise it shows the shared keyboard octave. It updates on track/mode changes and disappears at zero.
   In MPC mode the latest accepted pad note selects its track silently; use the normal track context and
@@ -470,17 +470,16 @@ release. It does not require a rack reverb slot. See ../SLOOP_PUNCH_FX.md.
 
 ## Large type (2026-10-14)
 
-The 1.54" panel (27.7 mm across) uses Melodee Pixel exclusively (`assets/fonts/melodee_pixel.txt`,
-a 5 x 7 1-bit face drawn at whole multiples). The FONT setting was removed on 2026-10-26;
-its old preference bit is retained but ignored. Line heights and baselines stay unchanged.
-Historical mockups above still show the former Rubik face.
+The 1.54" panel (27.7 mm across) needs larger text: every screen is set in four type roles, and Settings > FONT picks
+the face. Rubik 500 or Melodee Pixel (`assets/fonts/melodee_pixel.txt`, a 5 x 7 1-bit face drawn at whole multiples);
+a role has the same line height and baseline in both, so a layout holds in either (`gfx.c` `TY_*`, `ui.c` PREF_PIXEL).
 
-| Role | Use | Pixel |
-|---|---|---|
-| `TY_LB` | labels, units, tags, chips, keycaps | 2 x (letters and figures 4 wide) |
-| `TY_TX` | names, rows, the header, text | 2 x |
-| `TY_VL` | values | 3 x |
-| `TY_HR` | the hero: the chord, big names | 5 x |
+| Role | Use | Rubik | Pixel |
+|---|---|---|---|
+| `TY_LB` | labels, units, tags, chips, keycaps | 16 px | 2 x (letters and figures 4 wide) |
+| `TY_TX` | names, rows, the header, text | 20 px | 2 x |
+| `TY_VL` | values | 28 px | 3 x |
+| `TY_HR` | the hero: the chord, big names | 48 px | 5 x |
 
 `ty_y(cy, f)` centres a face's capitals on a row; `ty_fit(f, s, w)` drops to the label face before anything is cut.
 
@@ -498,8 +497,9 @@ turning: its value in the track's colour and a bar); the picture at y 84, 124 ta
 
 Rules, from the reviews: screens stay calm (no boxes or rings around cells, no tabs, no hint rows); nothing is ever
 cut or ellipsised (labels have short forms, `ui_draw.c` CELL_SHORT; dialogs and toasts
-wrap); Stage is multicolour. `tests/ui_render.c` lints every screen with Melodee Pixel: overlaps, texts past their canvas
+wrap); Stage is multicolour. `tests/ui_render.c` lints every screen in both faces: overlaps, texts past their canvas
 or cell, ellipsised labels; it must report none.
 
-Storage: the shared Pixel bitmaps, two glyph tables (regular and condensed), extras and four roles cost
-about 2.3 KB. No Rubik glyphs or kerning tables are generated for the firmware.
+Storage: the four Rubik faces are 4-bit alpha kept in four steps (0, 5, 10, 15) and Huffman-coded, with one kerning
+table for all of them (at 28 px, scaled per face); with the pixel face 31.4 KB in all. Glyphs stay in flash: no
+decode table lives in RAM (`gfx.c` builds a 64-entry one on the stack per string).

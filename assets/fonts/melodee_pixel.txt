@@ -1,4 +1,4 @@
-# Melodee Pixel 5x7: the UI's sole text face, drawn for Melodee, GPL-3.0-only like
+# Melodee Pixel 5x7: the UI's pixel face (a Settings choice: FONT PIXEL), drawn for Melodee, GPL-3.0-only like
 # the firmware. Capital height 7, x-height 5, descenders 2; proportional, one pixel between letters. Drawn at whole
 # multiples only (2x labels and text, 3x values, 5x the hero), so every edge is sharp. I has serifs, l a foot,
 # 1 a flag and 0 a slash, so none of them reads as another.

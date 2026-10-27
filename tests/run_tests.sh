@@ -387,9 +387,9 @@ if core && [ $TABLES = 1 ]; then
     t "Concert pitch: A4 frequency, engines, modulation, held notes and project-independent settings" tuning_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "themes: contrast, text blending and font metrics" theme_test -O1 $FW
-    t "text: pixel pens and pixels equal the reference renderer" text_ref_test -O1 $FW
+    t "text: pens, kerning and pixels equal the reference renderer" text_ref_test -O1 $FW
     if [ $PIL = 1 ]; then
-        run "text spacing: all Pixel glyphs and metrics match source; no Rubik tables" \
+        run "text spacing: glyph gaps against the font's own (16x supersampled), S M <= 0.25 px, L <= 0.5 px" \
             python3 tests/text_spacing_test.py build/gen/ui_fonts.h
     fi
     t "settings: PER5 records, palette ids and preference preservation" settings_test -O1 -w -Ibuild/gen
