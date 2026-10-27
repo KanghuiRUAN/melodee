@@ -585,11 +585,11 @@ static void project_capture(project_t *p);
 static uint32_t proj_saved_hash[PROJ_SLOTS] __attribute__((section(".pool")));
 #if MELODEE_FLASH
 static void proj_space(void) { int n = flash_ok ? st_project_free() : -1; proj_free = (uint8_t)(n < 0 ? 0xFF : n); }
-/* the shared pool's free share (projects and preset banks), 0..100 (-1 unknown): the SLOTS card */
-static int project_free_pct(void) { return proj_free == 0xFFu ? -1 : (int)(proj_free * 100u / ST_U_N); }
+/* the shared pool's free room (projects and preset banks share it) in KB of payload (-1 unknown): the SLOTS card */
+static int project_free_pct(void) { return proj_free == 0xFFu ? -1 : (int)(proj_free * ST_POOL_PAYLOAD_MAX / 1024u); }
 #else
 static void proj_space(void) {}
-static int project_free_pct(void) { return -1; }
+static int project_free_pct(void) { return -1; }   /* (KB) */
 #endif
 static int proj_read_slot(uint32_t slot)
 {

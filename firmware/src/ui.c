@@ -58,7 +58,7 @@ static void preset_old_allow(uint32_t allow);
 static void slot_save_sheet(void);              /* ui_slots.c */
 static int project_save_as(uint32_t slot, const char *name);
 static int project_name(uint32_t slot, char *b);
-static int project_free_pct(void);                 /* project.c: the project pool's room left, 0..100 (-1 unknown) */
+static int project_free_pct(void);                 /* project.c: the shared pool's room left in KB (-1 unknown) */
 static int project_rename(uint32_t slot, const char *name);
 static int project_erase(uint32_t slot);
 static void project_cur_name(char *b);

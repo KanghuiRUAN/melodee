@@ -68,16 +68,17 @@ static void slot_detail(uint32_t k, uint32_t r, int used, char *b)   /* the card
         int pct = project_free_pct();
         str_cpy(b, used == 2 ? "Starts empty" : r + 1u == (uint32_t)PROJ_TMPL ? (used ? "Saved" : "Empty")
                    : used ? "Saved" : "Empty", 24);
-        if (used != 2 && r + 1u != (uint32_t)PROJ_TMPL && pct >= 0) {   /* the project pool's room left */
+        if (used != 2 && r + 1u != (uint32_t)PROJ_TMPL && pct >= 0) {   /* the shared pool's room left, in KB */
             uint32_t n = str_len(b);
             char *e = b + n;
             if (!pct) str_cpy(e, ", full", 24 - n);
             else {
                 *e++ = ','; *e++ = ' ';
-                if (pct > 99) pct = 99;
-                if (pct > 9) *e++ = (char)('0' + pct / 10);
+                if (pct > 999) pct = 999;
+                if (pct > 99) *e++ = (char)('0' + pct / 100);
+                if (pct > 9) *e++ = (char)('0' + pct / 10 % 10);
                 *e++ = (char)('0' + pct % 10);
-                str_cpy(e, "% free", 7);
+                str_cpy(e, " KB free", 9);
             }
         }
     }
