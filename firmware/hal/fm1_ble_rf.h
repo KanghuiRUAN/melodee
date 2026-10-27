@@ -207,9 +207,12 @@ static void fm1_rfspi(uint32_t addr, uint32_t cmd, uint32_t data)   /* HW §5.2:
  * table's banks (word 1, entries 0-127) and RX DC (word 0, 128-223) from what it measured. The x187 given to
  * fm1_ble_rf_run is ignored then. docs/bt/RF-CALIBRATION.md. */
 #include "fm1_rf_cal.h"
+#ifndef FM1_RF_CAL_MEMORY
+#define FM1_RF_CAL_MEMORY                                   /* the firmware: the zeroed pool (its data RAM is full) */
+#endif
 static uint8_t fm1_rf_cal_on;                               /* set by the firmware: measure (1), or the stored 187 (0) */
-static struct fm1_rf_cal fm1_rfc;                           /* what was measured (the log reads it) */
-static uint8_t fm1_rfc_x187[68];                            /* the record built from it */
+static struct fm1_rf_cal fm1_rfc FM1_RF_CAL_MEMORY;         /* what was measured (the log reads it) */
+static uint8_t fm1_rfc_x187[68] FM1_RF_CAL_MEMORY;          /* the record built from it */
 static uint8_t fm1_rfc_scanned, fm1_rfc_trimmed;
 static int fm1_rfc_scan_rc, fm1_rfc_trim_rc;
 
