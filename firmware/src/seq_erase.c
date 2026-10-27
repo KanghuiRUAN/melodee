@@ -35,14 +35,14 @@ static void seq_erase_rebuild(track_t *t, uint64_t touched)
         found |= (uint64_t)1u << view;
         step_t *st = &t->step[view];
         if (r->vel > st->vel) st->vel = r->vel;
-        uint32_t lane = drum_lane(r->note);
-        if (drum_track(t) && r->note == DRUM_LANE_NOTE[lane]) {
+        uint32_t lane = drum_lane(recorded_note(r));
+        if (drum_track(t) && recorded_note(r) == DRUM_LANE_NOTE[lane]) {
             st->hit |= (uint8_t)(1u << lane);
             if (r->vel > 110u) st->acc |= (uint8_t)(1u << lane);
         } else {
             uint32_t j;
-            for (j = 0; j < st->n && st->note[j] != r->note; j++);
-            if (j == st->n && st->n < 4u) st->note[st->n++] = r->note;
+            for (j = 0; j < st->n && st->note[j] != recorded_note(r); j++);
+            if (j == st->n && st->n < 4u) st->note[st->n++] = recorded_note(r);
         }
         if (st->vel > 110u) st->flags |= SF_ACCENT;
     }

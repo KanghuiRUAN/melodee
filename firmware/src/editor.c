@@ -1060,7 +1060,7 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         track_t *t = &trk[a[0]]; uint32_t rc = 0;
         if (a[1] == 1u) rc = pattern_request(t, a[2]);
         if (a[1] == 2u) rc = pattern_copy(t, a[2], a[3]);
-        ed_b(a[0]); ed_b(a[1]); ed_b(rc); ed_b(t->pattern); ed_b(t->pattern_next < NPAT ? t->pattern_next : 127u); ed_b(NPAT);
+        ed_b(a[0]); ed_b(a[1]); ed_b(rc); ed_b(t->pattern); ed_b(t->pattern_next < NPAT ? t->pattern_next : 127u); ed_b(trk_npat(a[0]));
         ui.force = 1;
         break;
     }

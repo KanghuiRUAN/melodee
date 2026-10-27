@@ -93,7 +93,7 @@ static void track_blank(uint32_t k)
     t->p[P_ROOT] = TSEL->p[P_ROOT];                     /* the song's key */
     scale_share(TSEL);
     fm1_irq_off();
-    for (b = 0; b < NPAT; b++) {                        /* the other patterns empty too */
+    for (b = 0; b < trk_npat(k % NTRK); b++) {          /* the other patterns empty too */
         pattern_t p;
         pattern_read(k % NTRK, b, &p);
         for (i = 0; i < NSTEP; i++)

@@ -29,7 +29,7 @@ static int proj_image_valid(const project_t *q)
         for(uint32_t i=0;i<NSTEP;i++)if(!proj_step_pack(step,&q->t[k].step[i]))return 0;
     }
     if(!mpc_octaves_pack(oct))return 0;
-    for(uint32_t i=0;i<RECORD_MAX;i++)if(!recording_valid(&q->recording[i])||(q->recording[i].vel&&(recorded_owner(&q->recording[i])>=proj_owners()||recorded_step(&q->recording[i])>=64u)))return 0;
+    for(uint32_t i=0;i<RECORD_MAX;i++)if(!recording_valid(&q->recording[i])||(q->recording[i].vel&&(!proj_owner_ok(recorded_owner(&q->recording[i]))||recorded_step(&q->recording[i])>=64u)))return 0;
     return 68u+PROJ_TRK*(P_COUNT+2u+NSTEP*8u)+sizeof q->chain+sizeof q->motion+2u+2u*PROJ_TRK<=PROJ_MPC_OCT_WIRE;
 }
 static int proj_image_capture(int runtime)
@@ -37,6 +37,10 @@ static int proj_image_capture(int runtime)
     project_t *q=&proj_scratch;uint32_t f=motion_guard();
     project_capture(q);
     int ok=bank_pack_tail(proj_image_tail(),q,runtime);
+    if(!ok&&bank_too_full&&runtime&&bank_v1_fits()){          /* a dense project of before 16 patterns: as FBKK */
+        bank_force_v1=1;ok=bank_pack_tail(proj_image_tail(),q,runtime)&&!bank_wide;bank_force_v1=0;
+        if(!ok)bank_too_full=1;
+    }
     motion_unguard(f);
     /* The captured RAM is private until this synchronous operation returns;
      * validation can run with audio interrupts enabled. */
@@ -187,18 +191,19 @@ static int proj_stream_generate(st_stream_t *w,uint32_t obj)
 static int proj_stream_load(uint32_t obj,uint32_t copy,uint32_t len)
 {
     project_t *q=&proj_scratch;uint32_t hash=2166136261u;
-    proj_source_hash=0;bank_wide=0;bank_song64=0;bank_songfx=0;bank_sounds=0;bank_sound_bytes=0;
+    proj_source_hash=0;bank_wide=0;bank_p16=0;bank_song64=0;bank_songfx=0;bank_sounds=0;bank_sound_bytes=0;
     pj.on=0;
     if(len>PJ_HEAD&&len<=BANK_STORE_SIZE+PJ_HEAD&&!st_read_range(obj,copy,0,&pj.h,PJ_HEAD)&&pj.h.magic==PJ_MAGIC&&
        pj.h.len==BANK_STORE_SIZE){pj.on=1;len=BANK_STORE_SIZE;}
     if(bank_full(len)){
         uint32_t header[2];
-        if(pj_read(obj,copy,0,header,sizeof header)||(header[0]!=BANK_MAGIC&&header[0]!=BANKL_MAGIC&&header[0]!=BANKM_MAGIC&&header[0]!=BANKN_MAGIC&&header[0]!=BANKO_MAGIC)||header[1]!=len)return 0;
+        if(pj_read(obj,copy,0,header,sizeof header)||(header[0]!=BANK_MAGIC&&header[0]!=BANKL_MAGIC&&header[0]!=BANKM_MAGIC&&header[0]!=BANKN_MAGIC&&header[0]!=BANKO_MAGIC&&header[0]!=BANKP_MAGIC)||header[1]!=len)return 0;
+        bank_p16=(uint8_t)(header[0]==BANKP_MAGIC);
         bank_sounds=(uint8_t)(header[0]==BANKO_MAGIC);
-        bank_songfx=(uint8_t)(header[0]==BANKN_MAGIC || bank_sounds);
+        bank_songfx=(uint8_t)(header[0]==BANKN_MAGIC || bank_sounds || bank_p16);
         bank_song64=(uint8_t)(header[0]==BANKM_MAGIC || bank_songfx);
         bank_wide=(uint8_t)(header[0]!=BANK_MAGIC);
-        if(bank_wide&&pj_read(obj,copy,BANKL_REC_OFF,proj_rec_ext,sizeof proj_rec_ext))return 0;
+        if(bank_wide&&pj_read(obj,copy,BL.rec,proj_rec_ext,BL.recn))return 0;
         if(pj_read(obj,copy,8u,proj_image_store(),sizeof(project_store_t)))return 0;
         hash=fnv(fnv(hash,header,sizeof header),proj_image_store(),sizeof(project_store_t));
         if(!proj_import(q,proj_image_store(),sizeof(project_store_t)))return 0;
@@ -229,7 +234,7 @@ static int proj_stream_load(uint32_t obj,uint32_t copy,uint32_t len)
             recorded_note_t v={0};
             if(r[5]){
                 if(r[4]>127u||r[5]>127u||(int8_t)r[8]<-24||(int8_t)r[8]>24||r[9]>=8u)return 0;
-                v=(recorded_note_t){.on=(uint16_t)(r[0]|r[1]<<8),.duration=(uint16_t)(r[2]|r[3]<<8),.note=r[4],.vel=r[5],.owner=r[6],.step=r[7],.pitch=(int8_t)r[8],.length=r[9]&1u,.extended=r[9]>>1};
+                v=(recorded_note_t){.on=(uint16_t)(r[0]|r[1]<<8),.duration=(uint16_t)(r[2]|r[3]<<8),.note7=r[4],.vel=r[5],.owner=r[6],.step=r[7],.pitch=(int8_t)r[8],.length=r[9]&1u,.extended=r[9]>>1};
             }
             q->recording[i]=v;
         }

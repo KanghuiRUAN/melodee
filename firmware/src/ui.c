@@ -58,6 +58,13 @@ static void preset_old_allow(uint32_t allow);
 static void slot_save_sheet(void);              /* ui_slots.c */
 static int project_save_as(uint32_t slot, const char *name);
 static int project_name(uint32_t slot, char *b);
+/* pattern p's number, 1..16, into b (3 bytes); its length */
+static uint32_t pat_num(char *b, uint32_t p)
+{
+    p = p % NPAT + 1u;
+    if (p > 9u) { b[0] = (char)('0' + p / 10u); b[1] = (char)('0' + p % 10u); b[2] = 0; return 2; }
+    b[0] = (char)('0' + p); b[1] = 0; return 1;
+}
 static int project_free_pct(void);                 /* project.c: the shared pool's room left in KB (-1 unknown) */
 static int project_rename(uint32_t slot, const char *name);
 static int project_erase(uint32_t slot);

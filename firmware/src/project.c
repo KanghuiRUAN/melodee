@@ -188,7 +188,7 @@ static int proj_import_note10(project_t *q,const uint8_t *b,uint32_t n)
     for(uint32_t i=0;i<RECORD_MAX;i++){
         const uint8_t *r=b+at+i*10u;
         recorded_note_t v={0};
-        if(r[5])v=(recorded_note_t){.on=(uint16_t)(r[0]|r[1]<<8), .duration=(uint16_t)(r[2]|r[3]<<8), .note=r[4], .vel=r[5], .owner=r[6], .step=r[7], .pitch=(int8_t)r[8], .length=(r[9]&1u), .extended=(r[9]>>1)};
+        if(r[5])v=(recorded_note_t){.on=(uint16_t)(r[0]|r[1]<<8), .duration=(uint16_t)(r[2]|r[3]<<8), .note7=r[4], .vel=r[5], .owner=r[6], .step=r[7], .pitch=(int8_t)r[8], .length=(r[9]&1u), .extended=(r[9]>>1)};
         q->recording[i]=v;
     }
     uint32_t tail=__builtin_offsetof(project_t,pattern),old=at+RECORD_MAX*10u;
@@ -234,40 +234,48 @@ static uint32_t proj_name_get(char *d, const uint8_t *s)   /* its length */
  * The bank directory restores owners; event indices are runtime selection only.
  * An FBKL record (bank_wide, pattern_store.c) keeps the MIDI-only tracks' too: after the parts', their counts in its
  * tail (proj_rec_ext, read before the FUN record); an FBKK record has none (a track there not in use: dropped) */
-static uint8_t proj_rec_ext[PROJ_REC_DIR_BYTES];
+static uint8_t proj_rec_ext[(NTRK * NPAT * 11u + 7u) / 8u] __attribute__((section(".pool")));
 static uint8_t bank_wide;                              /* the bank record captured or read last is FBKL */
-static uint32_t proj_owners(void) { return (bank_wide ? NTRK : PROJ_TRK) * NPAT; }
+static uint8_t bank_p16;                               /* .. FBKP (pattern_store.c): its tail counts every owner's notes */
+/* the FUN record's timed notes go owner by owner: FBKP track * NPAT + bank, every one; before it track * NPAT_V1 +
+ * bank, the parts' (FBKK) or every track's (FBKL); proj_owner_id: that order's owner as the runtime numbers it */
+static uint32_t proj_owners(void) { return bank_p16 ? NTRK * NPAT : (bank_wide ? NTRK : PROJ_TRK) * NPAT_V1; }
+static uint32_t proj_owner_id(uint32_t o) { return bank_p16 ? o : o / NPAT_V1 * NPAT + o % NPAT_V1; }
+static int proj_owner_ok(uint32_t owner)
+{
+    return owner < NTRK * NPAT && (bank_p16 || (owner % NPAT < NPAT_V1 && owner / NPAT < (bank_wide ? NTRK : PROJ_TRK)));
+}
 static int proj_record_pack(uint8_t *b,const project_t *q)
 {
     uint32_t at=0;
-    for(uint32_t owner=0;owner<proj_owners();owner++){
-        uint16_t count=0;
+    for(uint32_t o=0;o<proj_owners();o++){
+        uint16_t count=0;uint32_t owner=proj_owner_id(o);
         for(uint32_t i=0;i<RECORD_MAX;i++){
             const recorded_note_t *r=&q->recording[i];
             if(!r->vel || recorded_owner(r)!=owner)continue;
             if(!recording_valid(r) || recorded_step(r)>=64u)return 0;
             uint32_t pos=0;uint8_t *v=b+PROJ_REC_OFF+at++*8u;
             wire_bits_put(v,&pos,r->on,16);wire_bits_put(v,&pos,r->duration,16);
-            wire_bits_put(v,&pos,r->note,7);wire_bits_put(v,&pos,r->vel,7);
+            wire_bits_put(v,&pos,recorded_note(r),7);wire_bits_put(v,&pos,r->vel,7);
             wire_bits_put(v,&pos,r->step,8);wire_bits_put(v,&pos,recorded_exponent(r),3);
             wire_bits_put(v,&pos,(uint32_t)(r->pitch+24),6);wire_bits_put(v,&pos,recorded_gate(r),1);count++;
         }
-        uint32_t dir=(owner%(PROJ_TRK*NPAT))*11u;
-        if(owner<PROJ_TRK*NPAT)wire_bits_put(b+PROJ_REC_DIR,&dir,count,11);
+        uint32_t dir=o*11u;
+        if(!bank_p16 && o<PROJ_TRK*NPAT_V1)wire_bits_put(b+PROJ_REC_DIR,&dir,count,11);   /* (FBKP: in its tail) */
     }
     return 1;
 }
 static int proj_record_unpack(project_t *q,const uint8_t *b)
 {
     uint32_t at=0;
-    for(uint32_t owner=0;owner<proj_owners();owner++){
-        uint32_t dir=(owner%(PROJ_TRK*NPAT))*11u;
-        uint16_t count=(uint16_t)wire_bits_get(owner<PROJ_TRK*NPAT?b+PROJ_REC_DIR:proj_rec_ext,&dir,11);
+    for(uint32_t o=0;o<proj_owners();o++){
+        uint32_t fun=!bank_p16 && o<PROJ_TRK*NPAT_V1,owner=proj_owner_id(o),dir=(fun||bank_p16?o:o-PROJ_TRK*NPAT_V1)*11u;
+        uint16_t count=(uint16_t)wire_bits_get(fun?b+PROJ_REC_DIR:proj_rec_ext,&dir,11);
         if(count>RECORD_MAX-at)return 0;
         for(uint32_t i=0;i<count;i++){
             recorded_note_t *r=&q->recording[at];const uint8_t *v=b+PROJ_REC_OFF+at++*8u;uint32_t pos=0;
             r->on=wire_bits_get(v,&pos,16);r->duration=wire_bits_get(v,&pos,16);
-            r->note=wire_bits_get(v,&pos,7);r->vel=wire_bits_get(v,&pos,7);
+            recorded_set_note(r,wire_bits_get(v,&pos,7));r->vel=wire_bits_get(v,&pos,7);
             r->step=wire_bits_get(v,&pos,8);recorded_set_owner(r,owner);recorded_set_exponent(r,wire_bits_get(v,&pos,3));
             r->pitch=(int8_t)((int32_t)wire_bits_get(v,&pos,6)-24);r->length=wire_bits_get(v,&pos,1);
             if(!r->vel || !recording_valid(r))return 0;

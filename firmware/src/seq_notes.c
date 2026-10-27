@@ -16,7 +16,7 @@ static int notes_before(uint32_t a, uint32_t b)
 {
     if (b >= RECORD_MAX) return 1;
     const recorded_note_t *x = &recording[a], *y = &recording[b];
-    return x->on != y->on ? x->on < y->on : x->note != y->note ? x->note < y->note : a < b;
+    return x->on != y->on ? x->on < y->on : recorded_note(x) != recorded_note(y) ? recorded_note(x) < recorded_note(y) : a < b;
 }
 static uint32_t notes_selected(const track_t *t)
 {
@@ -44,7 +44,7 @@ static uint32_t drum_hit_selected(void)
 {
     uint32_t selected=ui.note_pick?ui.note_pick-1u:RECORD_MAX, first=RECORD_MAX;
     for(uint32_t i=recording_head[recording_owner(TSEL)];i<RECORD_MAX;i=recording_next[i]){
-        if(!recording_active(TSEL,i) || recording_view(TSEL,&recording[i])!=ui.cursor || drum_sound_of(TSEL,recording[i].note)!=ui.drum_sound%drum_sound_count(TSEL))continue;
+        if(!recording_active(TSEL,i) || recording_view(TSEL,&recording[i])!=ui.cursor || drum_sound_of(TSEL,recorded_note(&recording[i]))!=ui.drum_sound%drum_sound_count(TSEL))continue;
         if(i==selected)return i;
         if(first==RECORD_MAX || recording[i].on<recording[first].on)first=i;
     }
@@ -96,14 +96,14 @@ static void notes_rebuild(track_t *t, uint32_t view)
         if (!recording_active(t, i) || recording_view(t, r) != view) continue;
         count++;
         if (r->vel > st->vel) st->vel = r->vel;
-        uint32_t lane = drum_lane(r->note);
-        if (drum_track(t) && r->note == DRUM_LANE_NOTE[lane]) {
+        uint32_t lane = drum_lane(recorded_note(r));
+        if (drum_track(t) && recorded_note(r) == DRUM_LANE_NOTE[lane]) {
             st->hit |= (uint8_t)(1u << lane);
             if (r->vel > 110u) st->acc |= (uint8_t)(1u << lane);
         } else {
             uint32_t j;
-            for (j = 0; j < st->n && st->note[j] != r->note; j++);
-            if (j == st->n && st->n < 4u) st->note[st->n++] = r->note;
+            for (j = 0; j < st->n && st->note[j] != recorded_note(r); j++);
+            if (j == st->n && st->n < 4u) st->note[st->n++] = recorded_note(r);
         }
     }
     if (!count) step_delete(t, view);
@@ -179,7 +179,7 @@ static void notes_preview(void)
     uint8_t nn[12],vv[12];uint32_t count=0,chosen=notes_selected(TSEL);
     if(pg->scope==SC_DRUMHIT)chosen=drum_hit_selected();
     int32_t pitch=0;uint32_t gate=0;
-    if(chosen<RECORD_MAX) { const recorded_note_t *r=&recording[chosen];nn[count]=r->note;vv[count++]=r->vel;
+    if(chosen<RECORD_MAX) { const recorded_note_t *r=&recording[chosen];nn[count]=recorded_note(r);vv[count++]=r->vel;
         if(drum_track(TSEL)){pitch=r->pitch;if(recorded_gate(r))gate=(uint32_t)(((uint64_t)r->duration<<(recorded_exponent(r)))*seq_div_samples(TSEL->p[P_SDIV])/RECORD_UNIT);}
     }
     else {

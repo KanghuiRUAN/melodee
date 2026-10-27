@@ -435,7 +435,7 @@ static int motion_replace_track(track_t *t, const motion_store_t *in)
 
 static int pattern_request(track_t *t, uint32_t bank)
 {
-    if (bank >= NPAT) return 1;
+    if (bank >= trk_npat(trk_index(t))) return 1;      /* (a MIDI-only track: 8) */
     uint32_t f = motion_guard();
     if (chain.running || chain.armed) { motion_unguard(f); return 1; }
     if (song.playing) t->pattern_next = bank == t->pattern ? 0xff : (uint8_t)bank;
@@ -448,7 +448,7 @@ static int pattern_request(track_t *t, uint32_t bank)
 static int pattern_copy_at(track_t *t, uint32_t source, uint32_t dest, int live)
 {
     uint32_t k = trk_index(t), i, n = 0, f, extra = 0;
-    if (source >= NPAT || dest >= NPAT) return 1;
+    if (source >= trk_npat(k) || dest >= trk_npat(k)) return 1;
     if (source == dest) return 0;
     f = motion_guard();
     if (chain.running || chain.armed || (song.playing && dest == t->pattern && !live)) { motion_unguard(f); return 1; }

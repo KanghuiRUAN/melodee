@@ -209,7 +209,7 @@ static void notes_follow(const track_t *t)
         if (!recording_active(t, i)) continue;
         uint32_t at = recording_raw_on(t, &recording[i], period);
         if (at < a || at >= b) continue;
-        int32_t note = recording[i].note;
+        int32_t note = recorded_note(&recording[i]);
         if (note < lo) lo = note;
         if (note > hi) hi = note;
     }
@@ -227,7 +227,7 @@ static void notes_follow(const track_t *t)
     int32_t center = hi < 0 ? last_note : (lo + hi + 1) / 2;
     if (hi - lo >= PR_ROWS) {
         uint32_t at = notes_manual_start(t);
-        if (chosen < RECORD_MAX) center = recording[chosen].note;
+        if (chosen < RECORD_MAX) center = recorded_note(&recording[chosen]);
         else if (at < NSTEP && t->step[at].n) center = t->step[at].note[notes_manual_slot(&t->step[at])];
     }
     int32_t target = clamp(center - PR_ROWS / 2, 0, 128 - PR_ROWS);
@@ -243,12 +243,12 @@ static void notes_bar(const track_t *t, uint32_t i, uint32_t period, uint32_t a,
     recorded_note_t snapshot = recording_snapshot(i);
     const recorded_note_t *r = &snapshot;
     if (c == T_THEME)
-        c = PR_OCT_C(r->note);
+        c = PR_OCT_C(recorded_note(r));
     uint32_t loop = recording_loop(t, period), at = recording_raw_on(t, r, period);
     uint64_t gate = (uint64_t)r->duration * (1u << (recorded_exponent(r))) * period / RECORD_UNIT;
     if (!gate) gate = 1;
     if (gate > loop) gate = loop;
-    int32_t y = pr_row_y(r->note), bottom = PR_Y0 + PR_ROWS * PR_RH;
+    int32_t y = pr_row_y(recorded_note(r)), bottom = PR_Y0 + PR_ROWS * PR_RH;
     for (int32_t wrap = -1; wrap <= 0; wrap++) {
         int64_t start = (int64_t)at + (int64_t)wrap * loop, end = start + gate;
         if (end <= a || start >= b) continue;
