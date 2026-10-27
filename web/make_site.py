@@ -199,10 +199,11 @@ def publish_manual(src, dest, version=None, preserve_nightly=False):
 def publish_resources(source, published):
     """the build's resource region (build/melodee-res.bin beside the package) as <package>-res.bin: the installer
     writes it after the firmware (fm1res.js)"""
-    source = Path(source)
+    source, target = Path(source), published.with_name(published.stem + "-res.bin")
     for res in (source.with_name(source.stem + "-res.bin"), source.with_name("melodee-res.bin")):
         if res.exists():
-            shutil.copy(res, published.with_name(published.stem + "-res.bin"))
+            if res.resolve() != target.resolve():   # a channel re-read from the site is already in place
+                shutil.copy(res, target)
             return
 
 
