@@ -111,8 +111,8 @@ static void name_open(uint32_t kind, uint32_t slot)
         else
             str_cpy(b, nm.ph, sizeof b);
     } else {
-        str_cpy(nm.ph, "PROJECT A", sizeof nm.ph);
-        nm.ph[8] = (char)('A' + (slot & 3u));
+        str_cpy(nm.ph, "PROJECT 00", sizeof nm.ph);
+        nm.ph[8] = (char)('0' + (slot % PROJ_SLOTS + 1u) / 10u); nm.ph[9] = (char)('0' + (slot % PROJ_SLOTS + 1u) % 10u);
         if (kind == NK_PROJ_RENAME)
             project_name(slot, b);
         else

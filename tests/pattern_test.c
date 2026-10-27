@@ -52,26 +52,27 @@ static int all_banks_persist(void)
     for (uint32_t k = 0; k < NPART; k++) for (uint32_t b = 0; b < NPAT; b++) {
         track_t *t = &trk[k]; pattern_request(t, b);
         t->p[P_SLEN] = (int16_t)(32+b); t->p[P_SSWING] = (int16_t)b;
-        t->step[0] = (step_t){{(uint8_t)(40+k*8+b),60,64,67},4,ST_NOTE,SF_SLIDE,100,(uint8_t)(1u<<b),(uint8_t)(1u<<b),(uint8_t)(20+b)};
-        t->step[1] = (step_t){{0},0,ST_TIE}; motion_set_event(t, 0, P_LEVEL, (int16_t)(k*8+b));
+        t->step[0] = (step_t){{(uint8_t)(40+k*NPAT+b),60,64,67},4,ST_NOTE,SF_SLIDE,100,(uint8_t)(1u<<b%8u),(uint8_t)(1u<<b%8u),(uint8_t)(20+b)};
+        t->step[1] = (step_t){{0},0,ST_TIE}; motion_set_event(t, 0, P_LEVEL, (int16_t)(k*NPAT+b));
     }
     chain_config.count = 2; chain_config.row[0] = (chain_row_t){0,3}; chain_config.row[1] = (chain_row_t){7,2};
     for (uint32_t k = 0; k < NPART; k++) { chain_patterns[0][k] = (uint8_t)k; chain_patterns[1][k] = (uint8_t)(7-k); }
-    bad += check("complete project saves all 32 banks", project_save(2) == 0);
+    bad += check("complete project saves all 64 banks", project_save(2) == 0);
     pattern_init(); memset(&motion,0,sizeof motion); project_load(2);
-    bad += check("project restores arrangement and active bank selection", chain_config.count == 2 && chain_patterns[0][3] == 3 && chain_patterns[1][3] == 4 && trk[3].pattern == 7);
+    bad += check("project restores arrangement and active bank selection", chain_config.count == 2 && chain_patterns[0][3] == 3 && chain_patterns[1][3] == 4 && trk[3].pattern == NPAT-1u);
     for (uint32_t k = 0; k < NPART; k++) for (uint32_t b = 0; b < NPAT; b++) {
         track_t *t = &trk[k]; pattern_request(t,b);
-        ok &= t->step[0].n == 4 && t->step[0].note[0] == 40+k*8+b && t->step[0].note[3] == 67 &&
+        ok &= t->step[0].n == 4 && t->step[0].note[0] == 40+k*NPAT+b && t->step[0].note[3] == 67 &&
             t->step[1].time == ST_TIE && t->p[P_SLEN] == 32+(int16_t)b && t->p[P_SSWING] == (int16_t)b &&
-            t->step[0].hit == (1u<<b) && t->step[0].acc == (1u<<b) && step_chance(&t->step[0]) == 20+b && motion_count(t)==1;
-        motion_begin(); motion_step(t,0,&motion); ok &= t->p[P_LEVEL] == (int16_t)(k*8+b); motion_end();
+            t->step[0].hit == (1u<<b%8u) && t->step[0].acc == (1u<<b%8u) && step_chance(&t->step[0]) == 20+b && motion_count(t)==1;
+        motion_begin(); motion_step(t,0,&motion); ok &= t->p[P_LEVEL] == (int16_t)(k*NPAT+b); motion_end();
     }
     bad += check("every bank round-trips chord, ties, timing, chance, hits and bank-specific automation", ok);
     uint8_t raw[BANK_STORE_SIZE]; project_capture(&proj_scratch); bank_pack(raw,&proj_scratch,1);
-    raw[BANK_ACTIVE_OFF] = 8; bank_checksum(raw);
+    raw[BANK_ACTIVE_OFF] = NPAT; bank_checksum(raw);
     bad += check("invalid bank IDs are rejected even with a valid checksum", !bank_valid(raw,sizeof raw));
-    bank_pack(raw,&proj_scratch,1); raw[BANK_EXTRA_OFF+3] |= 0xF0; bank_checksum(raw);
+    /* FBKP: track 1's bank mask, bank 1's step mask, then its first step (bits 4..6 of byte 3: its chord size) */
+    bank_pack(raw,&proj_scratch,1); raw[BANKP_STEPS_OFF+BANKM_SONG_BYTES+BANKN_FX_BYTES+2u+8u+3u] |= 0x70; bank_checksum(raw);
     bad += check("malformed inactive-bank chord is rejected before publication", !bank_valid(raw,sizeof raw) && trk[0].step[0].n == 4);
     return bad;
 }
@@ -147,7 +148,7 @@ static void rec_put(track_t *t, uint32_t actual, uint32_t note, uint32_t bits, u
     recorded_note_t r = {0};
     uint32_t i = 0;
     while (recording[i].vel) i++;
-    r.on = 1000; r.note = (uint8_t)note; r.vel = 100; r.owner = (uint8_t)recording_owner(t);
+    r.on = 1000; recorded_set_note(&r,(uint8_t)note); r.vel = 100; r.owner = (uint8_t)recording_owner(t);
     r.step = (uint8_t)(actual | bits);
     note_duration(&r, RECORD_UNIT);
     recording_restore_note(t, i, r);
@@ -156,7 +157,7 @@ static void rec_put(track_t *t, uint32_t actual, uint32_t note, uint32_t bits, u
 static int rec_has(const track_t *t, uint32_t note, uint32_t step)   /* (step: the byte as stored) */
 {
     for (uint32_t i = 0; i < RECORD_MAX; i++)
-        if (recording[i].vel && (recording[i].owner & 31u) == recording_owner(t) && recording[i].note == note &&
+        if (recording[i].vel && (recording[i].owner & 31u) == recording_owner(t) && recorded_note(&recording[i]) == note &&
             recording[i].step == step) return 1;
     return 0;
 }

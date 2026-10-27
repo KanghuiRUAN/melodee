@@ -172,7 +172,6 @@ web_tests() {                                     # the editor mock's tables mus
         step "installer safety: tab locks, wake/leave guards, throttled MIDI, preflight and interrupted resumes" node web/test_install_safety.mjs
         step "TransitFM1: verified package, backup, loader isolation and resume" node web/test_transit.mjs
         step "web backup: capture, validation before writes, restore order" node web/test_backup.mjs
-        step "BLE recovery: calibration validation, import and interrupted return" node web/test_ble_calibration.mjs
         step "stock restore: the unmodified official V15 file is the image, CHECK HEAD range" node web/test_stock_restore.mjs
         if [ -f FM-1_v15.fwsc ]; then
             build v15_ldr ldr_test &&
@@ -336,7 +335,6 @@ if core; then
     run "boot packages: constant entry sector and valid directory CRCs" python3 tests/boot_stub_pkg_test.py
     t "power cuts: every erase/page, resume and unchanged boot sector" loader_powercut_test -O2 -- powercut_tests
     t "M-UPGRADE entry (own loader and pinned boot installer)" ota_test -DOWN_PKG=1 -- "$OUT/ota_test" build/melodee.fwsc web/m-bootloader/fm1-uboot.fwsc
-    t "M-UPGRADE entry from the BLE calibration helper (page-sized flash driver)" ota_helper:ota_test -DOWN_PKG=1 -DOTA_HELPER_HOOKS=1 -- "$OUT/ota_helper" build/melodee.fwsc web/m-bootloader/fm1-uboot.fwsc
     t "installer crash report (read only)" installer_report_test
     t "update loader: other app -> this build" ldr_test -- old_to_new
     run "installer CLI (fm1_install.py) against a simulated FM-1" python3 tests/install_test.py
@@ -355,7 +353,7 @@ if core && [ $TABLES = 1 ]; then
     t "AUTO2: stable melody, harmony below, Western scales and immediate strum attack" chord_melody_test $FW
     t "project record (FUN16 round trip, the song chain, names, FM6 patches; older formats refused)" project_test $FW
     t "motion, whole-step chance, an older parameter count, song restore and ARP repeat" motion_test -O1 $FW
-    t "32 pattern banks: chords, ties, independent loop switching, copy and persistence" pattern_test \
+    t "64 pattern banks: chords, ties, independent loop switching, copy and persistence" pattern_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "song: 64 sections, rests, cursor playback, grid edits, phrases and undo" song_mode_test -O1 $FW
     t "song presets: local sounds, browser restoration, section playback, edits and persistence" song_preset_test -O1 $FW
@@ -387,9 +385,9 @@ if core && [ $TABLES = 1 ]; then
     t "Concert pitch: A4 frequency, engines, modulation, held notes and project-independent settings" tuning_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "themes: contrast, text blending and font metrics" theme_test -O1 $FW
-    t "text: pixel pens and pixels equal the reference renderer" text_ref_test -O1 $FW
+    t "text: pens, kerning and pixels equal the reference renderer" text_ref_test -O1 $FW
     if [ $PIL = 1 ]; then
-        run "text spacing: all Pixel glyphs and metrics match source; no Rubik tables" \
+        run "text spacing: glyph gaps against the font's own (16x supersampled), S M <= 0.25 px, L <= 0.5 px" \
             python3 tests/text_spacing_test.py build/gen/ui_fonts.h
     fi
     t "settings: PER5 records, palette ids and preference preservation" settings_test -O1 -w -Ibuild/gen

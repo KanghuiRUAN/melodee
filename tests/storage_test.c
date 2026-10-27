@@ -48,6 +48,15 @@ static int st_prog(uint32_t off, const void *src, uint32_t n)
 #include "../firmware/src/storage.c"
 #define T_OBJ OBJ_CZBANK0                        /* (an ordinary one-sector object for the A/B tests) */
 
+/* every committed copy of obj damaged, wherever it lives (fixed pair or pool): its payload (head 0) or header */
+static void corrupt_all(uint32_t obj, int head)
+{
+    for (uint32_t c = 0; c < ST_SMALL_U0 + ST_U_N; c++) {
+        st_hdr_t h;
+        if (st_head(obj, c, &h)) continue;
+        nor[st_sector(obj, c) + (head ? 8u : st_payload_off_header(obj, &h) + 10u)] ^= 0x01;
+    }
+}
 static int check(const char *what, int ok)
 {
     printf("%-46s %s\n", what, ok ? "ok" : "FAIL");
@@ -94,18 +103,21 @@ static int project_pool_test(void)
         next[0]=(uint8_t)(round*4u+k);
         ok &= !st_save(OBJ_BANK0+k,next,sizeof next);
         ok &= st_load(OBJ_BANK0+k,back,sizeof back)==sizeof next&&!memcmp(back,next,sizeof next);
-        uint32_t live[2]={0,0};
+        uint32_t live[ST_UW]={0};
         for(uint32_t j=0;j<4u;j++){
             st_hdr_t h;int copy=st_current(OBJ_BANK0+j,&h);
-            if(copy>=2){ok &= !(live[0]&h.rsv[0])&&!(live[1]&(h.rsv[1]&0x00FFFFFFu));st_project_used(live,OBJ_BANK0+j,(uint32_t)copy,&h);}
+            if(copy>=2){
+                uint32_t mine[ST_UW]={0};st_project_used(mine,OBJ_BANK0+j,(uint32_t)copy,&h);
+                for(uint32_t w=0;w<ST_UW;w++){ok &= !(live[w]&mine[w]);live[w]|=mine[w];}
+            }
         }
     }
     for(uint32_t k=0;k<4u;k++)ok &= st_load(OBJ_BANK0+k,back,sizeof back)==sizeof next&&back[0]==12u+k;
-    bad+=check("four 41888-byte projects and repeated shared-workspace saves fit",ok);
+    bad+=check("four maximum projects and repeated shared-workspace saves fit",ok);
     ok=1;
-    uint32_t live[2]={0,0};
+    uint32_t live[ST_UW]={0};
     for(uint32_t k=0;k<4u;k++){st_hdr_t h;int c=st_current(OBJ_BANK0+k,&h);st_project_used(live,OBJ_BANK0+k,(uint32_t)c,&h);}
-    for(uint32_t i=0;i<56u;i++)if((live[i/32u]>>(i%32u))&1u)for(uint32_t j=3840u;j<4096u;j++)ok &= nor[st_sector(OBJ_BANK0,i+2u)+j]==0xFFu;
+    for(uint32_t i=0;i<ST_POOL_SECTORS;i++)if((live[i/32u]>>(i%32u))&1u)for(uint32_t j=3840u;j<4096u;j++)ok &= nor[st_sector(OBJ_BANK0,i+2u)+j]==0xFFu;
     /* The original A0000..C7FFF and EA000..F9FFF regions are the only mutation windows. */
     for(uint32_t i=0;i<sizeof nor;i++)if(!((i>=0xA0000u&&i<0xC8000u)||(i>=0xEA000u&&i<0xFA000u)))ok &= nor[i]==0xFFu;
     bad+=check("SPL scan tails and all non-project regions stay erased",ok);
@@ -123,12 +135,12 @@ static int project_pool_test(void)
     st_hdr_t h;int copy=st_current(OBJ_BANK0+1,&h);h.seq=0xFFFFFFFFu;h.hcrc=st_crc32(&h,sizeof h-4u);
     memcpy(nor+st_sector(OBJ_BANK0+1,(uint32_t)copy),&h,sizeof h);
     bad+=check("pool sequence wraps safely",!st_save(OBJ_BANK0+1,next,sizeof next)&&st_load(OBJ_BANK0+1,back,sizeof back)==sizeof next&&!memcmp(back,next,sizeof next));
-    /* A legal 11-sector bitmap can numerically equal the settings layout tag.
-     * Project bitmaps and non-project tags must not share interpretation. */
+    /* A project record's sectors are read by its own tag (a list of pool indices), never as another object's tags */
     memset(nor,0xFF,sizeof nor);
-    h=(st_hdr_t){ST_MAGIC,OBJ_BANK0,3u,1u,ST_PROJECT_MAX,0u,{ST_SETTINGS_TAG,ST_POOL_TAG},0u};
+    h=(st_hdr_t){ST_MAGIC,OBJ_BANK0,3u,1u,ST_PROJECT_MAX,0u,{0u,0u},0u};
+    st_list_init(&h);for(uint32_t k=0;k<ST_PROJECT_SECTORS;k++)st_list_put(&h,k,1u+k);
     h.hcrc=st_crc32(&h,sizeof h-4u);memcpy(nor+0xA1000u,&h,sizeof h);
-    bad+=check("project bitmaps cannot collide with settings tags",!st_head(OBJ_BANK0,3u,&h));
+    bad+=check("project sector lists are read by their own tag",!st_head(OBJ_BANK0,3u,&h)&&st_payload_off_header(OBJ_BANK0,&h)==32u);
 
     return bad;
 }
@@ -160,8 +172,7 @@ int main(void)
     bad += check("save A again", st_save(T_OBJ, a, sizeof a) == 0);
     n = st_load(T_OBJ, got, sizeof got);
     bad += check("load returns A", n == (int)sizeof a && !memcmp(got, a, sizeof a));
-    nor[st_sector(T_OBJ, 0) + ST_PAYLOAD_OFF + 10] ^= 0x01;   /* bit rot in one copy */
-    nor[st_sector(T_OBJ, 1) + ST_PAYLOAD_OFF + 10] ^= 0x01;
+    corrupt_all(T_OBJ, 0);                            /* bit rot in every copy */
     n = st_load(T_OBJ, got, sizeof got);
     bad += check("both copies corrupt -> nothing", n < 0);
     bad += check("other objects untouched", st_load(T_OBJ + 1, got, sizeof got) < 0);
@@ -181,8 +192,7 @@ int main(void)
     bad += check("save over the rotten copy", st_save(T_OBJ + 2, b, sizeof b) == 0);
     n = st_load(T_OBJ + 2, got, sizeof got);
     bad += check("... loads the new data", n == (int)sizeof b && !memcmp(got, b, sizeof b));
-    nor[st_sector(T_OBJ + 2, 0) + 8] ^= 0x01;    /* both headers broken */
-    nor[st_sector(T_OBJ + 2, 1) + 8] ^= 0x01;
+    corrupt_all(T_OBJ + 2, 1);                        /* every header broken */
     bad += check("both headers broken -> nothing", st_load(T_OBJ + 2, got, sizeof got) < 0);
     bad += check("data stays in the Melodee regions",
                  st_sector(OBJ_SETTINGS, 1) + 4096 <= 0xFF000 && st_sector(T_OBJ + 3, 1) + 4096 <= 0xE0000 &&

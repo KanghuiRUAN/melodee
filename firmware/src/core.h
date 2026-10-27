@@ -48,10 +48,19 @@
 #ifndef NSTEP
 #define NSTEP 64
 #endif
+/* Patterns: 16 on each part (tracks 1..4), 8 on each MIDI-only track; arrays are NPAT wide. Records written before
+ * 16 kept 8 a track (NPAT_V1: pattern_store.c reads them with that layout). */
 #ifndef NPAT
-#define NPAT 8u
+#define NPAT 16u
 #endif
-_Static_assert(NSTEP <= 128u && NTRK * NPAT <= 64u, "recorded-note identifiers");
+#define NPAT_MIDI 8u
+#define PROJ_SLOTS 32u                   /* projects: 1..32, an empty one owns no flash (storage.c) */
+#ifndef RES_OK
+#define RES_OK() 1                               /* melodee.c: the resource region (res.c) is installed */
+#endif
+#define NPAT_V1 8u
+#define trk_npat(k) ((uint32_t)(k) < NPART ? NPAT : NPAT_MIDI)   /* the patterns track k has */
+_Static_assert(NSTEP <= 128u && NTRK * NPAT <= 128u, "recorded-note identifiers (seven bits)");
 #define HALF_FRAMES 128          /* I2S half buffer: 2.9 ms at 44.1 kHz (a key waits 0..1 half, then plays 1 half later) */
 /* SLICE retired. Keep its stored engine number reserved. */
 #ifdef MELODEE_SLICE

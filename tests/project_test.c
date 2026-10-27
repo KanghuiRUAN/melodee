@@ -42,11 +42,11 @@ int main(void)
 
     {   /* Reconstruct the prior raw layout independently of RAM bitfields. */
         static uint8_t old[sizeof(project_t)+RECORD_MAX];blank(&q);
-        q.recording[0]=(recorded_note_t){.on=65535, .duration=49321, .note=127, .vel=91, .owner=255, .step=255, .pitch=-24, .length=1};
+        q.recording[0]=(recorded_note_t){.on=65535, .duration=49321, .note7=127, .vel=91, .owner=255, .step=255, .pitch=-24, .length=1};
         uint32_t at=__builtin_offsetof(project_t,recording),tail=__builtin_offsetof(project_t,pattern);
         memcpy(old,&q,at);
         for(uint32_t i=0;i<RECORD_MAX;i++){
-            const recorded_note_t *r=&q.recording[i];uint8_t v[10]={r->on,r->on>>8,r->duration,r->duration>>8,r->note,r->vel,r->owner,r->step,(uint8_t)r->pitch,recorded_legacy_length(r)};
+            const recorded_note_t *r=&q.recording[i];uint8_t v[10]={r->on,r->on>>8,r->duration,r->duration>>8,recorded_note(r),r->vel,r->owner,r->step,(uint8_t)r->pitch,recorded_legacy_length(r)};
             memcpy(old+at+i*10u,v,10);
         }
         memcpy(old+at+RECORD_MAX*10u,(uint8_t *)&q+tail,sizeof q-tail);

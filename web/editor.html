@@ -377,11 +377,6 @@
 
   <section class="panel" id="p-settings" data-tab="settings" data-dev hidden>
     <div class="groups" id="setgroups"></div>
-    <div class="group" style="margin-top:12px">
-      <h2 data-t="bleRecoveryTitle"></h2>
-      <p class="dim" data-t="bleRecoveryHelp"></p>
-      <a href="./ble-calibration.html" data-t="bleRecoveryOpen"></a>
-    </div>
     <div class="group" id="device-display" hidden style="margin-top:12px">
       <h2 data-t="deviceDisplay"></h2>
       <p class="dim" data-t="deviceDisplayHelp"></p>
@@ -2069,7 +2064,7 @@ function makeMockDevice(opt = {}) {
     D("BPM", F.BPM, 40, 240, 120), D("SWG", F.PCT, 0, 100, 0), E("CLK", ["INT", "USB", "TRS", "BLE"], 0), D("TUNE", F.INT, -50, 50, 0),
     ...Array.from({length:8},()=>D("",F.INT,0,127,0)),
     E("MIDI", ["USB", "TRS", "BLE"], 0), E("DRUM", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 10), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16"], 0), D("CPU", F.INT, 0, 0, 0),
-    D("SLOT", F.INT, 1, 5, 1), E("BOOT", ["OFF", "A", "B", "C", "D"], 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
+    D("SLOT", F.INT, 1, 33, 1), E("BOOT", ["OFF", ...Array.from({ length: 32 }, (_, i) => String(i + 1))], 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
     E("ENG", ["-", "-", "-", "SID", "-", "-", "-", "-",
       "-", "-", "DRUM", "-", "FM6", "-", "-", "CZ-1", "-", "-", "-", "PROPHET", "-", "MIDI Track"], 0), D("A4", F.INT, 400, 480, 440, null, "Hz"),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
@@ -2956,7 +2951,6 @@ function setLabel(e, txt) { e.replaceChildren(...(e.dataset.ic ? [icon(e.dataset
 
 const TEXT = {
   ja: {
-    bleRecoveryTitle: "Bluetoothの復旧", bleRecoveryHelp: "NO CALと表示される場合、保存ファイルから復旧するか、このFM-1で無線を再校正できます。", bleRecoveryOpen: "Bluetooth復旧ツールを開く",
     tabFm6: "6-OP FM", fm6Help: "FM6 の音色を編集・SysEx から読み込み、トラックへ送ります。ユーザープリセットまたはプロジェクトへ保存すると、音色全体が保存されます。",
     fm6Source: "音色の出し入れ", fm6ReadBtn: "トラックから読む", fm6SendBtn: "トラックへ送る", fm6Live: "編集しながら送る",
     fm6StoreBtn: "バンクに保存", fm6Import: "SysEx を読み込む", fm6Export: "SysEx に書き出し", fm6BankExport: "バンクを SysEx に書き出し",
@@ -3051,7 +3045,6 @@ const TEXT = {
     smpSlots: "サンプルスロット", userBank: "ユーザープリセット", none: "なし",
   },
   en: {
-    bleRecoveryTitle: "Bluetooth recovery", bleRecoveryHelp: "If the FM-1 shows NO CAL, recover from a saved file or recalibrate this device.", bleRecoveryOpen: "Open Bluetooth recovery",
     tabFm6: "6-OP FM", fm6Help: "Edit an FM6 voice, or import a SysEx file and pick a voice. Send it to a track, then save it in User presets or save the project. Each preset keeps its whole voice.",
     fm6Source: "Patches in and out", fm6ReadBtn: "Read from track", fm6SendBtn: "Send to track", fm6Live: "Send while editing",
     fm6StoreBtn: "Store in bank", fm6Import: "Import SysEx", fm6Export: "Export SysEx", fm6BankExport: "Export bank as SysEx",

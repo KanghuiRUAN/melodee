@@ -8,6 +8,7 @@
 #define FELUCCA_BLE_BOND 1
 #define BLE_DIAG 0
 #define BLE_DMA_MEMORY __attribute__((section(".pool"), aligned(4)))
+#define FM1_RF_CAL_MEMORY __attribute__((section(".pool")))
 /* Stock uses 27-octet PDUs. Keep that radio-tested limit until DLE is measured. */
 #define BLE_LL_MAX_OCTETS 27u
 #define BLE_BARRIER() RING_PUBLISH()

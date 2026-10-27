@@ -25,6 +25,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import zlib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -118,7 +119,7 @@ def generate():
         (GEN / old).unlink(missing_ok=True)
     tools = SRC / "tools"
     subprocess.run([sys.executable, str(tools / "gen_scales.py"), "--check"], check=True)
-    cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "pixel"],
+    cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "rubik"],
             [tools / "gen_icons.py", GEN / "ui_icons.h"],
             [tools / "gen_aa_keycaps.py", GEN / "ui_keycaps.h"],
             [tools / "gen_ui_palettes.py", GEN / "ui_palettes.h"],
@@ -301,6 +302,7 @@ def build_app(stub):
                                ("common/bin/objcopy", "-O", "binary", "-j", ".dsp_tables", elf, OUT / "dsptables.bin"),
                                ("common/bin/objcopy", "-O", "binary", "-j", ".ram_text", elf, OUT / "ramtext.bin"),
                                ("common/bin/objcopy", "-O", "binary", "-j", ".audio_text", elf, OUT / "audiotext.bin"),
+                               ("common/bin/objcopy", "-O", "binary", "-j", ".mres", elf, OUT / "mres.bin"),
                                ("common/bin/objdump", "-t", elf),
                                ("common/bin/objdump", "-d", "-mcpu=r3", "-mattr=+fprev1", elf),
                                ("common/bin/objdump", "-d", "-mcpu=r3", "-mattr=+fprev1", "-j", ".ram_text", elf))
@@ -309,6 +311,7 @@ def build_app(stub):
     def symv(name):
         return int(re.search(r"^([0-9a-f]+) .*\s" + name + r"$", syms, re.M).group(1), 16)
     img = bytearray((OUT / "text.bin").read_bytes())
+    resources(img, symv)
     loads = (("ramtext.bin", "_rt_load"), ("dsptext.bin", "_dsp_load"), ("dsptables.bin", "_dt_load"),
              ("data.bin", "_data_load"), ("audiotext.bin", "_audio_load"))
     assert tuple(sect for sect, _ in loads) == boot_audio.SECTIONS
@@ -337,6 +340,32 @@ def build_app(stub):
     img = bytearray(stub) + img
     (OUT / "melodee.bin").write_bytes(img)
     return bytes(img), syms, dis, rt
+
+
+RES_BASE, RES_SECTORS, RES_HEAD = 0xCB000, 21, 32     # firmware/src/res.c
+
+
+def resources(img, symv):
+    """the resource region (res.c): .mres as installed after an update, build/melodee-res.bin = the 32-byte header
+    + the payload; this build's length and CRC-32 patched into res_want"""
+    payload = (OUT / "mres.bin").read_bytes() if (OUT / "mres.bin").exists() else b""
+    crc = zlib.crc32(payload)
+    at = symv("res_want") - APP_XIP
+    if img[at:at + 4] != struct.pack("<I", 0x544E5752):
+        raise SystemExit("res_want: no RWNT marker in the image")
+    img[at + 4:at + 12] = struct.pack("<II", len(payload), crc)
+    head = struct.pack("<7I", 0x3153524D, len(payload), crc, 0, 0, 0, 0)
+    region = head + struct.pack("<I", zlib.crc32(head)) + payload
+    if len(region) > RES_SECTORS * 4096:
+        raise SystemExit(f"resources: {len(region)} B over the {RES_SECTORS * 4096} B region")
+    # the SPL and the update loader act on a sector whose last 256 bytes are an update record (ota.c UPDATA_PARM)
+    for s in range(0, len(region), 4096):
+        tail = region[s + 0xF00:s + 0xF08]
+        if len(tail) == 8 and tail[2:8] == struct.pack("<3H", 0x5A0D, 0x5A01, 0x5441):
+            raise SystemExit(f"resources: sector {RES_BASE + s:#x}'s tail reads as an update record")
+    (OUT / "melodee-res.bin").write_bytes(region)
+    print(f"resources: {len(payload)} B at {RES_BASE + RES_HEAD:#x} ({-(-len(region) // 4096)} of {RES_SECTORS} sectors), "
+          f"crc {crc:08x} -> build/melodee-res.bin")
 
 
 def check(img, syms, dis, rt):

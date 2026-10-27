@@ -13,7 +13,7 @@ int main(void)
         for (uint32_t scene=0;scene<13;scene++) {
             char label[80];
             setup(scene==9?S_PRESETS:scene==10?S_PATGRID:scene==11?S_SCALE_PICKER_EDO:scene==12?S_MENU:S_HOME); pal(p); render_pixel=face;
-            if (face) PREF_BITS |= 64u; else PREF_BITS &= ~64u;
+            if (face) PREF_BITS |= PREF_PIXEL; else PREF_BITS &= ~PREF_PIXEL;
             memset(&mb,0,sizeof mb); mb.on=mb.cal=1;
             ble_init((uint8_t[]){1,2,3,4,5,0xC6},1);
             smp_passkey=BLE_NO_PASSKEY; ui.menu=3; ble_row=0;

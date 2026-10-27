@@ -366,8 +366,8 @@ static void page_sheet_open(void)
         sheet_open("Pattern", nm, SHEET_PATTERN, NELEM(SHEET_PATTERN));
         break;
     case 4: {                                           /* "Pattern 3", "T2" */
-        char t[12] = "Pattern 1";
-        t[8] = (char)('1' + TSEL->pattern % NPAT);
+        char t[12] = "Pattern ";
+        pat_num(t + 8, TSEL->pattern);
         str_cpy(nm, "T1", sizeof nm);
         nm[1] = (char)('1' + song.sel % NTRK);
         sheet_open(t, nm, SHEET_PATTERNS, NELEM(SHEET_PATTERNS));

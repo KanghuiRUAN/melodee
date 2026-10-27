@@ -215,9 +215,9 @@ static int property_edits_and_mixed_patterns(void)
     int bad=check("sequence navigation exposes exactly one note editor",count==1&&str_eq(cur_page()->title,"NOTES"));
     turn(EN_K1,1);uint32_t selected=notes_selected(t);
     turn(EN_K2,3);
-    bad+=check("PITCH edits only the highlighted hit and keeps exact timing",selected==1&&recording[1].note==67&&recording[1].on==original[1].on&&recording[1].duration==original[1].duration&&!memcmp(&original[0],&recording[0],sizeof original[0])&&!memcmp(&original[2],&recording[2],sizeof original[2]));
+    bad+=check("PITCH edits only the highlighted hit and keeps exact timing",selected==1&&recorded_note(&recording[1])==67&&recording[1].on==original[1].on&&recording[1].duration==original[1].duration&&!memcmp(&original[0],&recording[0],sizeof original[0])&&!memcmp(&original[2],&recording[2],sizeof original[2]));
     hold(B_EDIT);bad+=check("pitch undo restores exact event bytes and selection",!memcmp(original,recording,sizeof original)&&notes_selected(t)==1);
-    turn(EN_K4,-20);bad+=check("VEL changes the highlighted hit's playback velocity",recording[1].vel==70&&recording[1].note==64&&recording[0].vel==100);
+    turn(EN_K4,-20);bad+=check("VEL changes the highlighted hit's playback velocity",recording[1].vel==70&&recorded_note(&recording[1])==64&&recording[0].vel==100);
     uint32_t length=(uint32_t)recording[1].duration*(1u<<(recording[1].owner>>5));
     turn(EN_K3,1);
     bad+=check("LENGTH snaps one captured note to the next quarter without moving its onset",(uint32_t)recording[1].duration*(1u<<(recording[1].owner>>5))==(length/(RECORD_UNIT/4u)+1u)*(RECORD_UNIT/4u)&&recording[1].on==original[1].on&&recording[0].duration==original[0].duration);
@@ -359,7 +359,7 @@ static int live_erase_raw(void)
     int empty=1;for(uint32_t i=0;i<RECORD_MAX;i++)empty&=!recording[i].vel;
     bad+=check("keys still audition during erase without recording notes or recreating ties",empty&&!t->rh_n&&!t->seq_n&&!gate_note(t,65));
     erase_up();input_on(t,67,110);seq_advance(100);input_off(t,67);
-    bad+=check("recording resumes normally after EDIT release",recording[0].vel==110&&recording[0].note==67);
+    bad+=check("recording resumes normally after EDIT release",recording[0].vel==110&&recorded_note(&recording[0])==67);
     seq_stop();song.rec=0;
 
     raw_begin();t=TSEL;seq_advance(100);input_on(t,60,80);seq_advance(100);input_off(t,60);
@@ -476,7 +476,7 @@ static int bulk_and_pattern_clears(void)
     seq_advance(600);input_on(t,60,80);seq_advance(300);input_off(t,60);
     seq_advance(3600);input_on(t,64,90);seq_advance(300);input_off(t,64);
     seq_stop();song.rec=0;go_page(GR_ROLL);frame();
-    recorded_note_t other=recording[0];other.owner=(uint8_t)(1u+NPAT);other.note=75;
+    recorded_note_t other=recording[0];other.owner=(uint8_t)(1u+NPAT);recorded_set_note(&other,75);
     recording_restore_note(&trk[1],2,other);
     saved[0]=recording[0];saved[1]=recording[1];
     motion_set_event(t,0,P_LEVEL,80);motion_store_t before;motion_snapshot_track(t,&before);
@@ -492,7 +492,7 @@ static int bulk_and_pattern_clears(void)
     song.rec=1;seq_start();seq_advance(0);seq_advance(600);input_on(t,77,100);
     seq_advance(3u*6144u);input_off(t,77);seq_stop();song.rec=0;
     uint32_t count=0;int only=1;
-    for(uint32_t i=recording_head[recording_owner(t)];i<RECORD_MAX;i=recording_next[i]){count++;only&=recording[i].note==77;}
+    for(uint32_t i=recording_head[recording_owner(t)];i<RECORD_MAX;i=recording_next[i]){count++;only&=recorded_note(&recording[i])==77;}
     bad+=check("a long note recorded after clearing cannot revive old notes",count==1&&only&&!note_tools_history(0));
     raw_replay();seq_advance(600);int clean=gate_note(t,77)&&!gate_note(t,60)&&!gate_note(t,64);
     seq_advance(4000);clean&=!gate_note(t,60)&&!gate_note(t,64);
@@ -500,7 +500,7 @@ static int bulk_and_pattern_clears(void)
     bad+=check("playback after clearing sounds only the newly recorded long note",clean);
     seq_stop();project_capture(&proj_scratch);int packed=bank_pack(proj_wire_u.raw,&proj_scratch,1);
     project_restore_runtime(&proj_scratch);if(packed)bank_restore(proj_wire_u.raw);
-    count=0;only=1;for(uint32_t i=recording_head[recording_owner(t)];i<RECORD_MAX;i=recording_next[i]){count++;only&=recording[i].note==77;}
+    count=0;only=1;for(uint32_t i=recording_head[recording_owner(t)];i<RECORD_MAX;i=recording_next[i]){count++;only&=recorded_note(&recording[i])==77;}
     bad+=check("cleared events stay deleted through project save/load",packed&&count==1&&only);
 
     raw_begin();t=TSEL;seq_advance(600);input_on(t,60,80);input_on(t,64,90);
@@ -508,7 +508,7 @@ static int bulk_and_pattern_clears(void)
     /* Simulate a step replacement that invalidates the rounded recording. */
     step_clear(&t->step[0]);song.rec=1;seq_start();seq_advance(0);seq_advance(1800);input_on(t,79,100);
     seq_advance(3u*6144u);input_off(t,79);seq_stop();song.rec=0;
-    count=0;only=1;for(uint32_t i=recording_head[recording_owner(t)];i<RECORD_MAX;i=recording_next[i]){count++;only&=recording[i].note==79;}
+    count=0;only=1;for(uint32_t i=recording_head[recording_owner(t)];i<RECORD_MAX;i=recording_next[i]){count++;only&=recorded_note(&recording[i])==79;}
     bad+=check("overwritten dormant events are retired before new recording can reactivate their overview",count==1&&only);
     raw_begin();t=TSEL;seq_advance(12u*6144u+600u);input_on(t,60,80);seq_advance(300);input_off(t,60);
     seq_stop();song.rec=0;t->p[P_SLEN]=8;go_title("PATTERN");frame();

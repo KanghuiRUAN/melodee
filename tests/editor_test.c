@@ -90,6 +90,10 @@ static void reset(void)
         track_defaults(&trk[t]); set_engine_of(&trk[t], 3); apply_preset_to(&trk[t], 0);   /* (SID: values on p[]) */
         trk[t].engine = trk[t].eng_req; track_defaults_steps(&trk[t]);
     }
+    for (t = NPART; t < NTRK; t++) {                    /* the MIDI-only tracks, as melodee_init (FBKP carries them) */
+        for (i = 0; i < P_E0; i++) trk[t].p[i] = TP[i].def;
+        for (i = 0; i < NSTEP; i++) trk[t].step[i].time = ST_REST;
+    }
 }
 static uint32_t request(uint32_t cmd, const uint8_t *a, uint32_t n)
 {
@@ -396,11 +400,16 @@ static int bank_protocol(void)
 {
     int bad=0; reset(); uint8_t a[12] = {2,1,7};
     bad += check("PATTERN selects a track's bank without changing track selection", request(ED_PATTERN,a,3)==12 && !host_wire[7] && trk[2].pattern==7 && !song.sel);
-    a[2]=8;
+    a[2]=NPAT;
     bad += check("PATTERN rejects out-of-range bank IDs", request(ED_PATTERN,a,3)==12 && host_wire[7] && trk[2].pattern==7);
+    a[2]=NPAT-1u;
+    bad += check("PATTERN selects a part's bank 16 and reports its 16 banks", request(ED_PATTERN,a,3)==12 && !host_wire[7] && trk[2].pattern==NPAT-1u && host_wire[10]==NPAT);
+    uint8_t m[3] = {NPART,1,NPAT_MIDI};
+    bad += check("PATTERN rejects a MIDI-only track's bank 9 and reports its 8 banks", request(ED_PATTERN,m,3)==12 && host_wire[7] && !trk[NPART].pattern && host_wire[10]==NPAT_MIDI);
+    a[2]=7; request(ED_PATTERN,a,3);
     uint8_t row[] = {1,1,0,2,4,7,3};
     bad += check("bank SONG independently assigns four track banks", request(ED_BANK_SONG,row,sizeof row)==18 && !host_wire[6] && chain_patterns[0][3]==7 && chain_config.row[0].repeat==3);
-    row[4]=10;
+    row[4]=CHAIN_HOLD+1u;
     bad += check("malformed bank SONG leaves the arrangement unchanged", request(ED_BANK_SONG,row,sizeof row)==18 && host_wire[6]==1 && chain_patterns[0][2]==4);
     uint8_t long_song[2u + CHAIN_ROWS * 5u] = {1, CHAIN_ROWS};
     for (uint32_t r = 0; r < CHAIN_ROWS; r++) {
@@ -476,7 +485,8 @@ static int cz_dedicated_banks(void)
         bad+=check("shared host bank commits through bounded archive staging",!ed_bk_commit());
     }
     for(uint32_t k=0;k<8u;k++)bad+=check("shared CZ records preserve complete voices across bank evictions",native_used(ENGI_CZ,(8u+k)*18u+17u)&&native_raw(ENGI_CZ,(8u+k)*18u+17u)[128]=='a'+k);
-    bad+=check("full backups include all 22 shared preset objects",ED_BK_N==29u);
+    uint32_t shared=0;for(uint32_t i=0;i<ED_BK_N;i++)shared+=ed_bk_preset_bank(ED_BK_IDS[i])<UP_BANKS;
+    bad+=check("full backups include all 22 shared preset objects and the 32 projects",ED_BK_N==57u && shared==22u);
     return bad;
 }
 static int native_protocol(void)

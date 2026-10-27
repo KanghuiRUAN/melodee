@@ -5,11 +5,18 @@ and protection for unreadable records are part of **Melodee 1.2.0**. Merge the c
 `next`; there is no separate bridge release or 2.0 release for this work. Started from `next` 2598876.
 The flash-map v2 / XIP hardware probe remains parked on `feat/xip-probe`.
 
+## Rubik restoration (2026-10-27)
+
+Rubik and the FONT selector are restored alongside Melodee Pixel. The native
+MEL1 storage experiment is isolated on `experiment/native-mel-storage`; nightly
+retains the four-slot shared pool described below. No new font build or tests
+were run for this restoration, at the user's request.
+
 ## Project storage update (2026-10-26)
 
-Current firmware keeps Melodee Pixel only. Rubik remains in this source tree for historical mockups,
-with its licence; no Rubik glyphs, kerning tables or icon numerals enter the firmware image.
-The FONT menu entry is removed, and old font preference bits are ignored without rewriting settings.
+At that checkpoint the firmware kept Melodee Pixel only. Rubik remained for historical mockups,
+with its licence; that build omitted Rubik glyphs, kerning tables and icon numerals.
+That checkpoint removed FONT and ignored its preference bit; the restoration above reverses it.
 The measured nightly app shrinks from 575,084 to 543,016 bytes (32,068 bytes recovered), leaving
 34,232 bytes below the firmware body limit. The update package remains padded to its fixed app slot.
 

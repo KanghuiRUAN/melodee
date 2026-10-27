@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Kerem Kilic (Ellic Studio)
  * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* Melodee menu (HOME held): COLOR, HOLD (the layer threshold), LIGHTS (the keys' and buttons'
+/* Melodee menu (HOME held): COLOR, FONT (the type: RUBIK or PIXEL, ui.c TY_*), HOLD (the layer threshold), LIGHTS (the keys' and buttons'
  * glow: ui_input.c ui_leds), KNOB ACCEL (ui_input.c accel_by), USB AUDIO (IN+OUT, IN, OUT or OFF; usb.c ua_off_set),
  * USB INPUT (stereo master or four track stems; usb.c ua_tracks_set),
  * USB HOST (the USB-C port hosts a USB-MIDI controller instead of talking to a computer; not saved; usb_host.c),
@@ -13,7 +13,7 @@
  * PRESETS scrolls from ABOUT through all credits. ui.menu: 1 list, 2 information. */
 /* ------------------------------------------------------------ menu --- */
 #define MENU_HEAD H_HEAD                 /* the menu's own title strip */
-enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
+enum { MI_COLOR, MI_FONT, MI_HOLD, MI_LIGHTS,
 #if MELODEE_USB_AUDIO
        MI_USB, MI_USB_INPUT,
 #endif
@@ -26,7 +26,7 @@ enum { MI_COLOR, MI_HOLD, MI_LIGHTS,
        MI_MIDI_KNOBS, MI_MIDI_MODE,
        MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE, MI_PICKER, MI_ACCEL, MI_HOME_SEL, MI_GLO_SEL, MI_TRACKS, MI_SCREEN, MI_PANEL, MI_ABOUT, MI_DESIGNER, MI_BACK,
        MI_COUNT };
-static const char *const MI_NAME[MI_COUNT] = {"COLOR", "HOLD", "LIGHTS",
+static const char *const MI_NAME[MI_COUNT] = {"COLOR", "FONT", "HOLD", "LIGHTS",
 #if MELODEE_USB_AUDIO
                                               "USB AUDIO", "USB INPUT",
 #endif
@@ -113,6 +113,11 @@ static const menu_credit_t MENU_CREDITS[] = {
     {"RINGS / PHYS PORT", MC_TITLE},
     {"Emilie Gillet / MIT", MC_TEXT},
     {"https://github.com/pichenettes/eurorack", MC_URL},
+    {"", MC_TEXT},
+    {"RUBIK / FONT", MC_TITLE},
+    {"The Rubik Project Authors", MC_TEXT},
+    {"SIL Open Font License 1.1", MC_TEXT},
+    {"https://github.com/googlefonts/rubik", MC_URL},
     {"", MC_TEXT},
     {"VSCO-2 CE + VCSL / SAMPLES", MC_TITLE},
     {"Versilian Studios / CC0 1.0", MC_TEXT},
@@ -310,6 +315,7 @@ static void draw_menu(void)
                 if (i == MI_MIDI_KNOBS) value = MI_MIDI_KNOB_NAME[settings_midi_knobs % MK_PROFILES];
                 if (i == MI_MIDI_MODE) value = MI_MIDI_MODE_NAME[settings_midi_knob_mode % MK_MODES];
                 if (i == MI_PICKER) value = PREF_BITS & PREF_PICK_OFF ? "OFF" : "ON";
+                if (i == MI_FONT) value = TY_PIXEL ? "PIXEL" : "RUBIK";
                 if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
                 if (i == MI_HOME_SEL) value = HS_NAME[home_select()];
                 if (i == MI_GLO_SEL) value = HS_NAME[glo_select()];
@@ -453,6 +459,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_AUTOSAVE) {
         settings_autosave = (uint8_t)(s > 0 ? 1u : s < 0 ? 0u : !settings_autosave);
+        ui.force = 1; ok = 0;
+    }
+    if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_FONT) {   /* KNOB 1 right PIXEL, left RUBIK; OCT+ toggles */
+        uint32_t px = s > 0 ? 1u : s < 0 ? 0u : !TY_PIXEL;
+        PREF_BITS = (uint8_t)(px ? PREF_BITS | PREF_PIXEL : PREF_BITS & ~PREF_PIXEL);
+        palette_set(settings.palette);                 /* (ux.gen: every part's signature, the rolls redraw) */
         ui.force = 1; ok = 0;
     }
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_PICKER) {

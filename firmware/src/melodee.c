@@ -48,8 +48,13 @@
 #error "MELODEE_OTA needs MELODEE_FLASH"
 #endif
 
+/* the resource region (res.c): data read in place at 0xEA020 (app.ld .mres), installed after an update */
+#define MELODEE_RES __attribute__((section(".mres"), aligned(4)))
+#define RES_OK() (res_ok != 0u)
+
 /* ------------------------------------------------------------- HAL --- */
 #include <stdint.h>
+static uint8_t res_ok;                  /* res.c: installed and this build's; else the readers fall back */
 #include "fm1_time.h"
 #include "fm1_sys.h"
 #include "fm1_power.h"
@@ -115,6 +120,7 @@
 #include "fm1_flash.h"
 #include "storage_hw.c"
 #include "storage.c"
+#include "res.c"                 /* the resource region (needs the storage hooks) */
 #endif
 #include "upreset.c"             /* user presets (RAM mirror; flash with MELODEE_FLASH) */
 #include "project.c"

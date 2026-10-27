@@ -8,7 +8,7 @@ static void arrangement(uint32_t count)
     chain_defaults(&chain_config); chain_config.count = (uint8_t)count;
     memset(chain_patterns, 0, sizeof chain_patterns);
     for (uint32_t r = 0; r < count; r++) {
-        memset(chain_patterns[r], r % NPAT, NTRK);
+        for (uint32_t k = 0; k < NTRK; k++) chain_patterns[r][k] = (uint8_t)(r % trk_npat(k));   /* (MIDI-only: 8 banks) */
         chain_config.row[r] = (chain_row_t){r % NPAT, 1};
     }
 }
@@ -60,7 +60,7 @@ static int rests(void)
     track_t *t = &trk[0]; t->p[P_SLEN] = 1;
     t->step[0] = (step_t){{60}, 1, ST_NOTE, 0, 96}; pattern_commit(t);
     motion_set_event(t, 0, P_LEVEL, 12);
-    recording[0] = (recorded_note_t){.duration=RECORD_UNIT,.note=72,.vel=96};
+    recording[0] = (recorded_note_t){.duration=RECORD_UNIT,.note7=72,.vel=96};
     recorded_set_owner(&recording[0], recording_owner(t)); recording_reindex();
     arrangement(3); memset(chain_patterns, 0, sizeof chain_patterns);
     for (uint32_t r = 0; r < 3; r++) chain_config.row[r].slot = 0;
@@ -187,7 +187,7 @@ static int recorded_block(void)
 {
     int bad=0; ui_power_on(); trk[0].p[P_SLEN]=1; trk[1].p[P_SLEN]=8;
     pattern_commit(&trk[0]); pattern_commit(&trk[1]);
-    recorded_note_t note={.duration=32768,.note=72,.vel=96};
+    recorded_note_t note={.duration=32768,.note7=72,.vel=96};
     recorded_set_exponent(&note,3); recorded_set_owner(&note,recording_owner(&trk[1]));
     recording_restore_note(&trk[1],0,note); recording_reindex();
     trk[1].step[0] = (step_t){{72},1,ST_NOTE,SF_RECORDED,96};
@@ -224,7 +224,7 @@ static int song_looping(void)
     bad+=check("loop mode saves with the project",!project_save(0));
     song_loop_set(0);project_load(0);
     bad+=check("project reload restores loop mode",chain_config.rsv[CHAIN_LOOP]==1);
-    uint8_t *raw=proj_bank_slot[0];raw[BANKL_STEPS_OFF+1u]=2;bank_checksum(raw);
+    uint8_t *raw=proj_bank_slot[0];raw[BANKP_STEPS_OFF+1u]=2;bank_checksum(raw);
     bad+=check("invalid saved loop values are rejected before restoration",!bank_valid(raw,BANK_STORE_SIZE));
     song_loop_set(0);project_save(1);song_loop_set(1);project_load(1);
     bad+=check("ordinary older project records default to non-looping",!chain_config.rsv[CHAIN_LOOP]);
@@ -243,15 +243,15 @@ static int persistence(void)
     uint8_t patterns[CHAIN_ROWS][NTRK]; memcpy(patterns, chain_patterns, sizeof patterns);
     bad += check("64 sections with rests save successfully", !project_save(0));
     uint32_t magic; memcpy(&magic, proj_bank_slot[0], 4);
-    bad += check("extended songs have a distinct versioned container", magic == BANKM_MAGIC);
+    bad += check("extended songs save in the 16-pattern container", magic == BANKP_MAGIC);
     pattern_init(); chain_defaults(&chain_config); project_load(0);
     bad += check("all 64 sections, per-track rests and repeats survive reload", !memcmp(&expected, &chain_config, sizeof expected) && !memcmp(patterns, chain_patterns, sizeof patterns));
-    uint8_t *raw = proj_bank_slot[0]; uint32_t offset = BANKL_STEPS_OFF + 5u + 63u * (NTRK + 1u) + 2u;
+    uint8_t *raw = proj_bank_slot[0]; uint32_t offset = BANKP_STEPS_OFF + 5u + 63u * (NTRK + 1u) + 2u;
     raw[offset] = CHAIN_HOLD + 1u; bank_checksum(raw);
     bad += check("malformed extended assignments are rejected even with a valid checksum", !bank_valid(raw, BANK_STORE_SIZE));
-    arrangement(2); bad += check("ordinary songs retain the existing project format", !project_save(1));
+    arrangement(2); bad += check("ordinary songs save too", !project_save(1));
     memcpy(&magic, proj_bank_slot[1], 4);
-    bad += check("existing 16-section readers remain compatible with ordinary saves", magic == BANK_MAGIC);
+    bad += check("ordinary songs save in the same container (FBKK only as a dense fallback)", magic == BANKP_MAGIC);
     return bad;
 }
 int main(void)

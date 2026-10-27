@@ -244,11 +244,11 @@ static int persistence(void)
     chain_config.fx[0][0] = (chain_fx_t){PX_FREEZE + 1, 63, 1};
     chain_config.fx[1][3] = (chain_fx_t){PX_MONO + 1, 0, 64};
     chain_config_t expected = chain_config;
-    bad += check("songs containing timed punches save in the versioned FX format", !project_save(0) && *(uint32_t *)proj_bank_slot[0] == BANKN_MAGIC);
+    bad += check("songs containing timed punches save in the 16-pattern format, punches included", !project_save(0) && *(uint32_t *)proj_bank_slot[0] == BANKP_MAGIC);
     chain_defaults(&chain_config); project_load(0);
     bad += check("all timed punches survive a complete project reload", !memcmp(&expected, &chain_config, sizeof expected));
     uint8_t *raw = proj_bank_slot[0];
-    uint32_t offset = BANKL_STEPS_OFF + BANKM_SONG_BYTES;
+    uint32_t offset = BANKP_STEPS_OFF + BANKM_SONG_BYTES;
     static const uint8_t malformed[][3] = {{PUNCH_NFX + 1, 0, 1}, {1, 64, 1}, {1, 63, 2}, {1, 0, 0}, {0, 1, 0}};
     int valid = 0;
     for (uint32_t j = 0; j < NELEM(malformed); j++) {

@@ -22,6 +22,7 @@ static struct {
     uint32_t log[64], log_n;            /* every column write, (column << 16 | data), the last 64 */
 } fk;
 
+static uint8_t fm1_rf_cal_on;                     /* (hal/fm1_ble_rf.h: measure the radio calibration at start) */
 static inline void fm1_ble_sync(void) {}
 static inline uint32_t fm1_ticks(void) { return fk.ticks += fk.tick_per_read; }
 static inline void fm1_ble_col_wr(uint32_t link, uint32_t col, uint32_t data)

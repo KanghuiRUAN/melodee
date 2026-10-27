@@ -91,7 +91,7 @@ int main(void)
     /* Real BLE page drawing: both fonts, 0..8 discoveries, all selections. */
     reset_ble();
     for (uint32_t font=0; font<2; font++) {
-        if (font) PREF_BITS |= 64u; else PREF_BITS &= ~64u;
+        if (font) PREF_BITS |= PREF_PIXEL; else PREF_BITS &= ~PREF_PIXEL;
         for (uint32_t n=0; n<=BLE_SCAN_N; n++) {
             mb.count=(uint8_t)n;
             for(uint32_t i=0;i<n;i++) {mb.idx[i]=(uint8_t)i;str_cpy(mb.found.e[i].name,"Keyboard",BLE_NAME_MAX+1);}

@@ -22,14 +22,13 @@ import math
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import aa_raster as ar  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-from gen_aa_font import PIXEL, pixel_glyphs
-DIGITS = pixel_glyphs(PIXEL)
+RUBIK = ROOT / "assets" / "fonts" / "Rubik[wght].ttf"
 SS = 8                                   # supersampling
 
 # the UI's own icons, after the legacy names (their order is the enum's: keep it, append new ones at the end)
@@ -100,16 +99,9 @@ class Pen:
                                  radius=max(0.0, r * self.k - sw / 2), fill=0)
 
     def digit(self, ch, ink):
-        _, rows = DIGITS[ch]
-        scale = self.n * 0.62 / len(rows)
-        x0 = (self.n - len(rows[0]) * scale) / 2
-        y0 = (self.n - len(rows) * scale) / 2
-        for y, row in enumerate(rows):
-            for x, bit in enumerate(row):
-                if bit == "#":
-                    self.d.rectangle((round(x0 + x * scale), round(y0 + y * scale),
-                                      round(x0 + (x + 1) * scale) - 1, round(y0 + (y + 1) * scale) - 1), fill=ink)
-
+        font = ImageFont.truetype(str(RUBIK), int(self.n * 0.62))
+        font.set_variation_by_axes([600])
+        self.d.text((self.n / 2, self.n / 2 + self.n * 0.02), ch, font=font, fill=ink, anchor="mm")
 
 
 def arrow(pn, x0, y0, x1, y1, head=4.0, w=1.0):

@@ -35,7 +35,6 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from make_ble_calibration import write_bundle
 
 HERE = Path(__file__).resolve().parent
 BLOCKS, BLK, KEEP = 20, 0x30, 0x2F
@@ -56,7 +55,7 @@ def installer_module(name, exports):
 
 def installer_libraries():
     lib = "\n".join(strip_module((HERE / name).read_text(encoding="utf-8"))
-                    for name in ("fm1pkg.js", "fm1ota.js", "fm1backup.js"))
+                    for name in ("fm1pkg.js", "fm1ota.js", "fm1backup.js", "fm1res.js"))
     for source, exports in (
         ("progress.js", ["progressModel", "remaining", "afterFailure", "describeDevice", "planFor"]),
         ("keepalive.js", ["hold", "busyElsewhere"]),
@@ -197,6 +196,16 @@ def publish_manual(src, dest, version=None, preserve_nightly=False):
         page.write_text(text, encoding="utf-8")
 
 
+def publish_resources(source, published):
+    """the build's resource region (build/melodee-res.bin beside the package) as <package>-res.bin: the installer
+    writes it after the firmware (fm1res.js)"""
+    source = Path(source)
+    for res in (source.with_name(source.stem + "-res.bin"), source.with_name("melodee-res.bin")):
+        if res.exists():
+            shutil.copy(res, published.with_name(published.stem + "-res.bin"))
+            return
+
+
 def main(pkg, version, out, nightly=None, installer_only=False, rc=None, manual=None):
     pkg, out = Path(pkg), Path(out)
     raw, product = check_package(pkg)
@@ -248,15 +257,18 @@ def main(pkg, version, out, nightly=None, installer_only=False, rc=None, manual=
     (inst / "index.html").write_text(html, encoding="utf-8")
     if pkg.resolve() != (fw / name).resolve():
         shutil.copy(pkg, fw / name)
+    publish_resources(pkg, fw / name)
     (fw / "release.json").write_text(json.dumps(release_meta, indent=2) + "\n")
     (fw / "releases.json").write_text(json.dumps(releases, indent=2) + "\n")
     if nightly_meta:
         for path, data, identity, filename in nightly_files.values():
             (fw / filename).write_bytes(data)
+            publish_resources(Path(path), fw / filename)
         (fw / "nightly.json").write_text(json.dumps(nightly_meta, indent=2) + "\n")
     if rc_meta:
         for path, data, identity, filename in rc_files.values():
             (fw / filename).write_bytes(data)
+            publish_resources(Path(path), fw / filename)
         (fw / "rc.json").write_text(json.dumps(rc_meta, indent=2) + "\n")
     lic = HERE.parent / "LICENSES"                  # the packages hold JieLi SDK files (Apache-2.0): their
     (fw / "LICENSES").mkdir(exist_ok=True)          # licence travels next to it, with Melodee's own
@@ -273,18 +285,12 @@ def main(pkg, version, out, nightly=None, installer_only=False, rc=None, manual=
     if not installer_only:
         publish_manual(man_src, man, version, preserve_nightly=True)
         shutil.copy(HERE / "editor.html", ed / "index.html")
-        for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js", "fm1pkg.js", "fm1ota.js",
-                  "blecalibration.js", "ble-calibration.html", "ble-calibration-page.js", "ble-calibration-demo.js"):
+        for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js", "fm1pkg.js", "fm1ota.js"):
             if (HERE / f).exists():
                 shutil.copy(HERE / f, ed / f)
         (ed / "install").mkdir(exist_ok=True)
         for f in ("transfer.js", "keepalive.js", "progress.js", "fakefm1.js", "installer.css"):
             shutil.copy(HERE / "install" / f, ed / "install" / f)
-        # only the helper built with this package travels beside it (release.yml's release-assets); a helper
-        # from this checkout's build/ is not the published firmware's pair
-        calibration = pkg.parent / "melodee-ble-calibration.fwsc"
-        write_bundle(ed / "ble-calibration-bundled.js",pkg if calibration.exists() else None,
-                     calibration if calibration.exists() else None,version)
         (out / "index.html").write_text(
             '<!doctype html><meta charset="utf-8"><title>Melodee</title>'
             '<meta http-equiv="refresh" content="0; url=webapp/installer/">'

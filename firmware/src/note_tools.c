@@ -120,7 +120,7 @@ static int note_convert(uint32_t start)
     step_delete(TSEL,start);memcpy(&TSEL->step[start],&source,sizeof source);TSEL->step[start].flags|=SF_RECORDED;
     for(uint32_t j=0,i=0;j<count;j++){
         while(recording[i].vel)i++;
-        recorded_note_t r={0};r.note=nn[j];r.vel=vv[j];recorded_set_owner(&r,recording_owner(TSEL));recorded_set_step(&r,start,0,0);recorded_set_gate(&r,drum_track(TSEL));
+        recorded_note_t r={0};recorded_set_note(&r,nn[j]);r.vel=vv[j];recorded_set_owner(&r,recording_owner(TSEL));recorded_set_step(&r,start,0,0);recorded_set_gate(&r,drum_track(TSEL));
         note_duration(&r,n*RECORD_UNIT);recording_restore_note(TSEL,i,r);i++;
     }
     cursor_set((int32_t)start);ui.note_pick=0;notes_selected(TSEL);return 1;

@@ -4,13 +4,14 @@
 /* Small-canvas renderer (no full framebuffer). Draw text/lines into
  * an off-screen strip, then blit it in one DMA transfer. Pixels are stored
  * byte-swapped (the panel takes RGB565 big-endian).
- * Text uses 1-bit Melodee Pixel glyphs; icons use 4-bit alpha bitmaps (tools/gen_aa_font.py;
+ * Text and icons are 4-bit alpha bitmaps made at build time (tools/gen_aa_font.py: Rubik;
  * tools/gen_icons.py: Melodee's own drawings). A glyph is trimmed to its ink box, advances are in 1/16 px, and
  * each glyph is rasterised at 1 << psh horizontal phases (2: drawn at a pen of +0, +1/2 px);
  * cv_text takes the phase that puts it within a phase step of its true place. Blending uses a 16-entry
  * ramp per (ink, background) pair, cached, so a pixel costs a nibble read and a store. Colours come from the theme tokens.
  * The large type (docs/design/README.md "Large type"): text is set in four roles, TY_LB labels, TY_TX text, TY_VL values,
- * TY_HR the hero, in Melodee Pixel at 2 / 2 / 3 / 5 times its source pixels. */
+ * TY_HR the hero, each Rubik (16 / 20 / 28 / 48 px) or Melodee Pixel (a 5 x 7 1-bit face at 2 / 2 / 3 / 5 times: aafont_t
+ * px), as Settings > FONT says (ui.c TY_*); a role's two faces share its line height and baseline. */
 typedef struct { uint16_t off, adv; int8_t bx; uint8_t by, bw, bh; } aag_t;
 typedef struct {
     uint8_t h, asc, first, last, nex;   /* line height, baseline; ASCII range; extras */
@@ -28,15 +29,22 @@ typedef struct {
 } aafont_t;
 typedef struct { const char *name; uint16_t bg, surf, text, accent, trk[4], knob[4][4]; } ui_pal_t;
 typedef struct { const char *label; } kc_t;
-#include "ui_fonts.h"                   /* Melodee Pixel AP_* (tools/gen_aa_font.py) */
+#include "ui_fonts.h"                   /* the large type's AF_LB 16, AF_TX 20, AF_VL 28, AF_HR 48 px (Rubik 500) and
+                                         * Melodee Pixel's AP_* (tools/gen_aa_font.py) */
 #include "ui_palettes.h"
 #include "ui_keycaps.h"                 /* KC_*: the keycaps' / badges' labels (tools/gen_aa_keycaps.py) */
 #define ELLIPSIS '\x85'                 /* the ellipsis glyph (every face's extras) */
-/* Melodee Pixel is the sole UI face. Saved font preference bits are retired. */
-#define TY_LB (&AP_LB)
-#define TY_TX (&AP_TX)
-#define TY_VL (&AP_VL)
-#define TY_HR (&AP_HR)
+/* the type's roles (docs/design/README.md "Large type"): Rubik, or Melodee Pixel as Settings > FONT says (ui.c
+ * ty_pixel). A role's two faces share its line height and baseline, so a layout holds in both; widths differ (a
+ * layout fits the wider) */
+#ifndef RES_OK
+#define RES_OK() 1                               /* melodee.c: the resource region (res.c) is installed */
+#endif
+static uint32_t ty_pixel(void);
+#define TY_LB (ty_pixel() ? &AP_LB : &AF_LB)  /* labels, units, chips, tags: 16 px, pixel 2 x */
+#define TY_TX (ty_pixel() ? &AP_TX : &AF_TX)  /* names, rows, the header, text: 20 px, pixel 2 x */
+#define TY_VL (ty_pixel() ? &AP_VL : &AF_VL)  /* values: 28 px, pixel 3 x */
+#define TY_HR (ty_pixel() ? &AP_HR : &AF_HR)  /* the hero (the chord, a sound's name alone): 48 px, pixel 5 x */
 
 /* host tests hook in here (layout lint, draw cost); nothing in the firmware */
 #ifndef GFX_HOOK_TEXT
@@ -1024,7 +1032,7 @@ static int32_t text_w(const aafont_t *f, const char *s)
     }
     return (pen + 8) >> 4;
 }
-/* the line top that centres f's capitals on row cy (a pill, a row, a chip: the established position for every role) */
+/* the line top that centres f's capitals on row cy (a pill, a row, a chip: the same place in Rubik and pixel) */
 static int32_t ty_y(int32_t cy, const aafont_t *f) { return cy - f->asc + (f->cap + 1) / 2; }
 /* the face to set s in within maxw px: f when it fits, else the label face (a name is cut only when even that does not
  * fit) */

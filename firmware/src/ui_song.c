@@ -176,7 +176,7 @@ static void song_cell_pattern(int32_t steps)
     }
     uint32_t first = chain_origin(row, song.sel), end = chain_block_end(first, song.sel);
     int32_t old = chain_patterns[first][song.sel] == CHAIN_REST ? -1 : chain_patterns[first][song.sel];
-    int32_t value = clamp(old + steps, -1, NPAT - 1u);
+    int32_t value = clamp(old + steps, -1, (int32_t)trk_npat(song.sel) - 1);
     if (value == old || !song_edit_begin()) return;
     chain_patterns[first][song.sel] = (uint8_t)(value < 0 ? CHAIN_REST : value);
     for (uint32_t r = first; r < end; r++) {

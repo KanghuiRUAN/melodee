@@ -528,7 +528,7 @@ user presets saved by earlier Melodee versions are not imported, and the user sa
 - **Presets:** browse by category (BASS, LEAD, PAD, KEYS, ORGAN, STRING, BRASS, WIND, PLUCK, BELL, DRUM, FX), favourites or
   RECENT, with knob acceleration; factory presets, 384 shared user slots and 4 projects, named on the device;
   a startup project and a template for new projects; compatible upstream projects from earlier versions load
-- **Screen:** Melodee's own look: Melodee Pixel type, icons drawn for Melodee, every track in its own colour (the screen takes the
+- **Screen:** Melodee's own look: Rubik type, icons drawn for Melodee, every track in its own colour (the screen takes the
   selected track's, each knob a shade of it), eight palettes: NIGHT, DAY, CONTRAST, SUNSET, OCEAN, NEON, CANDY and LO-FI
 - **Stage (HOME):** the selected track's own four knobs (its engine's: the Prophet's cutoff, resonance, filter envelope
   and release, the CZ-1's wave, DCW, detune and vibrato), the notes and chord it plays in front of the live waveform
@@ -1135,8 +1135,7 @@ You can leave a tip with [ko-fi](https://ko-fi.com/keremimo).
   Felucca itself; the PHASE engine's waveforms (a C port of the oscillator of
   [CrispyZebra](https://github.com/hugelton/CrispyZebra), GPL-3.0); the [Fukiai](https://github.com/hugelton/Fukiai) icon
   font of the web editor ([MIT](LICENSES/MIT-Fukiai.txt))
-- Firmware font: Melodee Pixel, drawn for Melodee (GPL-3.0-only). Historical design references use
-  [Rubik](https://github.com/googlefonts/rubik) by The Rubik Project Authors, [SIL OFL 1.1](LICENSES/OFL-Rubik.txt);
+- Font: [Rubik](https://github.com/googlefonts/rubik) by The Rubik Project Authors, [SIL OFL 1.1](LICENSES/OFL-Rubik.txt);
   the panel diagram: [Inter Tight](https://github.com/rsms/inter-tight) by The Inter Project Authors, [SIL OFL 1.1](LICENSES/OFL-InterTight.txt)
 - VOICE engine: after [klattsch](https://github.com/tgies/klattsch) by Tony Gies (MIT); formant data from Klatt (1980) and Hillenbrand et al. (1995)
 - Native CZ engine: uPD933 model by Devin Acker in [MAME](https://github.com/mamedev/mame/blob/master/src/devices/sound/upd933.cpp) ([BSD-3-Clause](LICENSES/BSD-3-Clause-uPD933.txt))

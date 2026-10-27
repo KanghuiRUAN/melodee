@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Kerem Kilic (Ellic Studio)
  * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* MELODEE user interface.
- * Flat: SURF cards and panels on the palette's background, no rules, one type family (Melodee Pixel, four roles), tracks
+ * Flat: SURF cards and panels on the palette's background, no rules, one type family (Rubik or Melodee Pixel, four roles), tracks
  * named by circled numerals. Four columns <-> KNOB 1..4. Rendering is lazy:
  * every element remembers what it last drew and is redrawn only on change. */
 static int live_rec_sel(void);
@@ -58,6 +58,14 @@ static void preset_old_allow(uint32_t allow);
 static void slot_save_sheet(void);              /* ui_slots.c */
 static int project_save_as(uint32_t slot, const char *name);
 static int project_name(uint32_t slot, char *b);
+/* pattern p's number, 1..16, into b (3 bytes); its length */
+static uint32_t pat_num(char *b, uint32_t p)
+{
+    p = p % NPAT + 1u;
+    if (p > 9u) { b[0] = (char)('0' + p / 10u); b[1] = (char)('0' + p % 10u); b[2] = 0; return 2; }
+    b[0] = (char)('0' + p); b[1] = 0; return 1;
+}
+static int project_free_pct(void);                 /* project.c: the shared pool's room left in KB (-1 unknown) */
 static int project_rename(uint32_t slot, const char *name);
 static int project_erase(uint32_t slot);
 static void project_cur_name(char *b);
@@ -73,11 +81,14 @@ static void song_preset_finish(int keep);
 static void sound_name(const track_t *t, char *b);
 #include "favorites.c"
 /* MENU settings in favorites.factory[15][30]: bit 0 retired, bit 1 KNOB ACCEL OFF, bits 2..4 retired (OVERCLOCK until
- * 1.3.4 / 1.4: left as saved, never read), bit 5 PICKER OFF, bit 6 retired (FONT PIXEL), bit 7 retired
+ * 1.3.4 / 1.4: left as saved, never read), bit 5 PICKER OFF, bit 6 FONT PIXEL, bit 7 retired
  * (STAGE EFFECTS OFF in 1.4.0-rc.4: left as saved, never read). */
 #define PREF_BITS (favorites.factory[15][30])
 #define PREF_ACCEL_OFF 2u
 #define PREF_PICK_OFF 32u
+#define PREF_PIXEL 64u                         /* Settings > FONT: PIXEL (else RUBIK) */
+#define TY_PIXEL ty_pixel()
+static uint32_t ty_pixel(void) { return (PREF_BITS & PREF_PIXEL) != 0u || !RES_OK(); }   /* (gfx.c TY_*; Rubik: res.c) */
 /* HOME SELECT (the menu): what SELECT turns on HOME, kept in favorites.factory[15][25] (0, any other: BPM) */
 enum { HS_BPM, HS_MOD, HS_LEVEL, HS_SWING, HS_TRANS, HS_CHORD, HS_ARATE, HS_PATTERN, HS_OFF, HS_N };
 static const char *const HS_NAME[HS_N] = {"BPM", "MOD WHEEL", "LEVEL", "SWING", "TRANSPOSE", "CHORD", "ARP RATE", "PATTERN",

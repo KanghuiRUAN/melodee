@@ -164,9 +164,10 @@ static void head_chip_text(char *b)
     } else if (new_on()) {                                     /* NEW SONG */
         str_cpy(b, "NEW SONG", 16);
     } else if (ptc_on()) {                              /* PATTERNS' Copy to: "copy 3 to 5" */
-        str_cpy(b, "copy 1 to 1", 16);
-        b[5] = (char)('1' + ui.ptc_src % NPAT);
-        b[10] = (char)('1' + ui.ptc_dst % NPAT);
+        str_cpy(b, "copy ", 16);
+        pat_num(b + 5, ui.ptc_src);
+        str_cpy(b + str_len(b), " to ", 5);
+        pat_num(b + str_len(b), ui.ptc_dst);
     } else if (ui.home) {                               /* Stage: the engine (a kit: its name, "909 KIT") */
         if (browse_pending()) { uint32_t kk, s = browse_shown(&kk); e = src_engine(s, kk); }
         if (ENGINES[eng_idx(e)] == &ENG_DRUM && !browse_pending()) sound_name(TSEL, b);
@@ -808,7 +809,7 @@ static void draw_columns(void)
         char sn[12], u[12];
         fmt_int(sn, (int32_t)ui.cursor + 1); u[0] = '/'; fmt_int(u + 1, TSEL->p[P_SLEN]);
         draw_column(0, ui.note_copy?"COPY":bulk.on||ui.note_move?"MOVE":"STEP", sn, bulk.on||ui.note_move?"":u, VAL(0u), -1, ICON_AUTO);
-        uint32_t pitch = chosen < RECORD_MAX ? recording[chosen].note : st && st->n ? st->note[notes_manual_slot(st)] : last_note;
+        uint32_t pitch = chosen < RECORD_MAX ? recorded_note(&recording[chosen]) : st && st->n ? st->note[notes_manual_slot(st)] : last_note;
         note_name(sn, pitch);
         if(chosen<RECORD_MAX && drum_track(TSEL))fmt_int(sn,recording[chosen].pitch);
         draw_column(1, "PITCH", sn, chosen<RECORD_MAX && drum_track(TSEL)?"ST":"", selected ? VAL(1u) : T_DIM, -1, ICON_PITCH);
@@ -988,15 +989,15 @@ static void confirm_text(char *a, char *b)
         a[12] = (char)('1' + k % NTRK);
         break;
     case CF_OVR_PROJ:
-        str_cpy(a, "OVERWRITE PROJECT A?", 24);
-        a[18] = (char)('A' + (k & 3u));
-        if (!project_name(k & 3u, b) || !b[0])          /* the project's name, else what SONG plays from it */
+        str_cpy(a, "OVERWRITE PROJECT 00?", 24);
+        a[18] = (char)('0' + (k % PROJ_SLOTS + 1u) / 10u); a[19] = (char)('0' + (k % PROJ_SLOTS + 1u) % 10u);
+        if (!project_name(k % PROJ_SLOTS, b) || !b[0])          /* the project's name, else what SONG plays from it */
             str_cpy(b, "Its song and patterns change", 32);
         break;
     case CF_ERASE_PROJ:
-        str_cpy(a, "ERASE PROJECT A?", 24);
-        a[14] = (char)('A' + (k & 3u));
-        if (!project_name(k & 3u, b) || !b[0])
+        str_cpy(a, "ERASE PROJECT 00?", 24);
+        a[14] = (char)('0' + (k % PROJ_SLOTS + 1u) / 10u); a[15] = (char)('0' + (k % PROJ_SLOTS + 1u) % 10u);
+        if (!project_name(k % PROJ_SLOTS, b) || !b[0])
             str_cpy(b, "Its song and patterns go", 32);
         break;
     case CF_DEL_ROW:
@@ -1018,17 +1019,19 @@ static void confirm_text(char *a, char *b)
         str_cpy(a, "INITIALIZE SOUND?", 24);
         break;
     case CF_DEL_PAT:                                    /* PATTERNS: the track's pattern, its notes and motion */
-        str_cpy(a, "DELETE PATTERN 1?", 24);
-        a[15] = (char)('1' + trk[k % NTRK].pattern % NPAT);
+        str_cpy(a, "DELETE PATTERN ", 24);
+        pat_num(a + 15, trk[k % NTRK].pattern);
+        str_cpy(a + str_len(a), "?", 2);
         str_cpy(b, "Track 1 \xB7 notes and motion", 32);
         b[6] = (char)('1' + k % NTRK);
         break;
     case CF_PASTE_PAT:                                  /* PATTERNS' Copy to over a pattern in use */
-        str_cpy(a, "REPLACE PATTERN 1?", 24);
-        a[16] = (char)('1' + ui.ptc_dst % NPAT);
-        str_cpy(b, "Track 1 \xB7 with pattern 1", 32);
+        str_cpy(a, "REPLACE PATTERN ", 24);
+        pat_num(a + 16, ui.ptc_dst);
+        str_cpy(a + str_len(a), "?", 2);
+        str_cpy(b, "Track 1 \xB7 with pattern ", 32);
         b[6] = (char)('1' + k % NTRK);
-        b[str_len(b) - 1u] = (char)('1' + ui.ptc_src % NPAT);
+        pat_num(b + str_len(b), ui.ptc_src);
         break;
     case CF_CLEAR_MOTION:
         str_cpy(a, "CLEAR T1 MOTION?", 24); a[7] = (char)('1' + k % NTRK);
@@ -1084,8 +1087,9 @@ static void confirm_text(char *a, char *b)
                                                          * (b: CF_DETAIL) */
         uint32_t p = ui.pat_dlg % NPAT, n;
         n = (uint32_t)clamp(pattern_timing(k % NTRK, p, 0), 1, NSTEP);
-        str_cpy(a, "PATTERN 1 \xB7 ", 24);
-        a[8] = (char)('1' + p);
+        str_cpy(a, "PATTERN ", 24);
+        pat_num(a + 8, p);
+        str_cpy(a + str_len(a), " \xB7 ", 4);
         fmt_int(a + str_len(a), (int32_t)n);
         str_cpy(a + str_len(a), n == 1u ? " STEP" : " STEPS", 7);
         str_cpy(b, "Again: delete \xB7 other: copy\nBlinking: half \xB7 double", CF_DETAIL);

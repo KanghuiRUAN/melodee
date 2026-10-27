@@ -29,6 +29,9 @@ _Static_assert(sizeof(persist_t) == 604u, "the record's layout: new settings tak
 static int16_t settings_glo[4];                     /* ext.glo: project.c GLO_KEPT (glo_restore, glo_poll) */
 #define RECORD_PREF_TAG 0x52500000u /* RP, high half of the old zoom word */
 #define A4_TAG 0x41340000u                          /* "A4": old spare contents are not tuning */
+#ifndef PROJ_SLOTS
+#define PROJ_SLOTS 32u                              /* (core.h) */
+#endif
 #define AUTOSAVE_OFF_TAG 0xA1u                     /* CZ row byte 28: only this tag disables autosave */
 #define WORK_BUDGET_TAG 0x57420000u /* WB: high bits of usb_off; low two bits retain USB mode */
 /* GLO > WEIGHTS in favorites.c row 8 bytes 8..15: 'W', version 1, the five points (0 AUTO, 1..15), bit 0 of the
@@ -59,7 +62,7 @@ static int settings_legacy_valid(const persist_t *p)
         p->panel.magic == PANEL_MAGIC && p->lowcut <= 2u && (p->zoom & 0xFFu) <= 1u &&
         (p->zoom <= 0xFFu || (p->zoom & 0xFFFF0000u) == RECORD_PREF_TAG) &&
         hold_stored_ok(p->bold) && p->favorites.filter <= 1u && usb_ok &&
-        p->ext.boot <= 4u && p->ext.drumch <= 17u && p->ext.lights <= LIGHTS_N;
+        p->ext.boot <= PROJ_SLOTS && p->ext.drumch <= 17u && p->ext.lights <= LIGHTS_N;
 }
 
 /* Normalize in place; 1 = read, 0 = invalid. */
@@ -70,7 +73,7 @@ static int settings_import(persist_t *p, int n)
     settings_budget=(int16_t)(((work&0xffff0000u)==WORK_BUDGET_TAG && points>=8u && points<=32u)?points:VOICE_BUDGET_DEFAULT);
     uint32_t mode = work <= 3u || (work & 0xFFFF00FCu) == WORK_BUDGET_TAG ? work & 3u : 0u;
     p->ext.usb_off=mode|(settings_budget!=VOICE_BUDGET_DEFAULT?WORK_BUDGET_TAG|((uint32_t)settings_budget<<8):0u);
-    if (p->ext.boot > 4u)
+    if (p->ext.boot > PROJ_SLOTS)
         p->ext.boot = 0;
     settings_boot = (uint8_t)p->ext.boot;
     if (p->ext.drumch > 17u)

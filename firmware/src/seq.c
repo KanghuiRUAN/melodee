@@ -272,7 +272,8 @@ static uint32_t punch_clock_samples(void)
 /* destructive edits wait for a track's loop end while it plays (ui_input.c dq_poll): its loop ends so far; the banks one
  * waits to destroy; the tracks kept silent from a loop end until it is done (a UI frame that missed the last step) */
 static volatile uint16_t seq_loops[NTRK];
-static volatile uint8_t seq_pend[NTRK], seq_hush;
+static volatile uint16_t seq_pend[NTRK];          /* a bit a bank (NPAT) */
+static volatile uint8_t seq_hush;
 static const step_t SEQ_HUSH_STEP = {.time = ST_REST};
 static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
 {

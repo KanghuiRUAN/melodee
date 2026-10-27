@@ -15,6 +15,8 @@ import { SteadyUpdater } from "./transfer.js";
 import { hold, busyElsewhere } from "./keepalive.js";
 import { describeDevice, planFor, progressModel, remaining, afterFailure } from "./progress.js";
 import { MELODEE_LOADER, STOCK_LOADER } from "../fm1ota.js";
+import { BackupConnection } from "../fm1backup.js";
+import { installResources } from "../fm1res.js";
 import { setupLeaving } from "./leave.js";
 
 const IS_OTA = (id) => /^ota-/i.test(id.model);
@@ -678,6 +680,29 @@ async function resumeWrite(up, image, product, step) {
   if (ota.id.text !== MELODEE_LOADER) throw fail("wrongloader",`This package requires ${MELODEE_LOADER}; found ${ota.id.text}`,ota.id.text);
   if (!await up.resume(image,step,product,MELODEE_LOADER)) throw fail("stopped","The update did not finish");
 }
+/* the resource region (firmware/src/res.c) after the firmware: <package>-res.bin through editor command 82.
+ * Never fails the install: without it the FM-1 runs Melodee Pixel and INIT sounds and says to finish here. */
+async function pushResources(up) {
+  let region;
+  try { region = await fetchBytes(st.meta.pkg.dual.replace(/\.fwsc$/, "-res.bin")); }
+  catch (e) { log(`resources: ${e.message}`); return; }
+  for (let tries = 0; tries < 20; tries++) {
+    const dev = await up.find(id => id.model === "FM-1");
+    if (dev) {
+      const input = dev.link.input, output = dev.link.output; dev.link.close();
+      const link = new BackupConnection(input, output);
+      try {
+        log(`resources: ${await installResources((r, o) => link.request(r, o), region,
+          (done, total) => { if (done === total || done % 8192 < 256) log(`resources ${done}/${total}`); })}`);
+      } catch (e) { log(`resources: ${e.message}`); }
+      finally { link.close(); }
+      return;
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  log("resources: the FM-1 did not answer after the update");
+}
+
 async function start(isStock = false) {
   if (st.running || finding) return;
   const plan = isStock ? { firmware: true, resume: st.dev?.kind === "loader", boot: false } : currentPlan();
@@ -717,6 +742,7 @@ async function start(isStock = false) {
       }
       phase = "done";
       mark(false);
+      if (!isStock) await pushResources(up);
     }
     if (plan.boot) { phase = "boot"; await up.installBoot(st.boot.image, product, step); }
   } catch (e) {

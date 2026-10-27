@@ -75,7 +75,7 @@ static const char *const N_ROUTE[] = {"CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-1
 static const char *const N_NOTE[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const N_DASH[] = {"--"};
 static const char *const N_GO[] = {"--", "GO"};
-static const char *const N_BOOT[] = {"OFF", "A", "B", "C", "D"};
+static const char *const N_BOOT[] = {"OFF", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32"};   /* (PROJ_SLOTS) */
 static const char *const N_DRUMCH[] = {"OFF", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
                                        "15", "16"};
 /* GLO > SYSTEM KNOB 2, DRUM: the MIDI channel that plays the first DRUM track within ROUT (none: normal
@@ -83,7 +83,7 @@ static const char *const N_DRUMCH[] = {"OFF", "1", "2", "3", "4", "5", "6", "7",
  * project's: the column shows drumch_cell (seq.c midi_track) */
 static uint8_t settings_drumch = 10;
 static int16_t drumch_cell;
-#define PROJ_TMPL 5                                      /* SLOT 5: the template (project.c tmpl) */
+#define PROJ_TMPL 33                                     /* SLOT 33: the template (project.c tmpl) */
 /* SAVE > PROJECT KNOB 2, BOOT: the project power-on loads (OFF, A..D; OFF or an empty slot: the template, if one is
  * saved). A device setting kept with the settings (ext.boot), not the project's: the column shows boot_cell */
 static uint8_t settings_boot;
