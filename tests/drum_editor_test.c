@@ -140,15 +140,22 @@ static int capacity_and_controls(void)
 {
     int bad=0;kit(DK_808);
     project_capture(&proj_scratch);
-    for(uint32_t i=0;i<RECORD_MAX;i++)proj_scratch.recording[i]=(recorded_note_t){.on=(uint16_t)(i*61u), .duration=(uint16_t)(65535u-i), .note7=(uint8_t)(36+i%48), .vel=(uint8_t)(1+i%127), .owner=(uint8_t)((i%32)|((i%8)<<5)), .step=(uint8_t)(i%64), .pitch=(int8_t)((int32_t)(i%49)-24), .length=(uint8_t)(i&1)};
+    bank_p16=bank_wide=0;                     /* (a FUN record on its own: four parts of eight banks, 32 owners) */
+    for(uint32_t i=0;i<RECORD_MAX;i++){
+        proj_scratch.recording[i]=(recorded_note_t){.on=(uint16_t)(i*61u), .duration=(uint16_t)(65535u-i), .note7=(uint8_t)(36+i%48), .vel=(uint8_t)(1+i%127), .owner=(uint8_t)((i%8)<<5), .step=(uint8_t)(i%64), .pitch=(int8_t)((int32_t)(i%49)-24), .length=(uint8_t)(i&1)};
+        recorded_set_owner(&proj_scratch.recording[i],proj_owner_id(i%32));
+    }
     for(uint32_t t=0;t<NPART;t++)for(uint32_t i=0;i<16;i++){int8_t *c=proj_scratch.drum[t].c[i];c[0]=(int8_t)((i+t)%2?24:-24);c[1]=(int8_t)((i+t)%2?63:-64);c[2]=-c[1]-1;c[3]=(int8_t)(i%2?127:0);}
     project_store_t wire;project_t decoded;
     int ok=proj_pack(&wire,&proj_scratch) && proj_import(&decoded,&wire,sizeof wire);uint32_t at=0;
-    if(ok)for(uint32_t owner=0;owner<32;owner++)for(uint32_t i=0;i<RECORD_MAX;i++)if((proj_scratch.recording[i].owner&31u)==owner)ok&=!memcmp(&decoded.recording[at++],&proj_scratch.recording[i],sizeof(recorded_note_t));
+    if(ok)for(uint32_t o=0;o<32;o++)for(uint32_t i=0;i<RECORD_MAX;i++)if(recorded_owner(&proj_scratch.recording[i])==proj_owner_id(o))ok&=!memcmp(&decoded.recording[at++],&proj_scratch.recording[i],sizeof(recorded_note_t));
     bad+=check("all 1024 hits retain full timing, instrument, velocity, owner, pitch and length",ok && at==RECORD_MAX && !memcmp(decoded.drum,proj_scratch.drum,sizeof decoded.drum));
     memset(proj_scratch.recording,0,sizeof proj_scratch.recording);
-    for(uint32_t i=0;i<RECORD_MAX;i++)proj_scratch.recording[i]=(recorded_note_t){.on=0, .duration=65535, .note7=36, .vel=127, .owner=255, .step=63, .pitch=24, .length=1};
-    bad+=check("one bank can still hold all 1024 events",proj_pack(&wire,&proj_scratch) && proj_import(&decoded,&wire,sizeof wire) && decoded.recording[1023].owner==255 && decoded.recording[1023].pitch==24);
+    for(uint32_t i=0;i<RECORD_MAX;i++){
+        proj_scratch.recording[i]=(recorded_note_t){.on=0, .duration=65535, .note7=36, .vel=127, .owner=255, .step=63, .pitch=24, .length=1};
+        recorded_set_owner(&proj_scratch.recording[i],proj_owner_id(31));   /* (track 4, bank 8) */
+    }
+    bad+=check("one bank can still hold all 1024 events",proj_pack(&wire,&proj_scratch) && proj_import(&decoded,&wire,sizeof wire) && recorded_owner(&decoded.recording[1023])==proj_owner_id(31) && recorded_exponent(&decoded.recording[1023])==7u && decoded.recording[1023].pitch==24);
     for(uint32_t sound=11;sound<16;sound++){
         kit(DK_808);drum_patch_of(0)->c[sound][0]=12;trk_note_on(TSEL,drum_sound_note(TSEL,sound),100);drum_lane_t *k=drum_kit_of(TSEL);
         bad+=check("808 congas, clave and maraca have their own sound controls",drum_sound_of(TSEL,drum_sound_note(TSEL,sound))==sound && k[drum_lane(drum_sound_note(TSEL,sound))].r.pitch==192 && audio(64)>30);

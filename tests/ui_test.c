@@ -728,8 +728,8 @@ static int test_save(void)
                  song.g[G_SAVE] == 0 && !name_on());
     stop_transport();
     sheet_do("Save here");
-    bad += check("stopped, an empty slot: Save here opens NAME (no name yet: PROJECT A)", name_on() && nm.kind == NK_PROJ_SAVE &&
-                 nm.len == 0u && str_eq(nm.ph, "PROJECT A") && !project_used(0));
+    bad += check("stopped, an empty slot: Save here opens NAME (no name yet: PROJECT 01)", name_on() && nm.kind == NK_PROJ_SAVE &&
+                 nm.len == 0u && str_eq(nm.ph, "PROJECT 01") && !project_used(0));
     press(B_OCTUP);
     bad += check("..OCT+ saves it unnamed, SAVE dropped", !name_on() && project_used(0) && msg_is("SAVED (RAM)") &&
                  ui.act == 0u);
@@ -3480,9 +3480,9 @@ static int test_boot_template(void)
     sheet_do("Boot");
     bad += check("PROJECT KNOB 2 to B, its sheet's Boot: BOOT B, the device's (song.g untouched), saved", settings_boot == 2u &&
                  song.g[G_BOOT] == 0 && song.g[G_SLOT] == 2);
-    turn(EN_K1, 9);
+    turn(EN_K1, PROJ_TMPL);
     param_format(&GP[G_SLOT], song.g[G_SLOT], v, &u);
-    bad += check("KNOB 1 past D: SLOT TMPL", song.g[G_SLOT] == PROJ_TMPL && str_eq(v, "TMPL"));
+    bad += check("KNOB 1 past 32: SLOT TMPL", song.g[G_SLOT] == PROJ_TMPL && str_eq(v, "TMPL"));
     trk[1].p[P_LEVEL] = 77;
     fm6_fn[1][FN_PBUP] = 7;                              /* (track 2's FM6 bend range: kept too) */
     set_engine_of(&trk[2], ENGI_DRUM);
@@ -3609,7 +3609,7 @@ static int test_midi_status(void)
     return bad;
 }
 
-/* SAVE + REC: the project back to its slot at once ("SAVED B"); playing: stopped first, then saved; a new project:
+/* SAVE + REC: the project back to its slot at once ("SAVED 02"); playing: stopped first, then saved; a new project:
  * PROJECT on a free slot, SAVE picked; neither button does its own thing (no page, no undo, no arming) */
 static int test_quick_save(void)
 {
@@ -3623,8 +3623,8 @@ static int test_quick_save(void)
     btn_down(B_SAVE); frame();
     btn_down(B_REC); frame();
     btn_up(B_REC); btn_up(B_SAVE); frame();
-    bad += check("SAVE + REC: back into B at once, SAVED B; no SAVE page, no arming", stored_param(1, 0, P_LEVEL) == 55 &&
-                 msg_is("SAVED B") && ui.home && !song.rec);
+    bad += check("SAVE + REC: back into 02 at once, SAVED 02; no SAVE page, no arming", stored_param(1, 0, P_LEVEL) == 55 &&
+                 msg_is("SAVED 02") && ui.home && !song.rec);
     trk[0].p[P_LEVEL] = 66;
     song.playing = 1;
     btn_down(B_REC); frame();
@@ -3635,7 +3635,7 @@ static int test_quick_save(void)
     transport_req = 0;
     for (i = 0; i < 3; i++)
         frame();
-    bad += check("  .. then the save", stored_param(1, 0, P_LEVEL) == 66 && msg_is("SAVED B"));
+    bad += check("  .. then the save", stored_param(1, 0, P_LEVEL) == 66 && msg_is("SAVED 02"));
     project_load(1);
     proj_cur = PROJ_NO_SLOT;
     btn_down(B_SAVE); frame();
@@ -3656,7 +3656,7 @@ static int test_save_edit_holds(void)
     project_save(1);
     trk[0].p[P_LEVEL] = 53;
     btn_down(B_SAVE); frame(); frames(800);
-    ok = stored_param(1, 0, P_LEVEL) == 53 && msg_is("SAVED B") && ui.home;
+    ok = stored_param(1, 0, P_LEVEL) == 53 && msg_is("SAVED 02") && ui.home;
     trk[0].p[P_LEVEL] = 61; frames(800);
     btn_up(B_SAVE); frame();
     bad += check("hold SAVE saves the current slot once, release leaves the page unchanged",
@@ -3668,7 +3668,7 @@ static int test_save_edit_holds(void)
     ok = transport_req == 2u && stored_param(1, 0, P_LEVEL) == 61;
     song.playing = 0; transport_req = 0; frame();
     bad += check("hold SAVE while playing stops transport then saves the project",
-                 ok && stored_param(1, 0, P_LEVEL) == 72 && msg_is("SAVED B"));
+                 ok && stored_param(1, 0, P_LEVEL) == 72 && msg_is("SAVED 02"));
     ui_power_on(); stop_transport();
     hold(B_SAVE);
     bad += check("hold SAVE for an unsaved project opens its slot chooser without writing",
@@ -3846,7 +3846,7 @@ static int test_fm6_pages(void)
                  fm6_fn[tr][FN_PTIME] == 9u);
     {   /* a project saved before (no function settings in its record): Dexed's */
         uint8_t *raw = proj_bank_slot[3];
-        memset(raw + BANK_FN_OFF, 0, 4u + NPART * FM6_NFN);
+        memset(raw + (*(const uint32_t *)raw == BANKP_MAGIC ? BANKP_FN_OFF : BANK_FN_OFF), 0, 4u + NPART * FM6_NFN);
         bank_checksum(raw);
         project_load(3);
         bad += check("  a project of before: Dexed's", fm6_fn[tr][FN_ENGINE] == FM6_MARK1 && !fm6_fn[tr][FN_PTIME]);
@@ -5116,7 +5116,7 @@ static int test_new_song(void)
     stop_transport();
     my_steps(&trk[0]);
     go_page(GR_SLOTS);
-    for (i = 0; i < 6u; i++) turn(EN_K1, 1);
+    for (i = 0; i < PROJ_TMPL + 1u; i++) turn(EN_K1, 1);   /* (01..32, TMPL, NEW) */
     bad += check("PROJECT: KNOB 1 past TMPL shows NEW (SLOT itself stays)", ui.proj_new && song.g[G_SLOT] == PROJ_TMPL);
     turn(EN_K3, 1);
     press(B_OCTUP);
@@ -5138,7 +5138,7 @@ static int test_new_song(void)
                  entry_cat(src, k) == CAT_BASS && proj_cur == PROJ_NO_SLOT && msg_is("NEW SONG"));
     bad += check("  two tracks: those with a role", trk_n() == 2u);
     go_page(GR_SLOTS);
-    for (i = 0; i < 6u; i++) turn(EN_K1, 1);
+    for (i = 0; i < PROJ_TMPL + 1u; i++) turn(EN_K1, 1);   /* (01..32, TMPL, NEW) */
     turn(EN_K3, 1);
     press(B_OCTUP);
     press(B_OCTUP);
@@ -5149,7 +5149,7 @@ static int test_new_song(void)
     bad += check("  track 1 --, track 3 BASS: one track, the BASS sound as track 1", !new_on() && trk_n() == 1u &&
                  song.sel == 0 && entry_cat(src, k) == CAT_BASS);
     go_page(GR_SLOTS);
-    for (i = 0; i < 6u; i++) turn(EN_K1, 1);
+    for (i = 0; i < PROJ_TMPL + 1u; i++) turn(EN_K1, 1);   /* (01..32, TMPL, NEW) */
     turn(EN_K3, 1);
     press(B_OCTUP);
     bad += check("  a new song with nothing in it: no dialog", !ui.confirm && new_on());
@@ -5358,7 +5358,7 @@ static int test_pattern_page_keys(void)
                      song.sel == 7u && trk_n() == NTRK && !gates() && mo_w == midi);
     }
     tap_key(key_at(1, 0));
-    key_down(26); frame(); key_up(26); frame();
+    key_down(key_at(1, 10)); frame(); key_up(key_at(1, 10)); frame();   /* (every white key is a pattern's now) */
     bad += check("unused selection keys cannot play notes", !gates() && mo_w == midi && !song.playing);
     key_down(PAT_KEY[0]); frame(); key_up(PAT_KEY[0]); frame();
     bad += check("empty pattern selection arms silently and immediately enables playing",

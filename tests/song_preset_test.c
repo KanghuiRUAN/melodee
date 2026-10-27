@@ -81,7 +81,7 @@ static void native_and_persistence(void)
     for (uint32_t j = 0; j < NELEM(engines); j++) {
         setup(3); uint32_t id = choose(1, engines[j], 1);
         song_sound_t expected = *song_sound_get(id);
-        assert(!project_save(0)); assert(*(uint32_t *)proj_bank_slot[0] == BANKO_MAGIC);
+        assert(!project_save(0)); assert(*(uint32_t *)proj_bank_slot[0] == BANKP_MAGIC);   /* (FBKP keeps the song's sound copies) */
         uint8_t raw[BANK_STORE_SIZE]; memcpy(raw, proj_bank_slot[0], sizeof raw);
         /* Library and live sound edits cannot change the saved song copy. */
         engine_load_of(TSEL, ENGI_FM6, 8); project_load(0);

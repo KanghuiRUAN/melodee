@@ -353,7 +353,7 @@ if core && [ $TABLES = 1 ]; then
     t "AUTO2: stable melody, harmony below, Western scales and immediate strum attack" chord_melody_test $FW
     t "project record (FUN16 round trip, the song chain, names, FM6 patches; older formats refused)" project_test $FW
     t "motion, whole-step chance, an older parameter count, song restore and ARP repeat" motion_test -O1 $FW
-    t "32 pattern banks: chords, ties, independent loop switching, copy and persistence" pattern_test \
+    t "64 pattern banks: chords, ties, independent loop switching, copy and persistence" pattern_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "song: 64 sections, rests, cursor playback, grid edits, phrases and undo" song_mode_test -O1 $FW
     t "song presets: local sounds, browser restoration, section playback, edits and persistence" song_preset_test -O1 $FW

@@ -8,7 +8,7 @@ static void arrangement(uint32_t count)
     chain_defaults(&chain_config); chain_config.count = (uint8_t)count;
     memset(chain_patterns, 0, sizeof chain_patterns);
     for (uint32_t r = 0; r < count; r++) {
-        memset(chain_patterns[r], r % NPAT, NTRK);
+        for (uint32_t k = 0; k < NTRK; k++) chain_patterns[r][k] = (uint8_t)(r % trk_npat(k));   /* (MIDI-only: 8 banks) */
         chain_config.row[r] = (chain_row_t){r % NPAT, 1};
     }
 }
@@ -224,7 +224,7 @@ static int song_looping(void)
     bad+=check("loop mode saves with the project",!project_save(0));
     song_loop_set(0);project_load(0);
     bad+=check("project reload restores loop mode",chain_config.rsv[CHAIN_LOOP]==1);
-    uint8_t *raw=proj_bank_slot[0];raw[BANKL_STEPS_OFF+1u]=2;bank_checksum(raw);
+    uint8_t *raw=proj_bank_slot[0];raw[BANKP_STEPS_OFF+1u]=2;bank_checksum(raw);
     bad+=check("invalid saved loop values are rejected before restoration",!bank_valid(raw,BANK_STORE_SIZE));
     song_loop_set(0);project_save(1);song_loop_set(1);project_load(1);
     bad+=check("ordinary older project records default to non-looping",!chain_config.rsv[CHAIN_LOOP]);
@@ -243,15 +243,15 @@ static int persistence(void)
     uint8_t patterns[CHAIN_ROWS][NTRK]; memcpy(patterns, chain_patterns, sizeof patterns);
     bad += check("64 sections with rests save successfully", !project_save(0));
     uint32_t magic; memcpy(&magic, proj_bank_slot[0], 4);
-    bad += check("extended songs have a distinct versioned container", magic == BANKM_MAGIC);
+    bad += check("extended songs save in the 16-pattern container", magic == BANKP_MAGIC);
     pattern_init(); chain_defaults(&chain_config); project_load(0);
     bad += check("all 64 sections, per-track rests and repeats survive reload", !memcmp(&expected, &chain_config, sizeof expected) && !memcmp(patterns, chain_patterns, sizeof patterns));
-    uint8_t *raw = proj_bank_slot[0]; uint32_t offset = BANKL_STEPS_OFF + 5u + 63u * (NTRK + 1u) + 2u;
+    uint8_t *raw = proj_bank_slot[0]; uint32_t offset = BANKP_STEPS_OFF + 5u + 63u * (NTRK + 1u) + 2u;
     raw[offset] = CHAIN_HOLD + 1u; bank_checksum(raw);
     bad += check("malformed extended assignments are rejected even with a valid checksum", !bank_valid(raw, BANK_STORE_SIZE));
-    arrangement(2); bad += check("ordinary songs retain the existing project format", !project_save(1));
+    arrangement(2); bad += check("ordinary songs save too", !project_save(1));
     memcpy(&magic, proj_bank_slot[1], 4);
-    bad += check("existing 16-section readers remain compatible with ordinary saves", magic == BANK_MAGIC);
+    bad += check("ordinary songs save in the same container (FBKK only as a dense fallback)", magic == BANKP_MAGIC);
     return bad;
 }
 int main(void)
