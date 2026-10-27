@@ -468,8 +468,10 @@ def run(a, backend, out, ask):
         up.install(dev, image, product, prog, loader)
     finally:
         prog.end()
-    res = Path(a.resources) if a.resources else Path(a.package).with_name("melodee-res.bin")
-    if not a.no_resources and res.exists():
+    pkg = Path(a.package)
+    res = Path(a.resources) if a.resources else next(
+        (p for p in (pkg.with_name(pkg.stem + "-res.bin"), pkg.with_name("melodee-res.bin")) if p.exists()), None)
+    if not a.no_resources and res and res.exists():
         install_resources(up, res, out)
     return 0
 
