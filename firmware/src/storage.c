@@ -28,9 +28,14 @@
 #define ST_POOL_PAYLOAD_OFF 32u
 #define ST_POOL_PAYLOAD_MAX (ST_SECTOR - 256u - ST_POOL_PAYLOAD_OFF)
 #define ST_PROJECT_MAX (ST_PROJECT_SECTORS * ST_POOL_PAYLOAD_MAX)
-#define ST_POOL_SECTORS 56u
-#define ST_POOL_TAG 0xA7000000u
-_Static_assert(ST_PROJECT_SECTORS * 5u <= ST_POOL_SECTORS, "four full projects plus a shared save area");
+#define ST_POOL_SECTORS 56u                    /* the former project pool's sectors: shared indices 0..55 */
+#define ST_SP_N 23u                            /* the former preset pool's: 56..78 (ST_SP_AT) */
+#define ST_U_N (ST_POOL_SECTORS + ST_SP_N)     /* one pool for projects and preset banks */
+#define ST_UW ((ST_U_N + 31u) / 32u)           /* words of a pool bitmap */
+#define ST_POOL_TAG 0xA7000000u                /* a project record's sectors: a bitmap of indices 0..55 (read only) */
+#define ST_LIST_TAG 0xA8000000u                /* .. a list: eight 7-bit indices, 0x7F after the last */
+#define ST_SMALL_U0 100u                       /* a preset bank's copy in the pool: ST_SMALL_U0 + index */
+_Static_assert(ST_PROJECT_SECTORS * 5u <= ST_U_N && ST_U_N < 0x7Fu && ST_SMALL_U0 > ST_SP_N + 1u, "pool numbering");
 
 /* The Prophet user banks: 0x93000..0x9CFFF. The old banks at 0x89000 are retired and never migrated.
  * The current banks occupy the legacy single-pattern projects' place: those objects are retired (2026-10-10, Kerem: not
@@ -100,16 +105,19 @@ static uint32_t st_crc32(const void *p,uint32_t n)
 static const uint32_t ST_SP_AT[] = {0x93000u, 0x94000u, 0x95000u, 0x96000u, 0x97000u, 0x98000u, 0x99000u, 0x9A000u,
     0x9B000u, 0x9C000u, 0x9D000u, 0x9E000u, 0x9F000u, 0xC8000u, 0xC9000u, 0xCA000u, 0xE5000u, 0xE6000u, 0xE7000u,
     0xE8000u, 0xE9000u, 0xFA000u, 0xFE000u};
-#define ST_SP_N ((uint32_t)(sizeof ST_SP_AT / sizeof ST_SP_AT[0]))
-_Static_assert(ST_SP_N >= 23u, "the preset banks plus one shared spare");
+_Static_assert(sizeof ST_SP_AT / sizeof ST_SP_AT[0] == ST_SP_N, "the former preset pool");
+static uint32_t st_pool_at(uint32_t i)                 /* a pool index's sector */
+{
+    return i < 40u ? 0xA0000u + i * ST_SECTOR : i < ST_POOL_SECTORS ? ST_BANK_EXT_LO + (i - 40u) * ST_SECTOR
+         : i < ST_U_N ? ST_SP_AT[i - ST_POOL_SECTORS] : 0u;
+}
 static int st_preset_object(uint32_t obj);
 static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* legacy A/B (0/1), or project pool index + 2 */
 {
     if (((obj >= OBJ_BANK0 && obj < OBJ_CZBANK0) || st_pfile(obj)) && copy >= 2u) {
-        uint32_t index = copy - 2u;
-        if (index >= ST_POOL_SECTORS) return 0u;
-        return index < 40u ? 0xA0000u + index * ST_SECTOR : ST_BANK_EXT_LO + (index - 40u) * ST_SECTOR;
+        return st_pool_at(copy - 2u);
     }
+    if (copy >= ST_SMALL_U0 && st_preset_object(obj)) return st_pool_at(copy - ST_SMALL_U0);
     if (copy >= 2u && st_preset_object(obj)) return copy - 2u < ST_SP_N ? ST_SP_AT[copy - 2u] : 0u;
     if (obj == OBJ_SHARED_EXT) return 0x9D000u+copy*ST_SECTOR;
     if (obj >= OBJ_P5BANK0) return 0x93000u+(obj-OBJ_P5BANK0)*2u*ST_SECTOR+copy*ST_SECTOR;
@@ -141,7 +149,8 @@ static int st_preset_object(uint32_t obj)
 static int st_small(uint32_t obj) { return st_preset_object(obj); }
 static int st_copy_ok(uint32_t obj, uint32_t copy)    /* 0/1 the fixed pair; 2.. a pool sector */
 {
-    return copy < 2u || (st_banked(obj) && copy < ST_POOL_SECTORS + 2u) || (st_small(obj) && copy < ST_SP_N + 2u);
+    return copy < 2u || (st_banked(obj) && copy < ST_U_N + 2u) ||
+           (st_small(obj) && (copy < ST_SP_N + 2u || (copy >= ST_SMALL_U0 && copy < ST_SMALL_U0 + ST_U_N)));
 }
 static uint32_t st_payload_off_header(uint32_t obj,const st_hdr_t *h)
 {
@@ -152,28 +161,55 @@ static uint32_t st_extension(uint32_t obj, uint32_t copy)
 {
     return ST_BANK_EXT_LO + ((obj - OBJ_BANK0) * 2u + copy) * 2u * ST_SECTOR;
 }
-/* A pool header's reserved words carry a 56-bit sector bitmap and an 8-bit tag.
- * Payloads start at 32 in every sector; the last 256 bytes stay erased for the SPL.
- * slot >= 2 identifies its first sector (pool index + 2); 0/1 remain legacy A/B. */
+/* One pool of 79 sectors holds projects and preset banks. A project header's reserved words carry its sectors in
+ * order (ST_LIST_TAG: eight 7-bit pool indices; ST_POOL_TAG: the former 56-bit bitmap, still read) and an 8-bit tag;
+ * a preset bank is one sector. Payloads start at 32 in every sector; the last 256 bytes stay erased for the SPL.
+ * slot >= 2 identifies the first sector (pool index + 2, a bank's ST_SMALL_U0 + index); 0/1 remain legacy A/B. */
 static int st_pool_bit(const st_hdr_t *h, uint32_t i)
 {return (h->rsv[i / 32u] >> (i % 32u)) & 1u;}
+static uint32_t st_list_get(const st_hdr_t *h, uint32_t k)
+{
+    uint32_t v = 0;
+    for (uint32_t b = 0, p = 7u * k; b < 7u; b++, p++) v |= ((h->rsv[p / 32u] >> (p % 32u)) & 1u) << b;
+    return v;
+}
+static void st_list_put(st_hdr_t *h, uint32_t k, uint32_t v)
+{
+    for (uint32_t b = 0, p = 7u * k; b < 7u; b++, p++) {
+        if ((v >> b) & 1u) h->rsv[p / 32u] |= 1u << (p % 32u);
+        else h->rsv[p / 32u] &= ~(1u << (p % 32u));
+    }
+}
+static void st_list_init(st_hdr_t *h) { h->rsv[0] = 0xFFFFFFFFu; h->rsv[1] = ST_LIST_TAG | 0x00FFFFFFu; }
+/* a pool record's sectors in order (pool indices); their count, 0 when it has no pool shape */
+static uint32_t st_rec_sectors(const st_hdr_t *h, uint8_t idx[ST_PROJECT_SECTORS])
+{
+    uint32_t tag = h->rsv[1] & 0xFF000000u, n = 0;
+    if (tag == ST_POOL_TAG) {
+        for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) if (st_pool_bit(h, i)) { if (n == ST_PROJECT_SECTORS) return 0; idx[n++] = (uint8_t)i; }
+    } else if (tag == ST_LIST_TAG) {
+        for (uint32_t k = 0; k < ST_PROJECT_SECTORS; k++) {
+            uint32_t v = st_list_get(h, k);
+            if (v == 0x7Fu) break;
+            if (v >= ST_U_N) return 0;
+            idx[n++] = (uint8_t)v;
+        }
+    }
+    return n;
+}
 static int st_pool_shape(const st_hdr_t *h, uint32_t copy)
 {
-    if (copy < 2u || copy >= ST_POOL_SECTORS + 2u || (h->rsv[1] & 0xFF000000u) != ST_POOL_TAG) return 0;
-    uint32_t count = 0, first = ST_POOL_SECTORS;
-    for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) if (st_pool_bit(h, i)) { count++; if (first == ST_POOL_SECTORS) first = i; }
-    return first + 2u == copy && count == (h->len ? (h->len + ST_POOL_PAYLOAD_MAX - 1u) / ST_POOL_PAYLOAD_MAX : 1u) && count <= ST_PROJECT_SECTORS;
+    uint8_t idx[ST_PROJECT_SECTORS];
+    uint32_t n = copy >= 2u && copy < ST_U_N + 2u ? st_rec_sectors(h, idx) : 0u;
+    return n && idx[0] + 2u == copy && n == (h->len ? (h->len + ST_POOL_PAYLOAD_MAX - 1u) / ST_POOL_PAYLOAD_MAX : 1u);
 }
 static uint32_t st_pool_address(const st_hdr_t *h, uint32_t off, uint32_t *span)
 {
-    uint32_t sector = off / ST_POOL_PAYLOAD_MAX;
-    for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) if (st_pool_bit(h, i)) {
-        if (!sector--) {
-            *span = ST_POOL_PAYLOAD_MAX - off % ST_POOL_PAYLOAD_MAX;
-            return st_sector(OBJ_BANK0, i + 2u) + ST_POOL_PAYLOAD_OFF + off % ST_POOL_PAYLOAD_MAX;
-        }
-    }
-    *span = 0; return 0;
+    uint8_t idx[ST_PROJECT_SECTORS];
+    uint32_t n = st_rec_sectors(h, idx), k = off / ST_POOL_PAYLOAD_MAX;
+    if (k >= n) { *span = 0; return 0; }
+    *span = ST_POOL_PAYLOAD_MAX - off % ST_POOL_PAYLOAD_MAX;
+    return st_pool_at(idx[k]) + ST_POOL_PAYLOAD_OFF + off % ST_POOL_PAYLOAD_MAX;
 }
 static uint32_t st_stream_generation;
 /* New records use their pool bitmap. Legacy reads retain the five-sector base
@@ -280,47 +316,68 @@ static int st_legacy_current(uint32_t obj, st_hdr_t *h)
     return -1;
 }
 
+/* the copy numbers a pooled object's records can have: a project's 2..80 (the pool index + 2), a preset bank's
+ * 2..24 (the former preset pool's) then ST_SMALL_U0 + the pool index */
+static uint32_t st_cands(uint32_t obj) { return st_small(obj) ? ST_SP_N + ST_U_N : ST_U_N; }
+static uint32_t st_cand(uint32_t obj, uint32_t i)
+{
+    return !st_small(obj) || i < ST_SP_N ? i + 2u : ST_SMALL_U0 + i - ST_SP_N;
+}
 static int st_current(uint32_t obj, st_hdr_t *h)
 {
     if (!st_banked(obj) && !st_small(obj)) return st_legacy_current(obj, h);
-    uint32_t pool = st_small(obj) ? ST_SP_N : ST_POOL_SECTORS;
-    /* At most 56 candidates; retry older headers only after a failed payload CRC.
-     * Rejecting one candidate in RAM avoids an erase merely to read storage. */
-    uint32_t rejected[2] = {0, 0};
+    /* Retry older headers only after a failed payload CRC. Rejecting one
+     * candidate in RAM avoids an erase merely to read storage. */
+    uint32_t rejected[4] = {0, 0, 0, 0}, n = st_cands(obj);
     st_hdr_t legacy; int old = st_pfile(obj) ? -1 : st_legacy_current(obj, &legacy);
     for (;;) {
-        st_hdr_t best = {0}; int current = -1;
-        for (uint32_t i = 0; i < pool; i++) {
+        st_hdr_t best = {0}; int current = -1; uint32_t at = 0;
+        for (uint32_t i = 0; i < n; i++) {
             st_hdr_t candidate;
-            if ((rejected[i / 32u] >> (i % 32u)) & 1u || st_head(obj, i + 2u, &candidate)) continue;
-            if (current < 0 || (candidate.seq != best.seq && candidate.seq - best.seq < 0x80000000u)) { best = candidate; current = (int)i + 2; }
+            if ((rejected[i / 32u] >> (i % 32u)) & 1u || st_head(obj, st_cand(obj, i), &candidate)) continue;
+            if (current < 0 || (candidate.seq != best.seq && candidate.seq - best.seq < 0x80000000u)) { best = candidate; current = (int)st_cand(obj, i); at = i; }
         }
         if (old >= 0 && (current < 0 || best.seq == legacy.seq || legacy.seq - best.seq < 0x80000000u)) { *h = legacy; return old; }
         if (current < 0) return -1;
         if (!st_body(obj, (uint32_t)current, &best)) { *h = best; return current; }
-        uint32_t i = (uint32_t)current - 2u;
-        rejected[i / 32u] |= 1u << (i % 32u);
+        rejected[at / 32u] |= 1u << (at % 32u);
     }
+}
+/* the pool index holding a preset bank's copy (-1: a fixed pair outside the pool, in the resource region) */
+static int st_small_index(uint32_t obj, uint32_t copy)
+{
+    if (copy >= ST_SMALL_U0) return (int)(copy - ST_SMALL_U0);
+    if (copy >= 2u) return (int)(ST_POOL_SECTORS + copy - 2u);
+    uint32_t at = st_sector(obj, copy);
+    for (uint32_t i = 0; i < ST_U_N; i++) if (st_pool_at(i) == at) return (int)i;
+    return -1;
 }
 /* Protect precisely the current payload of each slot, including unreadable musical
  * formats with valid storage CRCs. Old duplicates and abandoned stages are free. */
-static void st_project_used(uint32_t used[2], uint32_t obj, uint32_t copy, const st_hdr_t *h)
+static void st_project_used(uint32_t used[ST_UW], uint32_t obj, uint32_t copy, const st_hdr_t *h)
 {
-    if (copy >= 2u) { used[0] |= h->rsv[0]; used[1] |= h->rsv[1] & 0x00FFFFFFu; return; }
+    if (copy >= 2u) {
+        uint8_t idx[ST_PROJECT_SECTORS];
+        for (uint32_t k = 0, n = st_rec_sectors(h, idx); k < n; k++) used[idx[k] / 32u] |= 1u << (idx[k] % 32u);
+        return;
+    }
     for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) {
-        uint32_t addr = st_sector(OBJ_BANK0, i + 2u), base = st_sector(obj, copy), ext = st_extension(obj, copy);
+        uint32_t addr = st_pool_at(i), base = st_sector(obj, copy), ext = st_extension(obj, copy);
         uint32_t bytes = h->len < ST_BANK_BASE_MAX ? h->len : ST_BANK_BASE_MAX;
         int live = addr >= base && addr < base + ST_PAYLOAD_OFF + bytes;
         if (h->len > ST_BANK_BASE_MAX) live |= addr >= ext && addr < ext + ((h->len - ST_BANK_BASE_MAX + ST_PAYLOAD_MAX - 1u) / ST_PAYLOAD_MAX) * ST_SECTOR;
         if (live) used[i / 32u] |= 1u << (i % 32u);
     }
 }
-/* every project slot's current record into used; *seq: obj's next sequence (1 when it has none). Nonzero: a read
- * failed, which is never evidence of free space */
-static int st_projects_used(uint32_t used[2], uint32_t obj, uint32_t *seq)
+/* every current record in the pool, projects' and preset banks', into used; *seq: obj's next sequence (1 when it
+ * has none); *outside: preset banks whose current record is outside the pool. Nonzero: a read failed, which is
+ * never evidence of free space */
+static int st_pool_used(uint32_t used[ST_UW], uint32_t obj, uint32_t *seq, uint32_t *outside)
 {
     st_read_failed = 0;
     *seq = 1u;
+    if (outside) *outside = 0;
+    for (uint32_t w = 0; w < ST_UW; w++) used[w] = 0;
     for (uint32_t s = 0; s < ST_NPROJ; s++) {
         uint32_t o = st_proj_obj(s);
         st_hdr_t current; int copy = st_current(o, &current);
@@ -329,23 +386,33 @@ static int st_projects_used(uint32_t used[2], uint32_t obj, uint32_t *seq)
             if (o == obj) *seq = current.seq + 1u;
         }
     }
+    for (uint32_t o = 0; o < OBJ_COUNT; o++) {
+        if (!st_small(o)) continue;
+        st_hdr_t current; int copy = st_current(o, &current);
+        if (copy < 0) continue;
+        int i = st_small_index(o, (uint32_t)copy);
+        if (i >= 0) used[(uint32_t)i / 32u] |= 1u << ((uint32_t)i % 32u);
+        else if (outside) (*outside)++;
+        if (o == obj) *seq = current.seq + 1u;
+    }
     return st_read_failed;
 }
-/* the pool's free sectors for projects (-1: a read failed) */
+static int st_pool_free_at(const uint32_t used[ST_UW], uint32_t i) { return !((used[i / 32u] >> (i % 32u)) & 1u); }
+/* the pool's free sectors (-1: a read failed) */
 static int st_project_free(void)
 {
-    uint32_t used[2] = {0, 0}, seq, n = 0;
-    if (st_projects_used(used, 0xFFFFu, &seq)) return -1;
-    for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) if (!((used[i / 32u] >> (i % 32u)) & 1u)) n++;
+    uint32_t used[ST_UW], seq, n = 0;
+    if (st_pool_used(used, 0xFFFFu, &seq, 0)) return -1;
+    for (uint32_t i = 0; i < ST_U_N; i++) n += (uint32_t)st_pool_free_at(used, i);
     return (int)n;
 }
 /* a project slot emptied: every committed copy's header erased, the oldest first and the current one last, so a
  * cut leaves the project as it was or nothing (an older copy never comes back). 0, or the first error */
 static int st_project_delete(uint32_t obj)
 {
-    for (uint32_t pass = 0; pass < ST_POOL_SECTORS + 2u; pass++) {
+    for (uint32_t pass = 0; pass < ST_U_N + 2u; pass++) {
         st_hdr_t h, best; uint32_t at = 0; int found = 0;
-        for (uint32_t c = st_pfile(obj) ? 2u : 0u; c < ST_POOL_SECTORS + 2u; c++) {
+        for (uint32_t c = st_pfile(obj) ? 2u : 0u; c < ST_U_N + 2u; c++) {
             if (st_head(obj, c, &h)) continue;
             if (!found || (best.seq != h.seq && best.seq - h.seq < 0x80000000u)) { best = h; at = c; found = 1; }
         }
@@ -357,21 +424,18 @@ static int st_project_delete(uint32_t obj)
 }
 static int st_project_allocate(uint32_t obj, uint32_t len, st_hdr_t *h)
 {
-    uint32_t used[2] = {0, 0};
-    st_read_failed = 0;
+    uint32_t used[ST_UW];
     memset(h, 0xFF, sizeof *h);
     h->type = (uint16_t)obj; h->len = len; h->seq = 1u;
-    if (st_projects_used(used, obj, &h->seq)) return -7;
-    h->rsv[0] = 0; h->rsv[1] = ST_POOL_TAG;
-    uint32_t need = len ? (len + ST_POOL_PAYLOAD_MAX - 1u) / ST_POOL_PAYLOAD_MAX : 1u;
-    int first = -1;
-    for (uint32_t i = 0; i < ST_POOL_SECTORS && need; i++) if (!((used[i / 32u] >> (i % 32u)) & 1u)) {
-        h->rsv[i / 32u] |= 1u << (i % 32u); need--; if (first < 0) first = (int)i;
-    }
-    if (need) return -5;
-    h->slot = (uint16_t)(first + 2);
-    for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) if (st_pool_bit(h, i)) {
-        int rc = st_erase(st_sector(obj, i + 2u)); if (rc) return rc;
+    if (st_pool_used(used, obj, &h->seq, 0)) return -7;
+    st_list_init(h);
+    uint32_t need = len ? (len + ST_POOL_PAYLOAD_MAX - 1u) / ST_POOL_PAYLOAD_MAX : 1u, k = 0;
+    if (need > ST_PROJECT_SECTORS) return -1;
+    for (uint32_t i = 0; i < ST_U_N && k < need; i++) if (st_pool_free_at(used, i)) st_list_put(h, k++, i);
+    if (k < need) return -5;
+    h->slot = (uint16_t)(st_list_get(h, 0) + 2u);
+    for (uint32_t m = 0; m < need; m++) {
+        int rc = st_erase(st_pool_at(st_list_get(h, m))); if (rc) return rc;
     }
     /* Persist the address map for staged range reads. The erased magic and
      * header CRC keep it invisible until the final one-page commit. */
@@ -396,41 +460,16 @@ static int st_exists(uint32_t obj)
     return st_obj_ok(obj) && !st_retired(obj) && st_current(obj, &h) >= 0 && h.len != 0;
 }
 
-/* the preset pool's sector holding copy (-1 none: a fixed pair outside the pool, in the resource region) */
-static int st_small_index(uint32_t obj, uint32_t copy)
-{
-    if (copy >= 2u) return (int)copy - 2;
-    uint32_t at = st_sector(obj, copy);
-    for (uint32_t i = 0; i < ST_SP_N; i++) if (ST_SP_AT[i] == at) return (int)i;
-    return -1;
-}
-/* the preset pool's sectors holding a current record; *seq: obj's (0 none); *outside: banks whose current record
- * is outside the pool. Nonzero: a read failed */
-static int st_small_used(uint32_t *used, uint32_t obj, uint32_t *seq, uint32_t *outside)
-{
-    st_read_failed = 0;
-    *used = 0; *seq = 0; if (outside) *outside = 0;
-    for (uint32_t o = 0; o < OBJ_COUNT; o++) {
-        if (!st_small(o)) continue;
-        st_hdr_t h; int copy = st_current(o, &h);
-        if (copy < 0) continue;
-        int i = st_small_index(o, (uint32_t)copy);
-        if (i >= 0) *used |= 1u << i;
-        else if (outside) (*outside)++;
-        if (o == obj) *seq = h.seq;
-    }
-    return st_read_failed;
-}
 /* a preset bank into a free pool sector: erase, payload at 32, the commit record last, read back */
 static int st_small_save(uint32_t obj, const void *src, uint32_t len)
 {
-    uint32_t used, seq, i, at;
+    uint32_t used[ST_UW], seq, i, at;
     if (len > ST_SECTOR - 256u - sizeof(st_hdr_t)) return -1;
-    if (st_small_used(&used, obj, &seq, 0)) return -7;
-    for (i = 0; i < ST_SP_N && ((used >> i) & 1u); i++)
-        ;
-    if (i == ST_SP_N) return -5;
-    at = ST_SP_AT[i];
+    if (st_pool_used(used, obj, &seq, 0)) return -7;
+    for (i = ST_U_N; i-- && !st_pool_free_at(used, i);)   /* from the top: banks gather where they were, projects */
+        ;                                                 /* grow from the bottom */
+    if (i >= ST_U_N) return -5;                          /* STORAGE FULL */
+    at = st_pool_at(i);
     int rc = st_erase(at);
     if (rc) return rc;
     for (uint32_t off = 0; off < len;) {
@@ -441,12 +480,12 @@ static int st_small_save(uint32_t obj, const void *src, uint32_t len)
         off += n;
     }
     st_hdr_t h;
-    h.magic = ST_MAGIC; h.type = (uint16_t)obj; h.slot = (uint16_t)(i + 2u); h.seq = seq + 1u; h.len = len;
+    h.magic = ST_MAGIC; h.type = (uint16_t)obj; h.slot = (uint16_t)(ST_SMALL_U0 + i); h.seq = seq; h.len = len;
     h.crc = st_crc32(src, len); h.rsv[0] = ST_COMPACT_TAG; h.rsv[1] = 0xFFFFFFFFu;
     h.hcrc = st_crc32(&h, sizeof h - 4u);
     if ((rc = st_prog(at, &h, sizeof h)) != 0) return rc;
     st_hdr_t chk;
-    if (st_head(obj, i + 2u, &chk) || memcmp(&chk, &h, sizeof h) || st_body(obj, i + 2u, &chk)) return -7;
+    if (st_head(obj, ST_SMALL_U0 + i, &chk) || memcmp(&chk, &h, sizeof h) || st_body(obj, ST_SMALL_U0 + i, &chk)) return -7;
     return 0;
 }
 /* Banks still in their old fixed pairs outside the pool (where the resource region now goes) copied into it, as

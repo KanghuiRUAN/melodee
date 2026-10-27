@@ -6,7 +6,7 @@
 typedef struct {
     st_hdr_t head;
     uint32_t obj, pos, crc, generation;
-    uint32_t avail[2];                  /* lazy: the pool sectors still free to take */
+    uint32_t avail[ST_UW];              /* lazy: the pool sectors still free to take */
     int error;
     uint8_t lazy;                       /* st_stream_begin_lazy: the length is known only at st_stream_end */
 } st_stream_t;
@@ -28,7 +28,7 @@ static int st_stream_begin(st_stream_t *w,uint32_t obj,uint32_t len)
  * st_stream_end programs the staged header, its address map is the header in RAM. */
 static int st_stream_begin_lazy(st_stream_t *w,uint32_t obj)
 {
-    uint32_t used[2]={0,0};
+    uint32_t used[ST_UW];
     memset(w,0,sizeof *w);w->error=-1;
 #if defined(MELODEE_AUDIO_PROFILE) && MELODEE_AUDIO_PROFILE
     if(AUDIO_LAB_GUARDED())return -9;
@@ -37,16 +37,15 @@ static int st_stream_begin_lazy(st_stream_t *w,uint32_t obj)
     w->obj=obj;w->crc=0xffffffffu;w->generation=++st_stream_generation;
     memset(&w->head,0xFF,sizeof w->head);
     w->head.type=(uint16_t)obj;w->head.len=0;
-    if(st_projects_used(used,obj,&w->head.seq))return w->error=-7;
-    w->avail[0]=~used[0];w->avail[1]=~used[1]&0x00FFFFFFu;
-    w->head.rsv[0]=0;w->head.rsv[1]=ST_POOL_TAG;w->head.slot=0;
+    if(st_pool_used(used,obj,&w->head.seq,0))return w->error=-7;
+    for(uint32_t i=0;i<ST_UW;i++)w->avail[i]=~used[i];
+    st_list_init(&w->head);w->head.slot=0;
     w->lazy=1;w->error=0;return 0;
 }
 static uint32_t st_stream_sectors(const st_stream_t *w)
 {
-    uint32_t n=0;
-    for(uint32_t i=0;i<ST_POOL_SECTORS;i++)n+=(uint32_t)st_pool_bit(&w->head,i);
-    return n;
+    uint8_t idx[ST_PROJECT_SECTORS];
+    return st_rec_sectors(&w->head,idx);
 }
 /* sectors taken for the image's first end bytes */
 static int st_stream_room(st_stream_t *w,uint32_t end)
@@ -55,12 +54,12 @@ static int st_stream_room(st_stream_t *w,uint32_t end)
     if(need>ST_PROJECT_SECTORS)return w->error=-5;
     while(have<need){
         uint32_t i=0;
-        while(i<ST_POOL_SECTORS && !((w->avail[i/32u]>>(i%32u))&1u))i++;
-        if(i==ST_POOL_SECTORS)return w->error=-5;      /* STORAGE FULL */
+        while(i<ST_U_N && !((w->avail[i/32u]>>(i%32u))&1u))i++;
+        if(i==ST_U_N)return w->error=-5;               /* STORAGE FULL */
         w->avail[i/32u]&=~(1u<<(i%32u));
-        w->head.rsv[i/32u]|=1u<<(i%32u);
+        st_list_put(&w->head,have,i);
         if(!have)w->head.slot=(uint16_t)(i+2u);
-        int rc=st_erase(st_sector(w->obj,i+2u));if(rc)return w->error=rc;
+        int rc=st_erase(st_pool_at(i));if(rc)return w->error=rc;
         have++;
     }
     return 0;
