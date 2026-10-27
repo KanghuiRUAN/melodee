@@ -191,14 +191,15 @@ static int proj_stream_generate(st_stream_t *w,uint32_t obj)
 static int proj_stream_load(uint32_t obj,uint32_t copy,uint32_t len)
 {
     project_t *q=&proj_scratch;uint32_t hash=2166136261u;
-    proj_source_hash=0;bank_wide=0;bank_p16=0;bank_song64=0;bank_songfx=0;bank_sounds=0;bank_sound_bytes=0;
+    proj_source_hash=0;bank_wide=0;bank_p16=0;bank_patterns=0;bank_song64=0;bank_songfx=0;bank_sounds=0;bank_sound_bytes=0;
     pj.on=0;
     if(len>PJ_HEAD&&len<=BANK_STORE_SIZE+PJ_HEAD&&!st_read_range(obj,copy,0,&pj.h,PJ_HEAD)&&pj.h.magic==PJ_MAGIC&&
        pj.h.len==BANK_STORE_SIZE){pj.on=1;len=BANK_STORE_SIZE;}
     if(bank_full(len)){
         uint32_t header[2];
-        if(pj_read(obj,copy,0,header,sizeof header)||(header[0]!=BANK_MAGIC&&header[0]!=BANKL_MAGIC&&header[0]!=BANKM_MAGIC&&header[0]!=BANKN_MAGIC&&header[0]!=BANKO_MAGIC&&header[0]!=BANKP_MAGIC)||header[1]!=len)return 0;
-        bank_p16=(uint8_t)(header[0]==BANKP_MAGIC);
+        if(pj_read(obj,copy,0,header,sizeof header)||(header[0]!=BANK_MAGIC&&header[0]!=BANKL_MAGIC&&header[0]!=BANKM_MAGIC&&header[0]!=BANKN_MAGIC&&header[0]!=BANKO_MAGIC&&header[0]!=BANKP_MAGIC&&header[0]!=BANKQ_MAGIC)||header[1]!=len)return 0;
+        bank_patterns=(uint8_t)(header[0]==BANKQ_MAGIC);
+        bank_p16=(uint8_t)(header[0]==BANKP_MAGIC || bank_patterns);
         bank_sounds=(uint8_t)(header[0]==BANKO_MAGIC);
         bank_songfx=(uint8_t)(header[0]==BANKN_MAGIC || bank_sounds || bank_p16);
         bank_song64=(uint8_t)(header[0]==BANKM_MAGIC || bank_songfx);

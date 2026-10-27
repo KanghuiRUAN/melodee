@@ -169,10 +169,15 @@ static void seq_clear_now(uint32_t kind, uint32_t k)
     track_t *t = &trk[k % NTRK];
     if (recording_head[recording_owner(t)] < RECORD_MAX) {
         if (!note_clear_pattern(t)) return;
+        note_transaction.sound_clear = kind == CF_DEL_PAT;
     } else {
-        load_begin(t, UNDO_PAT);
+        load_begin(t, UNDO_PAT | (kind == CF_DEL_PAT ? UNDO_PATTERN_SOUND : 0));
         track_defaults_steps(t);
         load_end(t);
+    }
+    if (kind == CF_DEL_PAT) {
+        pattern_sound[k % NTRK][t->pattern] = 0;
+        if (song.playing) pattern_sound_switch(k % NTRK, t->pattern);
     }
     t->nheld = 0;                                       /* and the latched arp chord */
     t->arp_phys = 0;
@@ -2053,6 +2058,7 @@ static void ui_input(void)
     }
     if(ui.import_refresh){pop.on=0;brw.on=0;ui.import_refresh=0;ui.force=1;}
     if (song_picker.active && song_picker.epoch != pattern_epoch) song_preset_cancel();
+    if (song_picker.active && transport_busy()) song_preset_finish(0);
     if (song_punch_on() && (song_punch_epoch != pattern_epoch || song_punch.row >= chain_config.count))
         pop_close();
     if (scr_input(pressed, notes)) return;

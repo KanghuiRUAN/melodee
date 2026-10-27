@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Kerem Kilic (Ellic Studio) */
-/* Immutable song-local sounds. Allocation belongs to stopped foreground edits;
+/* Immutable Song/Pattern-local sounds. Allocation belongs to stopped foreground edits;
  * section boundaries only copy bounded RAM, without loading the preset library.
  * The byte representation is also the versioned project payload. */
 typedef struct {
@@ -9,20 +9,38 @@ typedef struct {
     union { uint8_t fm[FP_SIZE + 1u]; cz_patch_t cz; p5_patch_t p5; drum_patch_t drum; } patch;
 } song_sound_t;
 _Static_assert(sizeof(song_sound_t) == P_COUNT + 22u + FP_SIZE + 1u, "song sound byte layout");
-static uint8_t song_sound_count;
+static uint8_t song_sound_count, song_base_reserved;
+/* Pattern assignments share immutable snapshots with Song, but own their IDs. */
+static uint8_t pattern_sound[NTRK][NPAT];
+static uint32_t chain_bank(uint32_t row, uint32_t track);
+static uint32_t chain_sound_id(uint32_t row, uint32_t track);
+static uint32_t pattern_sound_id(uint32_t k, uint32_t bank)
+{ return bank < NPAT ? pattern_sound[k][bank] : 0; }
+static int pattern_sounds_any(void)
+{
+    for (uint32_t k = 0; k < NTRK; k++) for (uint32_t b = 0; b < NPAT; b++)
+        if (pattern_sound[k][b]) return 1;
+    return 0;
+}
+static uint32_t resolved_sound_id(uint32_t row, uint32_t k)
+{
+    uint32_t id = chain_sound_id(row, k);
+    return id ? id : pattern_sound_id(k, chain_bank(row, k));
+}
 static struct { uint8_t mask, active[NTRK]; } song_sounds;
 static int16_t motion_base_value(const track_t *t, uint32_t id);
 static void motion_restore(track_t *t);
 static void motion_rebase(track_t *t);
-static uint32_t chain_sound_id(uint32_t row, uint32_t track);
 static song_sound_t *song_sound_pool(void) { return resource[RES_SONG_SOUNDS].ptr; }
 static const song_sound_t *song_sound_get(uint32_t id)
 { return id && id <= song_sound_count ? song_sound_pool() + id - 1u : 0; }
 static void song_sound_reset(void)
 {
     /* Keep an import's preflight reservation until its validated tail restores. */
+    memset(pattern_sound, 0, sizeof pattern_sound);
     song_sound_count = 0; memset(&song_sounds, 0, sizeof song_sounds);
-    resource_release(RES_SONG_BASE); resource_release(RES_SONG_PREVIEW);
+    if (!song_base_reserved) resource_release(RES_SONG_BASE);
+    resource_release(RES_SONG_PREVIEW);
 }
 static void song_sound_capture(song_sound_t *s, const track_t *t, const char *name)
 {
@@ -78,6 +96,13 @@ static int song_sound_prepare(void)
         if (!s || (k >= NPART && s->engine != ENGI_MIDI)) return 0;
         mask |= (uint8_t)(1u << k);
     }
+    for (uint32_t k = 0; k < NTRK; k++) for (uint32_t b = 0; b < NPAT; b++) {
+        uint32_t id = pattern_sound[k][b];
+        if (!id) continue;
+        const song_sound_t *s = song_sound_get(id);
+        if (!s || (k >= NPART && s->engine != ENGI_MIDI)) return 0;
+        mask |= (uint8_t)(1u << k);
+    }
     song_sounds.mask = mask;
     if (!song_sounds.mask) { resource_release(RES_SONG_BASE); return 1; }
     song_sound_t *base = resource_get(RES_SONG_BASE, NTRK * sizeof *base);
@@ -86,10 +111,10 @@ static int song_sound_prepare(void)
     return 1;
 }
 static int song_sound_changed(uint32_t row, uint32_t k)
-{ return (song_sounds.mask >> k & 1u) && song_sounds.active[k] != chain_sound_id(row, k); }
+{ return (song_sounds.mask >> k & 1u) && song_sounds.active[k] != resolved_sound_id(row, k); }
 static void song_sound_section(uint32_t row, uint32_t k)
 {
-    uint32_t id = chain_sound_id(row, k);
+    uint32_t id = resolved_sound_id(row, k);
     const song_sound_t *s = id ? song_sound_get(id) : (song_sound_t *)resource[RES_SONG_BASE].ptr + k;
     song_sound_apply(k, s); song_sounds.active[k] = (uint8_t)id;
 }
@@ -100,5 +125,41 @@ static void song_sound_stop(void)
         song_sound_apply(k, (song_sound_t *)resource[RES_SONG_BASE].ptr + k);
     }
     song_sounds.mask = 0;
-    resource_release(RES_SONG_BASE);
+    if (!pattern_sounds_any() && !song_base_reserved) resource_release(RES_SONG_BASE);
+}
+
+/* Manual transport starts in the audio path: the editor/import reserves this
+ * buffer up front. No allocation or library lookup occurs at a loop boundary. */
+static void pattern_sound_begin(void)
+{
+    song_sounds.mask = 0; memset(song_sounds.active, 0, sizeof song_sounds.active);
+    if (!resource[RES_SONG_BASE].size) return;
+    for (uint32_t k = 0; k < NTRK; k++) {
+        int used = 0;
+        for (uint32_t b = 0; b < NPAT; b++) used |= pattern_sound[k][b];
+        if (!used) continue;
+        song_sound_capture((song_sound_t *)resource[RES_SONG_BASE].ptr + k, &trk[k], "");
+        song_sounds.mask |= (uint8_t)(1u << k);
+        uint32_t id = pattern_sound_id(k, trk[k].pattern);
+        if (id) { song_sound_apply(k, song_sound_get(id)); song_sounds.active[k] = (uint8_t)id; }
+    }
+}
+static void pattern_sound_switch(uint32_t k, uint32_t bank)
+{
+    if (!(song_sounds.mask >> k & 1u)) return;
+    uint32_t id = pattern_sound_id(k, bank);
+    if (id == song_sounds.active[k]) return;
+    const song_sound_t *s = id ? song_sound_get(id) : (song_sound_t *)resource[RES_SONG_BASE].ptr + k;
+    song_sound_apply(k, s); song_sounds.active[k] = (uint8_t)id;
+}
+
+/* Foreground edits/undo reserve before publishing an assignment. */
+static int pattern_sound_reserve(uint32_t k)
+{
+    if (!resource_get(RES_SONG_BASE, NTRK * sizeof(song_sound_t))) return 0;
+    if (song.playing && !(song_sounds.mask >> k & 1u)) {
+        song_sound_capture((song_sound_t *)resource[RES_SONG_BASE].ptr + k, &trk[k], "");
+        song_sounds.mask |= (uint8_t)(1u << k);
+    }
+    return 1;
 }

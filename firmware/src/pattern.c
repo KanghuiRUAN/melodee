@@ -356,5 +356,7 @@ static void pattern_init(void)
 }
 static void pattern_switch(track_t *t, uint32_t bank)
 {
-    pattern_commit(t); pattern_apply(t, bank); t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
+    pattern_commit(t); pattern_apply(t, bank);
+    if (song.playing) pattern_sound_switch((uint32_t)(t - trk), bank);
+    t->seq_idx = (uint16_t)(t->p[P_SLEN] - 1);
 }

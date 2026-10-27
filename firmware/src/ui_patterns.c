@@ -39,7 +39,7 @@ static int pattern_used(uint32_t k, uint32_t b)
 static int pattern_empty(uint32_t k, uint32_t b)
 {
     uint32_t i;
-    if (pattern_used(k, b))
+    if (pattern_used(k, b) || pattern_sound_id(k, b))
         return 0;
     for (i = 0; i < motion.count; i++)
         if ((motion.event[i].place >> 6) == k && motion_pattern[i] == b)

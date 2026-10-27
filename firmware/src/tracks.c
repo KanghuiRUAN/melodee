@@ -102,6 +102,7 @@ static void track_blank(uint32_t k)
             p.timing[i] = TP[P_SLEN + i].def;
         pattern_write(k % NTRK, b, &p);
     }
+    memset(pattern_sound[k % NTRK], 0, sizeof pattern_sound[0]);
     pattern_switch(t, 0);
     t->pattern_next = 0xff;
     t->pattern_gen++;

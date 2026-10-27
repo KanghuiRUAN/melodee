@@ -75,7 +75,7 @@ static uint32_t user_of(const track_t *t)    /* user preset slot its sound came 
 }
 static uint32_t up_gen;                      /* bumped on every user bank change (redraws) */
 static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the browser's opening (ui_browser.c: back) */
-static struct { uint8_t active, row, track, return_page; uint16_t epoch; } song_picker;
+static struct { uint8_t active, row, track, return_page, pattern; uint16_t epoch; } song_picker;
 static void song_preset_cancel(void);
 static void song_preset_finish(int keep);
 static void sound_name(const track_t *t, char *b);
@@ -656,13 +656,13 @@ static int seq_is_empty(const track_t *t)
  * so the undo goes back past the whole browse. Eight levels use ordinary SRAM or validated cache RAM.
  * The resident/cache profile keeps one SRAM fallback level if cache startup fails.
  * Not snapshotted: power-on, projects (a project load drops them all) */
-enum { UNDO_SOUND = 1, UNDO_PAT = 2 };
+enum { UNDO_SOUND = 1, UNDO_PAT = 2, UNDO_PATTERN_SOUND = 4 };
 #include "step_snapshot.h"
 typedef struct {
     uint8_t trk;                 /* track + 1, 0 = nothing to undo */
     uint8_t keep;                /* the track is as the last load left it (after): a next load keeps the copy */
     uint8_t what;                /* UNDO_SOUND | UNDO_PAT: what the loads since the copy changed (undo_step) */
-    uint8_t eng, preset, user_native, patn;
+    uint8_t eng, preset, user_native, patn, pattern_sound;
     uint16_t user;
     uint8_t fm6[FP_SIZE + 1u];   /* the track's complete patch */
     cz_patch_t cz;
@@ -785,7 +785,7 @@ static void load_begin_guarded(track_t *t, uint32_t what)
     u = undo_last();
     if (undo_top && u->keep && u->pattern_gen == t->pattern_gen && u->trk == i + 1u && track_sig(t) == u->after) {
         u->what |= (uint8_t)what;                 /* browsing on: the copy from before the first load stays */
-        if(!designer_on())motion_reset(t);
+        if(!designer_on() && (what & (UNDO_SOUND | UNDO_PAT)))motion_reset(t);
         return;
     }
     u->keep = 0;
@@ -813,8 +813,9 @@ static void load_begin_guarded(track_t *t, uint32_t what)
     u->drum=(*drum_patch_of(i));
     u->pat = pat_sig[i];
     u->patn = pat_last[i];
+    u->pattern_sound = pattern_sound[i][t->pattern];
     motion_snapshot_track(t, &u->motion_backup);
-    if(!designer_on())motion_reset(t);
+    if(!designer_on() && (what & (UNDO_SOUND | UNDO_PAT)))motion_reset(t);
 }
 static void load_begin(track_t *t, uint32_t what)
 {
@@ -889,13 +890,16 @@ static void undo_step_guarded(int redo)
     t = &trk[(u->trk - 1u) % NTRK];
     if (u->pattern_gen != t->pattern_gen) { undo_clear(); ui_message(redo ? "NOTHING TO REDO" : "NOTHING TO UNDO"); return; }
     motion_restore(t);
-    motion_store_t current_motion;
-    motion_snapshot_track(t, &current_motion);
-    if (motion_replace_track(t, &u->motion_backup) != 0) {
-        ui_message("MOTION FULL");
-        return;
+    if (u->what & UNDO_PATTERN_SOUND) {
+        if (chain_busy()) { ui_message("STOP TO EDIT"); return; }
+        if (!pattern_sound_reserve(trk_index(t))) { ui_message("NO SOUND MEMORY"); return; }
     }
-    u->motion_backup = current_motion;
+    if (u->what & (UNDO_SOUND | UNDO_PAT)) {
+        motion_store_t current_motion;
+        motion_snapshot_track(t, &current_motion);
+        if (motion_replace_track(t, &u->motion_backup) != 0) { ui_message("MOTION FULL"); return; }
+        u->motion_backup = current_motion;
+    }
     /* Already guarded: audio cannot see half a sound. */
     if (u->what & UNDO_SOUND) {
         uint8_t e = t->eng_req, pr = t->preset, un=t->user_native;
@@ -915,6 +919,11 @@ static void undo_step_guarded(int redo)
                 t->p[i] = u->p[i];
                 u->p[i] = v;
             }
+    }
+    if (u->what & UNDO_PATTERN_SOUND) {
+        uint32_t k = trk_index(t); uint8_t id = pattern_sound[k][t->pattern];
+        pattern_sound[k][t->pattern] = u->pattern_sound; u->pattern_sound = id;
+        if (song.playing) pattern_sound_switch(k, t->pattern);
     }
     if (u->what & UNDO_PAT) {
         uint32_t ps = pat_sig[trk_index(t)];

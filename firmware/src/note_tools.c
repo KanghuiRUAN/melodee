@@ -7,6 +7,7 @@ typedef struct {
     uint32_t generation, pattern_gen, signature;
     motion_store_t motion;
     uint8_t valid, redo, track, cursor, len, clear;
+    uint8_t pattern_sound, sound_clear;
     uint8_t slen;                /* LEN to swap in too (a doubled pattern), 0 = LEN stays */
     uint16_t note_count;
     recorded_note_t notes[RECORD_MAX]; /* variable allocation tail */
@@ -48,7 +49,7 @@ static int note_transaction_begin_track(track_t *t)
     memcpy(note_transaction.steps,t->step,sizeof note_transaction.steps);
     note_transaction.track=(uint8_t)trk_index(t);note_transaction.pattern_gen=t->pattern_gen;
     note_transaction.cursor=ui.cursor;note_transaction.len=(uint8_t)step_pattern_len(t);
-    note_transaction.valid=1;note_transaction.redo=note_transaction.clear=note_transaction.slen=0;return 1;
+    note_transaction.valid=1;note_transaction.redo=note_transaction.clear=note_transaction.sound_clear=note_transaction.slen=0;return 1;
 }
 static int note_transaction_begin(void){return note_transaction_begin_track(TSEL);}
 static void note_transaction_pack(void)
@@ -78,6 +79,9 @@ static int note_tools_history(int redo)
        note_transaction.generation!=recording_generation||note_transaction.signature!=steps_sig(t)||
        (song.playing&&rec_on(t)))return 0;
     fm1_irq_off();
+    if(note_transaction.sound_clear && (chain_busy() || !pattern_sound_reserve(trk_index(t)))) {
+        fm1_irq_on();ui_message(chain_busy()?"STOP TO EDIT":"NO SOUND MEMORY");return 1;
+    }
     note_transaction_t *grown=resource_resize(RES_NOTE_HISTORY,sizeof *grown);
     if(!grown){fm1_irq_on();ui_message("NO EDIT MEMORY");return 1;}
     note_transaction_ptr=grown;note_history_expand(note_transaction.notes,note_transaction.note_count);note_transaction.note_count=RECORD_MAX;
@@ -85,6 +89,11 @@ static int note_tools_history(int redo)
         motion_store_t current;motion_snapshot_track(t,&current);
         if(motion_replace_track(t,&note_transaction.motion)){note_transaction_pack();fm1_irq_on();ui_message("MOTION FULL");return 1;}
         note_transaction.motion=current;
+        if(note_transaction.sound_clear){
+            uint8_t id=pattern_sound[trk_index(t)][t->pattern];
+            pattern_sound[trk_index(t)][t->pattern]=note_transaction.pattern_sound;note_transaction.pattern_sound=id;
+            if(song.playing)pattern_sound_switch(trk_index(t),t->pattern);
+        }
     }
     recording_stop(t);
     note_swap(recording,note_transaction.notes,sizeof recording);
@@ -104,6 +113,7 @@ static int note_clear_pattern(track_t *t)
     fm1_irq_off();recording_stop(t);
     if(!note_transaction_begin_track(t)){fm1_irq_on();return 0;}
     motion_snapshot_track(t,&note_transaction.motion);note_transaction.clear=1;
+    note_transaction.pattern_sound=pattern_sound[trk_index(t)][t->pattern];
     track_defaults_steps(t);note_transaction_end();fm1_irq_on();undo_seal();return 1;
 }
 /* Convert an entire chord together so its original manual notes cannot double
