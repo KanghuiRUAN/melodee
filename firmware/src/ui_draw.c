@@ -988,15 +988,15 @@ static void confirm_text(char *a, char *b)
         a[12] = (char)('1' + k % NTRK);
         break;
     case CF_OVR_PROJ:
-        str_cpy(a, "OVERWRITE PROJECT A?", 24);
-        a[18] = (char)('A' + (k & 3u));
-        if (!project_name(k & 3u, b) || !b[0])          /* the project's name, else what SONG plays from it */
+        str_cpy(a, "OVERWRITE PROJECT 00?", 24);
+        a[18] = (char)('0' + (k % PROJ_SLOTS + 1u) / 10u); a[19] = (char)('0' + (k % PROJ_SLOTS + 1u) % 10u);
+        if (!project_name(k % PROJ_SLOTS, b) || !b[0])          /* the project's name, else what SONG plays from it */
             str_cpy(b, "Its song and patterns change", 32);
         break;
     case CF_ERASE_PROJ:
-        str_cpy(a, "ERASE PROJECT A?", 24);
-        a[14] = (char)('A' + (k & 3u));
-        if (!project_name(k & 3u, b) || !b[0])
+        str_cpy(a, "ERASE PROJECT 00?", 24);
+        a[14] = (char)('0' + (k % PROJ_SLOTS + 1u) / 10u); a[15] = (char)('0' + (k % PROJ_SLOTS + 1u) % 10u);
+        if (!project_name(k % PROJ_SLOTS, b) || !b[0])
             str_cpy(b, "Its song and patterns go", 32);
         break;
     case CF_DEL_ROW:

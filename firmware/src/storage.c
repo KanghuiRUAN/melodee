@@ -51,6 +51,14 @@ _Static_assert(ST_PROJECT_SECTORS * 5u <= ST_POOL_SECTORS - ST_POOL_RES_N, "four
  * E0000..E4FFF remains reserved for OTA loader staging. */
 enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_FM6BANK = OBJ_UPRESET0 + 2, OBJ_BANK0, OBJ_CZBANK0 = OBJ_BANK0 + 4, OBJ_UPRESET_EXT0 = OBJ_CZBANK0 + 8, OBJ_UPFM6_EXT = OBJ_UPRESET_EXT0 + 2, OBJ_NATIVEFM0, OBJ_P5BANK0 = OBJ_NATIVEFM0 + 2, OBJ_SHARED_EXT = OBJ_P5BANK0 + 5, OBJ_COUNT };
 
+/* Projects: 32 slots (project.c PROJ_SLOTS). The first four keep their objects (and legacy A/B copies); slots 5..32
+ * are pool records of type ST_PFILE0 + slot. Empty slots own no sector. */
+#define ST_NPROJ 32u
+#define ST_PFILE0 64u
+static uint32_t st_proj_obj(uint32_t slot) { return slot < 4u ? OBJ_BANK0 + slot : ST_PFILE0 + slot; }
+static int st_pfile(uint32_t obj) { return obj >= ST_PFILE0 + 4u && obj < ST_PFILE0 + ST_NPROJ; }
+static int st_obj_ok(uint32_t obj) { return obj < OBJ_COUNT || st_pfile(obj); }
+
 typedef struct {
     uint32_t magic;
     uint16_t type, slot;
@@ -90,7 +98,7 @@ static uint32_t st_crc32(const void *p,uint32_t n)
 
 static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* legacy A/B (0/1), or project pool index + 2 */
 {
-    if (obj >= OBJ_BANK0 && obj < OBJ_CZBANK0 && copy >= 2u) {
+    if (((obj >= OBJ_BANK0 && obj < OBJ_CZBANK0) || st_pfile(obj)) && copy >= 2u) {
         uint32_t index = copy - 2u;
         if (index >= ST_POOL_SECTORS) return 0u;
         return index < 40u ? 0xA0000u + index * ST_SECTOR : ST_BANK_EXT_LO + (index - 40u) * ST_SECTOR;
@@ -113,7 +121,7 @@ static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* legacy A/B (0/1), or 
     return 0x97000u + (obj - OBJ_PROJECT0) * 2u * ST_SECTOR + copy * ST_SECTOR;
 }
 
-static int st_banked(uint32_t obj) { return obj >= OBJ_BANK0 && obj < OBJ_CZBANK0; }
+static int st_banked(uint32_t obj) { return (obj >= OBJ_BANK0 && obj < OBJ_CZBANK0) || st_pfile(obj); }
 /* New preset objects start directly after the commit header, leaving the last
  * 256 bytes erased so the SPL/update loader cannot interpret musical data as OTA. */
 static uint32_t st_payload_off(uint32_t obj) { return obj >= OBJ_UPRESET_EXT0 ? sizeof(st_hdr_t) : ST_PAYLOAD_OFF; }
@@ -182,7 +190,7 @@ static uint32_t st_address(uint32_t obj,uint32_t copy,uint32_t off,uint32_t *spa
 }
 static int st_read_range(uint32_t obj, uint32_t copy, uint32_t off, void *dst, uint32_t n)
 {
-    if (obj >= OBJ_COUNT || (copy > 1u && (!st_banked(obj) || copy >= ST_POOL_SECTORS + 2u)) || off > st_capacity(obj) || n > st_capacity(obj) - off) return -1;
+    if (!st_obj_ok(obj) || (copy > 1u && (!st_banked(obj) || copy >= ST_POOL_SECTORS + 2u)) || off > st_capacity(obj) || n > st_capacity(obj) - off) return -1;
     if (st_banked(obj) && copy < 2u && (off > ST_BANK_BASE_MAX + ST_BANK_EXT_MAX || n > ST_BANK_BASE_MAX + ST_BANK_EXT_MAX - off)) return -1;
     uint8_t *d = dst;
     while (n) {
@@ -202,7 +210,8 @@ static int st_retired(uint32_t obj) { return obj >= OBJ_PROJECT0 && obj < OBJ_PR
 
 static int st_head(uint32_t obj, uint32_t copy, st_hdr_t *h)   /* commit record valid: 0 */
 {
-    if (obj >= OBJ_COUNT || (copy > 1u && (!st_banked(obj) || copy >= ST_POOL_SECTORS + 2u)) || st_retired(obj))
+    if (!st_obj_ok(obj) || (copy > 1u && (!st_banked(obj) || copy >= ST_POOL_SECTORS + 2u)) || st_retired(obj) ||
+        (copy < 2u && st_pfile(obj)))
         return -1;
     if (st_fetch(st_sector(obj, copy), h, sizeof *h))
         return -1;
@@ -263,7 +272,7 @@ static int st_current(uint32_t obj, st_hdr_t *h)
     /* At most 56 candidates; retry older headers only after a failed payload CRC.
      * Rejecting one candidate in RAM avoids an erase merely to read storage. */
     uint32_t rejected[2] = {0, 0};
-    st_hdr_t legacy; int old = st_legacy_current(obj, &legacy);
+    st_hdr_t legacy; int old = st_pfile(obj) ? -1 : st_legacy_current(obj, &legacy);
     for (;;) {
         st_hdr_t best = {0}; int current = -1;
         for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) {
@@ -291,20 +300,54 @@ static void st_project_used(uint32_t used[2], uint32_t obj, uint32_t copy, const
         if (live) used[i / 32u] |= 1u << (i % 32u);
     }
 }
+/* every project slot's current record into used; *seq: obj's next sequence (1 when it has none). Nonzero: a read
+ * failed, which is never evidence of free space */
+static int st_projects_used(uint32_t used[2], uint32_t obj, uint32_t *seq)
+{
+    st_read_failed = 0;
+    *seq = 1u;
+    for (uint32_t s = 0; s < ST_NPROJ; s++) {
+        uint32_t o = st_proj_obj(s);
+        st_hdr_t current; int copy = st_current(o, &current);
+        if (copy >= 0) {
+            st_project_used(used, o, (uint32_t)copy, &current);
+            if (o == obj) *seq = current.seq + 1u;
+        }
+    }
+    used[1] |= ST_POOL_RES_MASK1;
+    return st_read_failed;
+}
+/* the pool's free sectors for projects (-1: a read failed) */
+static int st_project_free(void)
+{
+    uint32_t used[2] = {0, 0}, seq, n = 0;
+    if (st_projects_used(used, 0xFFFFu, &seq)) return -1;
+    for (uint32_t i = 0; i < ST_POOL_SECTORS; i++) if (!((used[i / 32u] >> (i % 32u)) & 1u)) n++;
+    return (int)n;
+}
+/* a project slot emptied: every committed copy's header erased, the oldest first and the current one last, so a
+ * cut leaves the project as it was or nothing (an older copy never comes back). 0, or the first error */
+static int st_project_delete(uint32_t obj)
+{
+    for (uint32_t pass = 0; pass < ST_POOL_SECTORS + 2u; pass++) {
+        st_hdr_t h, best; uint32_t at = 0; int found = 0;
+        for (uint32_t c = st_pfile(obj) ? 2u : 0u; c < ST_POOL_SECTORS + 2u; c++) {
+            if (st_head(obj, c, &h)) continue;
+            if (!found || (best.seq != h.seq && best.seq - h.seq < 0x80000000u)) { best = h; at = c; found = 1; }
+        }
+        if (!found) return 0;
+        int rc = st_erase(st_sector(obj, at));
+        if (rc) return rc;
+    }
+    return -7;
+}
 static int st_project_allocate(uint32_t obj, uint32_t len, st_hdr_t *h)
 {
     uint32_t used[2] = {0, 0};
     st_read_failed = 0;
     memset(h, 0xFF, sizeof *h);
     h->type = (uint16_t)obj; h->len = len; h->seq = 1u;
-    for (uint32_t slot = OBJ_BANK0; slot < OBJ_CZBANK0; slot++) {
-        st_hdr_t current; int copy = st_current(slot, &current);
-        if (copy >= 0) {
-            st_project_used(used, slot, (uint32_t)copy, &current);
-            if (slot == obj) h->seq = current.seq + 1u;
-        }
-    }
-    if (st_read_failed) return -7;
+    if (st_projects_used(used, obj, &h->seq)) return -7;
     h->rsv[0] = 0; h->rsv[1] = ST_POOL_TAG;
     uint32_t need = len ? (len + ST_POOL_PAYLOAD_MAX - 1u) / ST_POOL_PAYLOAD_MAX : 1u;
     int first = -1;
@@ -328,7 +371,7 @@ static int st_load(uint32_t obj, void *dst, uint32_t max)
 {
     st_hdr_t h;
     int cur;
-    if (obj >= OBJ_COUNT || (cur = st_current(obj, &h)) < 0 || h.len > max) return -1;
+    if (!st_obj_ok(obj) || (cur = st_current(obj, &h)) < 0 || h.len > max) return -1;
     if (st_read_range(obj, (uint32_t)cur, 0, dst, h.len)) return -1;
     return (int)h.len;
 }
@@ -337,7 +380,7 @@ static int st_load(uint32_t obj, void *dst, uint32_t max)
 static int st_exists(uint32_t obj)
 {
     st_hdr_t h;
-    return obj < OBJ_COUNT && !st_retired(obj) && st_current(obj, &h) >= 0 && h.len != 0;
+    return st_obj_ok(obj) && !st_retired(obj) && st_current(obj, &h) >= 0 && h.len != 0;
 }
 
 static int st_save(uint32_t obj, const void *src, uint32_t len)
@@ -348,7 +391,7 @@ static int st_save(uint32_t obj, const void *src, uint32_t len)
     uint32_t seq, base, off;
     int cur, rc;
     st_hdr_t h;
-    if (obj >= OBJ_COUNT || st_retired(obj) || len > st_capacity(obj))
+    if (!st_obj_ok(obj) || st_retired(obj) || len > st_capacity(obj))
         return -1;
     if (st_banked(obj)) return st_project_save(obj, src, len);
     cur = st_current(obj, &h);

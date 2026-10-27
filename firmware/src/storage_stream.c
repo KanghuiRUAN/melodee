@@ -6,7 +6,9 @@
 typedef struct {
     st_hdr_t head;
     uint32_t obj, pos, crc, generation;
+    uint32_t avail[2];                  /* lazy: the pool sectors still free to take */
     int error;
+    uint8_t lazy;                       /* st_stream_begin_lazy: the length is known only at st_stream_end */
 } st_stream_t;
 static int st_stream_begin(st_stream_t *w,uint32_t obj,uint32_t len)
 {
@@ -21,16 +23,69 @@ static int st_stream_begin(st_stream_t *w,uint32_t obj,uint32_t len)
     if(rc)return w->error=rc;
     w->error=0;return 0;
 }
+/* A project image whose length is known only at its end (project_stream.c): it takes the pool's free sectors, the
+ * lowest first, as its writes reach them (each erased then), so a small project erases and occupies little. Until
+ * st_stream_end programs the staged header, its address map is the header in RAM. */
+static int st_stream_begin_lazy(st_stream_t *w,uint32_t obj)
+{
+    uint32_t used[2]={0,0};
+    memset(w,0,sizeof *w);w->error=-1;
+#if defined(MELODEE_AUDIO_PROFILE) && MELODEE_AUDIO_PROFILE
+    if(AUDIO_LAB_GUARDED())return -9;
+#endif
+    if(!st_banked(obj))return -1;
+    w->obj=obj;w->crc=0xffffffffu;w->generation=++st_stream_generation;
+    memset(&w->head,0xFF,sizeof w->head);
+    w->head.type=(uint16_t)obj;w->head.len=0;
+    if(st_projects_used(used,obj,&w->head.seq))return w->error=-7;
+    w->avail[0]=~used[0];w->avail[1]=~used[1]&0x00FFFFFFu;
+    w->head.rsv[0]=0;w->head.rsv[1]=ST_POOL_TAG;w->head.slot=0;
+    w->lazy=1;w->error=0;return 0;
+}
+static uint32_t st_stream_sectors(const st_stream_t *w)
+{
+    uint32_t n=0;
+    for(uint32_t i=0;i<ST_POOL_SECTORS;i++)n+=(uint32_t)st_pool_bit(&w->head,i);
+    return n;
+}
+/* sectors taken for the image's first end bytes */
+static int st_stream_room(st_stream_t *w,uint32_t end)
+{
+    uint32_t need=(end+ST_POOL_PAYLOAD_MAX-1u)/ST_POOL_PAYLOAD_MAX,have=st_stream_sectors(w);
+    if(need>ST_PROJECT_SECTORS)return w->error=-5;
+    while(have<need){
+        uint32_t i=0;
+        while(i<ST_POOL_SECTORS && !((w->avail[i/32u]>>(i%32u))&1u))i++;
+        if(i==ST_POOL_SECTORS)return w->error=-5;      /* STORAGE FULL */
+        w->avail[i/32u]&=~(1u<<(i%32u));
+        w->head.rsv[i/32u]|=1u<<(i%32u);
+        if(!have)w->head.slot=(uint16_t)(i+2u);
+        int rc=st_erase(st_sector(w->obj,i+2u));if(rc)return w->error=rc;
+        have++;
+    }
+    return 0;
+}
+static int st_stream_read(st_stream_t *w,uint32_t off,void *dst,uint32_t n)
+{
+    uint8_t *d=dst;
+    while(n){
+        uint32_t span,at=st_pool_address(&w->head,off,&span),k=n<span?n:span;
+        if(!k||st_fetch(at,d,k))return -7;
+        d+=k;off+=k;n-=k;
+    }
+    return 0;
+}
 /* Input must be RAM: the flash-program window cannot fetch from XIP. Calls
  * may use arbitrary packet lengths; split at physical pages and extents. */
 static int st_stream_write_at(st_stream_t *w,uint32_t off,const void *data,uint32_t n)
 {
     if(w->generation!=st_stream_generation)return w->error=-6;
     if(w->error)return w->error;
-    if(off>w->head.len||n>w->head.len-off)return w->error=-1;
+    if(w->lazy){if(off>ST_PROJECT_MAX||n>ST_PROJECT_MAX-off||st_stream_room(w,off+n))return w->error?w->error:(w->error=-1);}
+    else if(off>w->head.len||n>w->head.len-off)return w->error=-1;
     const uint8_t *p=data;
     while(n){
-        uint32_t span,at=st_address_at(w->obj,w->head.slot,off,&span,ST_PAYLOAD_OFF);
+        uint32_t span,at=w->lazy?st_pool_address(&w->head,off,&span):st_address_at(w->obj,w->head.slot,off,&span,ST_PAYLOAD_OFF);
         if(!span)return w->error=-1;
         uint32_t k=256u-(at&255u);if(k>span)k=span;if(k>n)k=n;
         int rc=st_prog(at,p,k);if(rc)return w->error=rc;
@@ -42,6 +97,18 @@ static int st_stream_write(st_stream_t *w,const void *data,uint32_t n)
 {
     int rc=st_stream_write_at(w,w->pos,data,n);if(rc)return rc;
     w->crc=st_crc32_update(w->crc,data,n);w->pos+=n;return 0;
+}
+/* a lazy image's length: the staged header (no magic) programmed, so range reads and st_stream_check see it; the
+ * CRC is the caller's seal */
+static int st_stream_end(st_stream_t *w,uint32_t len)
+{
+    if(w->generation!=st_stream_generation)return w->error=-6;
+    if(w->error)return w->error;
+    if(!w->lazy||!len||st_stream_room(w,len))return w->error?w->error:(w->error=-1);
+    w->head.len=len;
+    if(st_stream_sectors(w)!=(len+ST_POOL_PAYLOAD_MAX-1u)/ST_POOL_PAYLOAD_MAX)return w->error=-1;
+    int rc=st_prog(st_sector(w->obj,w->head.slot),&w->head,sizeof w->head);
+    return rc?(w->error=rc):0;
 }
 /* Generated images may write disjoint pieces out of order. The caller seals
  * their exact coverage and expected CRC; readback must match before publish. */

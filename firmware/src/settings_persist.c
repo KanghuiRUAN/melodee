@@ -59,7 +59,7 @@ static int settings_legacy_valid(const persist_t *p)
         p->panel.magic == PANEL_MAGIC && p->lowcut <= 2u && (p->zoom & 0xFFu) <= 1u &&
         (p->zoom <= 0xFFu || (p->zoom & 0xFFFF0000u) == RECORD_PREF_TAG) &&
         hold_stored_ok(p->bold) && p->favorites.filter <= 1u && usb_ok &&
-        p->ext.boot <= 4u && p->ext.drumch <= 17u && p->ext.lights <= LIGHTS_N;
+        p->ext.boot <= PROJ_SLOTS && p->ext.drumch <= 17u && p->ext.lights <= LIGHTS_N;
 }
 
 /* Normalize in place; 1 = read, 0 = invalid. */
@@ -70,7 +70,7 @@ static int settings_import(persist_t *p, int n)
     settings_budget=(int16_t)(((work&0xffff0000u)==WORK_BUDGET_TAG && points>=8u && points<=32u)?points:VOICE_BUDGET_DEFAULT);
     uint32_t mode = work <= 3u || (work & 0xFFFF00FCu) == WORK_BUDGET_TAG ? work & 3u : 0u;
     p->ext.usb_off=mode|(settings_budget!=VOICE_BUDGET_DEFAULT?WORK_BUDGET_TAG|((uint32_t)settings_budget<<8):0u);
-    if (p->ext.boot > 4u)
+    if (p->ext.boot > PROJ_SLOTS)
         p->ext.boot = 0;
     settings_boot = (uint8_t)p->ext.boot;
     if (p->ext.drumch > 17u)

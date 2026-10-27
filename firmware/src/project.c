@@ -151,8 +151,13 @@ _Static_assert(sizeof(project_store_t) == 13212u, "FUN17 keeps the FUN16 extent"
 project_store_t proj_slot[4];                 /* host-only cache; hardware reads complete projects from NOR */
 static uint8_t proj_bank_slot[4][PROJ_BANK_BYTES];
 #endif
-static struct { uint8_t used, old; char name[PROJ_NAME_LEN + 1u]; } proj_meta[4];   /* old: a record this firmware
+static struct { uint8_t used, old; char name[PROJ_NAME_LEN + 1u]; } proj_meta[PROJ_SLOTS]   /* old: a record this firmware
                                                      * does not read (written before 1.0): shown, kept, never overwritten unasked */
+    __attribute__((section(".pool")));
+#if MELODEE_FLASH
+_Static_assert(PROJ_SLOTS == ST_NPROJ, "the project slots are storage.c's");
+static uint8_t proj_free = 0xFFu;            /* the pool's free sectors (proj_space), 0xFF unknown */
+#endif
 
 static uint32_t proj_hash(const void *p, uint32_t n) { return fnv(2166136261u, p, n); }
 static uint32_t proj_sum(const project_t *p) { return proj_hash(p, sizeof *p - 4u); }
@@ -577,16 +582,24 @@ static void project_capture(project_t *p);
 #endif
 
 /* FNV of each slot's stored bytes, as last written or read (0: unknown): autosave writes only what differs */
-static uint32_t proj_saved_hash[4];
+static uint32_t proj_saved_hash[PROJ_SLOTS] __attribute__((section(".pool")));
+#if MELODEE_FLASH
+static void proj_space(void) { int n = flash_ok ? st_project_free() : -1; proj_free = (uint8_t)(n < 0 ? 0xFF : n); }
+/* the project pool's free share, 0..100 (-1 unknown): the SLOTS card */
+static int project_free_pct(void) { return proj_free == 0xFFu ? -1 : (int)(proj_free * 100u / (ST_POOL_SECTORS - ST_POOL_RES_N)); }
+#else
+static void proj_space(void) {}
+static int project_free_pct(void) { return -1; }
+#endif
 static int proj_read_slot(uint32_t slot)
 {
     int n = -1;
-    slot &= 3u;
+    slot %= PROJ_SLOTS;
     proj_wire_gen++;
 #if MELODEE_FLASH
-    st_hdr_t source; int copy = flash_ok ? st_current(OBJ_BANK0 + slot, &source) : -1;
-    int valid = copy >= 0 && proj_stream_load(OBJ_BANK0 + slot, (uint32_t)copy, source.len);
-    if (copy >= 0) n = (int)source.len;
+    st_hdr_t source; int copy = flash_ok ? st_current(st_proj_obj(slot), &source) : -1;
+    int valid = copy >= 0 && proj_stream_load(st_proj_obj(slot), (uint32_t)copy, source.len);
+    if (copy >= 0) n = pj.on ? (int)BANK_STORE_SIZE : (int)source.len;
 #else
     wire_take();
     if (bank_valid(proj_bank_slot[slot], BANK_STORE_SIZE) &&
@@ -600,13 +613,13 @@ static int proj_read_slot(uint32_t slot)
 #endif
 #if MELODEE_FLASH && !defined(FM1_IRQ_TARGET)
     if (valid) {
-        if (n == BANK_STORE_SIZE) { st_read_range(OBJ_BANK0 + slot, (uint32_t)copy, 0, proj_bank_slot[slot], BANK_STORE_SIZE); memcpy(&proj_slot[slot], proj_bank_slot[slot] + 8u, sizeof proj_slot[slot]); }
+        if (n == BANK_STORE_SIZE) { st_read_range(st_proj_obj(slot), (uint32_t)copy, 0, proj_bank_slot[slot], BANK_STORE_SIZE); memcpy(&proj_slot[slot], proj_bank_slot[slot] + 8u, sizeof proj_slot[slot]); }
         else { memset(proj_bank_slot[slot], 0, sizeof proj_bank_slot[slot]); proj_bound(&proj_scratch); proj_pack(&proj_slot[slot], &proj_scratch); }
     }
 #endif
     proj_meta[slot].used = (uint8_t)valid;
 #if MELODEE_FLASH
-    proj_meta[slot].old = (uint8_t)(!valid && flash_ok && st_exists(OBJ_BANK0 + slot));
+    proj_meta[slot].old = (uint8_t)(!valid && flash_ok && st_exists(st_proj_obj(slot)));
 #endif
     if (valid) proj_name_get(proj_meta[slot].name, (const uint8_t *)proj_scratch.name);
     else proj_meta[slot].name[0] = 0;
@@ -620,9 +633,10 @@ static int proj_read_slot(uint32_t slot)
 static void proj_fetch(uint32_t slot) { (void)proj_read_slot(slot); }
 static int proj_write_slot(uint32_t slot, const uint8_t *raw, uint32_t len)
 {
-    slot &= 3u;
+    slot %= PROJ_SLOTS;
 #if MELODEE_FLASH
-    if (!flash_ok || st_save(OBJ_BANK0 + slot, raw, len)) return 2;
+    if (!flash_ok || (len ? st_save(st_proj_obj(slot), raw, len) : st_project_delete(st_proj_obj(slot)))) return 2;
+    proj_space();
 #endif
 #if !defined(FM1_IRQ_TARGET)
     memset(proj_bank_slot[slot], 0, sizeof proj_bank_slot[slot]);
@@ -643,7 +657,8 @@ static int proj_write_slot(uint32_t slot, const uint8_t *raw, uint32_t len)
 static int proj_publish_slot(uint32_t slot,st_stream_t *w)
 {
     if(!flash_ok || st_stream_publish(w))return 2;
-    slot &= 3u;
+    slot %= PROJ_SLOTS;
+    proj_space();
 #if !defined(FM1_IRQ_TARGET)
     if(st_read_range(w->obj,w->head.slot,0,proj_bank_slot[slot],BANK_STORE_SIZE))return 2;
     memcpy(&proj_slot[slot],proj_bank_slot[slot]+8u,sizeof proj_slot[slot]);
@@ -656,8 +671,10 @@ static int proj_publish_slot(uint32_t slot,st_stream_t *w)
 static int proj_save_image(uint32_t slot)
 {
     st_stream_t w;
-    if(!flash_ok || proj_stream_generate(&w,OBJ_BANK0+(slot&3u)))return 2;
-    return proj_publish_slot(slot,&w);
+    int rc=flash_ok?proj_stream_generate(&w,st_proj_obj(slot%PROJ_SLOTS)):2;
+    if(rc){ui_message(rc==-5?"STORAGE FULL":"SAVE ERROR");return 3;}
+    if(proj_publish_slot(slot,&w)){ui_message("SAVE ERROR");return 2;}
+    return 0;
 }
 #endif
 
@@ -760,14 +777,14 @@ static int project_save_as(uint32_t slot, const char *name)
     }
     proj_wire_gen++;
 #if MELODEE_FLASH
-    if(proj_save_image(slot)){ui_message("SAVE ERROR");return 2;}
+    if(proj_save_image(slot))return 2;
 #else
     wire_take();
     if (!bank_pack(proj_wire_u.raw, p, 1)) { ui_message(bank_too_full ? "PROJECT FULL" : "SAVE FORMAT ERROR"); return 2; }
     if (proj_write_slot(slot, proj_wire_u.raw, BANK_STORE_SIZE)) { ui_message("SAVE ERROR"); return 2; }
 #endif
     proj_name_get(proj_name, (const uint8_t *)p->name);
-    proj_cur = (uint8_t)(slot & 3u);
+    proj_cur = (uint8_t)(slot % PROJ_SLOTS);
     ui_message(MELODEE_FLASH ? "SAVED" : "SAVED (RAM)");
     return 0;
 }
@@ -779,11 +796,11 @@ static uint32_t project_free_slot(void);
 static void project_quick_save(void)
 {
     uint32_t i;
-    if (proj_cur < 4u) {
+    if (proj_cur < PROJ_SLOTS) {
         uint32_t slot = proj_cur;
         if (!project_save(slot)) {
-            char b[12] = "SAVED A";
-            b[6] = (char)('A' + slot);
+            char b[12] = "SAVED 00";
+            b[6] = (char)('0' + (slot + 1u) / 10u); b[7] = (char)('0' + (slot + 1u) % 10u);
             ui_message(b);
         }
         return;
@@ -805,7 +822,7 @@ static void project_autosave(void)
     if(AUDIO_LAB_GUARDED())return;
     project_t *p = &proj_scratch;
     uint32_t slot = proj_cur;
-    if (slot >= 4u || transport_busy() || wire_waiting())   /* (a DX7 frame in the scratch: later) */
+    if (slot >= PROJ_SLOTS || transport_busy() || wire_waiting())   /* (a DX7 frame in the scratch: later) */
         return;
     project_capture(p);
     proj_wire_gen++;                                    /* (the staging RAM: a backup's copy there is gone) */
@@ -824,14 +841,14 @@ static void project_autosave(void)
 static void project_cur_name(char *b) { str_cpy(b, proj_name, PROJ_NAME_LEN + 1u); }   /* b: 13 bytes */
 
 /* slot's name -> b (PROJ_NAME_LEN + 1 bytes); 0 = an empty slot (b ""). Uses proj_scratch */
-static int project_old(uint32_t slot) { return !project_used(slot) && proj_meta[slot & 3u].old; }
+static int project_old(uint32_t slot) { return !project_used(slot) && proj_meta[slot % PROJ_SLOTS].old; }
 /* the slot's name ("" none): 1 a project, 0 empty; an old record's: OLD FORMAT (1: the slot is taken) */
 static int project_name(uint32_t slot, char *b)
 {
     b[0] = 0;
     if (project_old(slot)) { str_cpy(b, "OLD FORMAT", PROJ_NAME_LEN + 1u); return 1; }
     if (!project_used(slot)) return 0;
-    str_cpy(b, proj_meta[slot & 3u].name, PROJ_NAME_LEN + 1u);
+    str_cpy(b, proj_meta[slot % PROJ_SLOTS].name, PROJ_NAME_LEN + 1u);
     return 1;
 }
 
@@ -856,7 +873,7 @@ static int project_rename(uint32_t slot, const char *name)
         proj_bound(p);chain_legacy_defaults(&p->chain);
         if(!bank_pack_tail(proj_image_tail(),p,0))return 2;
     }
-    if(proj_save_image(slot)){ui_message("SAVE ERROR");return 2;}
+    if(proj_save_image(slot))return 2;
 #else
     wire_take();
     if (n == BANK_STORE_SIZE) {
@@ -869,7 +886,7 @@ static int project_rename(uint32_t slot, const char *name)
     }
     if (proj_write_slot(slot, proj_wire_u.raw, BANK_STORE_SIZE)) { ui_message("SAVE ERROR"); return 2; }
 #endif
-    if (proj_cur == (slot & 3u))
+    if (proj_cur == slot % PROJ_SLOTS)
         proj_name_get(proj_name, (const uint8_t *)p->name);
 #if MELODEE_FLASH
     if (flash_ok) { ui_message("RENAMED"); return 0; }
@@ -885,7 +902,7 @@ static int project_erase(uint32_t slot)
         ui_message("STOP TO SAVE");
         return 1;
     }
-    slot &= 3u;
+    slot %= PROJ_SLOTS;
     if (proj_write_slot(slot, proj_wire_u.raw, 0)) { ui_message("SAVE ERROR"); return 2; }
     if (proj_cur == slot)
         proj_cur = PROJ_NO_SLOT;
@@ -1015,7 +1032,7 @@ static void project_load(uint32_t slot)
             bank_restore(proj_wire_u.raw);
 #endif
         }
-        proj_cur = (uint8_t)(slot & 3u);
+        proj_cur = (uint8_t)(slot % PROJ_SLOTS);
     }
 }
 
@@ -1218,7 +1235,7 @@ static void template_save(void)
 static uint32_t project_free_slot(void)
 {
     uint32_t i;
-    for (i = 0; i < 4u; i++)
+    for (i = 0; i < PROJ_SLOTS; i++)
         if (!project_used(i) && !project_old(i))
             return i;
     return 0;
@@ -1327,7 +1344,7 @@ static void project_new_blank(void)
 static int project_dirty(void)
 {
     uint32_t k;
-    if (proj_cur < 4u) {
+    if (proj_cur < PROJ_SLOTS) {
         project_capture(&proj_scratch);
         proj_wire_gen++;
 #if MELODEE_FLASH
@@ -1485,9 +1502,10 @@ static void persist_boot(void)                    /* before settings_init / pane
     }
     {   /* projects: fill empty RAM slots from flash, so the slot list is right after power-on */
         uint32_t i;
-        for (i = 0; i < 4u; i++)
+        for (i = 0; i < PROJ_SLOTS; i++)
             if (!project_used(i))
                 proj_fetch(i);
+        proj_space();
     }
     settings_init();                               /* maintenance uses the saved palette */
     up_boot();                                     /* user presets */
@@ -1504,7 +1522,7 @@ static int project_used(uint32_t slot)
     proj_meta[slot].used = (uint8_t)valid;
     if (valid) proj_name_get(proj_meta[slot].name, (const uint8_t *)proj_scratch.name);
 #endif
-    return proj_meta[slot & 3u].used;
+    return proj_meta[slot % PROJ_SLOTS].used;
 }
 
 /* Main loop only: no flash access or copies when the ISR changes rows. */
