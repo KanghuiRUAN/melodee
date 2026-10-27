@@ -22,6 +22,8 @@
 #define BANKP_MAGIC 0x504B4246u                 /* FBKP: FBKO with 16 patterns a part, 8 a MIDI-only track (NPAT); always
                                                  * the song and punch blocks, song byte 2 = sounds follow. Before it, every
                                                  * format kept NPAT_V1 a track: those layouts read below */
+#define BANKQ_MAGIC 0x514B4246u                 /* FBKQ: FBKP plus per-pattern sound IDs after the sound pool */
+#define BANKQ_PATTERN_BYTES (NTRK * NPAT)
 #define BANK_STORE_SIZE PROJ_BANK_BYTES
 #define BANK_PROJ_SIZE PROJ_STORE_SIZE
 #define BANK_STEP_SIZE 8u
@@ -62,11 +64,13 @@ static const bank_lay_t BANK_LAY[2] = {
      BANKP_TRK_OFF, BANKP_STEPS_OFF, 2u}};
 static uint8_t bank_force_v1;                           /* capture as FBKK (project.c: FBKP did not fit) */
 #define BL (BANK_LAY[bank_p16 != 0])
+static uint8_t bank_patterns;
 static uint8_t bank_song64, bank_songfx, bank_sounds, bank_sound_count, bank_sound_ids[CHAIN_SOUNDS];
 static uint32_t bank_sound_bytes;
 static uint32_t bank_sound_off(void) { return BL.steps - BANK_ACTIVE_OFF + BANKM_SONG_BYTES + BANKN_FX_BYTES; }
 
-static uint32_t bank_steps_off(void) { return BL.steps + (bank_song64 ? BANKM_SONG_BYTES : 0u) + (bank_songfx ? BANKN_FX_BYTES : 0u) + bank_sound_bytes; }
+static uint32_t bank_pattern_off(void) { return bank_sound_off() + bank_sound_bytes; }
+static uint32_t bank_steps_off(void) { return BL.steps + (bank_song64 ? BANKM_SONG_BYTES : 0u) + (bank_songfx ? BANKN_FX_BYTES : 0u) + bank_sound_bytes + (bank_patterns ? BANKQ_PATTERN_BYTES : 0u); }
 _Static_assert(BANKL_STEPS_OFF + NTRK <= BANK_STORE_SIZE - 4u && (NTRK - PROJ_TRK) * NPAT_V1 <= 32u && NSTEP == 64u,
                "FBKL: its fixed fields, one more directory of owners, a 64-bit step mask");
 _Static_assert(BANKP_STEPS_OFF + BANKM_SONG_BYTES + BANKN_FX_BYTES + 2u * NTRK <= BANK_STORE_SIZE - 4u && NPAT <= 16u,
@@ -74,13 +78,21 @@ _Static_assert(BANKP_STEPS_OFF + BANKM_SONG_BYTES + BANKN_FX_BYTES + 2u * NTRK <
 #define BT(off) ((off) - BANK_ACTIVE_OFF)               /* an offset into the tail */
 static uint8_t bank_too_full;                           /* the music did not fit an FBKL record */
 static int bank_full(uint32_t n) { return n == BANK_STORE_SIZE; }
-static uint32_t bank_magic(void) { return bank_p16 ? BANKP_MAGIC : bank_sounds ? BANKO_MAGIC : bank_songfx ? BANKN_MAGIC : bank_song64 ? BANKM_MAGIC : bank_wide ? BANKL_MAGIC : BANK_MAGIC; }
+static uint32_t bank_magic(void) { return bank_patterns ? BANKQ_MAGIC : bank_p16 ? BANKP_MAGIC : bank_sounds ? BANKO_MAGIC : bank_songfx ? BANKN_MAGIC : bank_song64 ? BANKM_MAGIC : bank_wide ? BANKL_MAGIC : BANK_MAGIC; }
 static void bank_capture_kind(int runtime)
 {
+    bank_patterns = 0;
     bank_sounds = bank_sound_count = 0; bank_sound_bytes = 0;
     if (runtime) for (uint32_t r = 0; r < chain_config.count; r++) for (uint32_t k = 0; k < cap_tracks(); k++) {
         uint32_t src = cap_map(k), id = src < NTRK ? chain_config.sound[r][src] : 0;
         if (!id) continue;
+        uint32_t j = 0; while (j < bank_sound_count && bank_sound_ids[j] != id) j++;
+        if (j == bank_sound_count && j < CHAIN_SOUNDS) bank_sound_ids[bank_sound_count++] = (uint8_t)id;
+    }
+    if (runtime) for (uint32_t k = 0; k < cap_tracks(); k++) for (uint32_t b = 0; b < NPAT; b++) {
+        uint32_t src = cap_map(k), id = src < NTRK ? pattern_sound[src][b] : 0;
+        if (!id) continue;
+        bank_patterns = 1;
         uint32_t j = 0; while (j < bank_sound_count && bank_sound_ids[j] != id) j++;
         if (j == bank_sound_count && j < CHAIN_SOUNDS) bank_sound_ids[bank_sound_count++] = (uint8_t)id;
     }
@@ -152,6 +164,14 @@ static int bankl_pack_tail(uint8_t *raw, const project_t *q)   /* runtime only (
             uint32_t src = cap_map(k), id = src < NTRK ? chain_config.sound[r][src] : 0;
             if (!id) continue;
             for (uint32_t j = 0; j < bank_sound_count; j++) if (bank_sound_ids[j] == id) out[4u + r * NTRK + k] = (uint8_t)(j + 1u);
+        }
+    }
+    if (bank_patterns) {
+        uint8_t *out = raw + bank_pattern_off();
+        for (uint32_t k = 0; k < NTRK; k++) for (uint32_t b = 0; b < NPAT; b++) {
+            uint32_t src = cap_map(k), id = src < NTRK ? pattern_sound[src][b] : 0;
+            for (uint32_t j = 0; id && j < bank_sound_count; j++)
+                if (bank_sound_ids[j] == id) out[k * NPAT + b] = (uint8_t)(j + 1u);
         }
     }
     if (bank_song64) {
@@ -230,6 +250,7 @@ static int bankl_pack_tail(uint8_t *raw, const project_t *q)   /* runtime only (
 static uint32_t pattern_room(void)
 {
     uint32_t fixed = BT(BANKP_STEPS_OFF) + BANKM_SONG_BYTES + BANKN_FX_BYTES + 2u * NTRK + 4u;
+    if (pattern_sounds_any()) fixed += BANKQ_PATTERN_BYTES;
     if (song_sound_count) fixed += BANKO_HEAD_BYTES + song_sound_count * (uint32_t)sizeof(song_sound_t);
     return fixed < BANK_TAIL_SIZE ? BANK_TAIL_SIZE - fixed : 0u;
 }
@@ -237,7 +258,7 @@ static uint32_t pattern_room(void)
  * playing there, no MIDI-only track in use */
 static int bank_v1_fits(void)
 {
-    if (cap_tracks() > PROJ_TRK) return 0;
+    if (cap_tracks() > PROJ_TRK || pattern_sounds_any()) return 0;
     for (uint32_t k = 0; k < PROJ_TRK; k++) {
         uint32_t src = cap_map(k);
         if (src >= NTRK) continue;
@@ -349,12 +370,13 @@ static int bankl_tail_valid(const uint8_t *raw)
         if (raw[BT(BL.steps) + 2u] > 1u) return 0;
         bank_sounds = raw[BT(BL.steps) + 2u];
     }
+    if (bank_patterns && !bank_sounds) return 0;
     if (bank_sounds) {
         const uint8_t *in = raw + bank_sound_off();
         uint32_t count = in[0], size = in[2] | (uint32_t)in[3] << 8;
         if (!count || count > CHAIN_SOUNDS || in[1] != P_COUNT || size != sizeof(song_sound_t)) return 0;
         bank_sound_bytes = BANKO_HEAD_BYTES + count * size;
-        if (bank_sound_off() + bank_sound_bytes + NTRK * BL.mask > BANK_TAIL_SIZE - 4u) return 0;
+        if (bank_sound_off() + bank_sound_bytes + (bank_patterns ? BANKQ_PATTERN_BYTES : 0u) + NTRK * BL.mask > BANK_TAIL_SIZE - 4u) return 0;
         uint8_t used[CHAIN_SOUNDS] = {0};
         for (uint32_t r = 0; r < CHAIN_ROWS; r++) for (uint32_t k = 0; k < NTRK; k++) {
             uint32_t id = in[4u + r * NTRK + k];
@@ -364,6 +386,19 @@ static int bankl_tail_valid(const uint8_t *raw)
                 if (k >= NPART && sound->engine != ENGI_MIDI) return 0;
                 used[id-1u] = 1;
             }
+        }
+        if (bank_patterns) {
+            const uint8_t *ids = raw + bank_pattern_off();
+            uint32_t any = 0;
+            for (uint32_t k = 0; k < NTRK; k++) for (uint32_t b = 0; b < NPAT; b++) {
+                uint32_t id = ids[k * NPAT + b];
+                if (id > count || (b >= trk_npat(k) && id)) return 0;
+                if (!id) continue;
+                const song_sound_t *sound = (const song_sound_t *)(in + BANKO_HEAD_BYTES + (id - 1u) * size);
+                if (k >= NPART && sound->engine != ENGI_MIDI) return 0;
+                used[id - 1u] = 1; any = 1;
+            }
+            if (!any) return 0;
         }
         for (uint32_t j = 0; j < count; j++)
             if (!used[j] || !song_sound_valid((const song_sound_t *)(in + BANKO_HEAD_BYTES + j * size))) return 0;
@@ -430,6 +465,12 @@ static int bankl_tail_valid(const uint8_t *raw)
         int ok = bytes <= resource[RES_SONG_SOUNDS].size || resource_resize(RES_SONG_SOUNDS, bytes) != 0;
         motion_unguard(f); if (!ok) return 0;
     }
+    if (bank_patterns) {
+        uint32_t f = motion_guard();
+        int ok = resource_get(RES_SONG_BASE, NTRK * sizeof(song_sound_t)) != 0;
+        if (ok) song_base_reserved = 1;
+        motion_unguard(f); if (!ok) return 0;
+    }
     return 1;
 }
 static int bank_tail_valid(const uint8_t *raw)
@@ -463,8 +504,9 @@ static int bank_valid(const uint8_t *raw,uint32_t len)
     uint32_t magic,size,sum;
     if(!bank_full(len))return 0;
     memcpy(&magic,raw,4);memcpy(&size,raw+4,4);memcpy(&sum,raw+len-4u,4);
-    if((magic!=BANK_MAGIC && magic!=BANKL_MAGIC && magic!=BANKM_MAGIC && magic!=BANKN_MAGIC && magic!=BANKO_MAGIC && magic!=BANKP_MAGIC)||size!=len||sum!=proj_hash(raw,len-4u))return 0;
-    bank_p16=(uint8_t)(magic==BANKP_MAGIC);
+    if((magic!=BANK_MAGIC && magic!=BANKL_MAGIC && magic!=BANKM_MAGIC && magic!=BANKN_MAGIC && magic!=BANKO_MAGIC && magic!=BANKP_MAGIC && magic!=BANKQ_MAGIC)||size!=len||sum!=proj_hash(raw,len-4u))return 0;
+    bank_patterns=(uint8_t)(magic==BANKQ_MAGIC);
+    bank_p16=(uint8_t)(magic==BANKP_MAGIC || bank_patterns);
     bank_sounds=(uint8_t)(magic==BANKO_MAGIC); bank_sound_bytes=0;
     bank_songfx=(uint8_t)(magic==BANKN_MAGIC || bank_sounds || bank_p16);
     bank_song64=(uint8_t)(magic==BANKM_MAGIC || bank_songfx);
@@ -497,6 +539,8 @@ static void bankl_restore_tail(const uint8_t *raw)
         memcpy(chain_config.sound, in + 4u, CHAIN_ROWS * NTRK);
         memcpy(song_sound_pool(), in + BANKO_HEAD_BYTES, song_sound_count * sizeof(song_sound_t));
     } else { song_sound_count = 0; resource_release(RES_SONG_SOUNDS); }
+    if (bank_patterns) memcpy(pattern_sound, raw + bank_pattern_off(), sizeof pattern_sound);
+    song_base_reserved = 0;
     if (bank_songfx) memcpy(chain_config.fx, raw + BT(BL.steps) + BANKM_SONG_BYTES, BANKN_FX_BYTES);
     memcpy(motion_pattern, bank_import_tags, sizeof motion_pattern);
     for (uint32_t k = 0; k < NTRK; k++) {

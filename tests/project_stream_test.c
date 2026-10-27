@@ -127,7 +127,7 @@ static void extended_songs_stream(int punches)
     puts(punches ? "Project stream: FBKP punch songs, exact codec, dirty hashes, rename and track removal passed" :
         "Project stream: FBKP 64-section songs, eight-track rests, dirty hashes, rename and track removal passed");
 }
-static void song_sounds_stream(void)
+static void song_sounds_stream(int patterns)
 {
     reset(); chain_config.count = 3;
     engine_load_of(&trk[0], ENGI_PROPHET, 1);
@@ -137,23 +137,28 @@ static void song_sounds_stream(void)
     assert(song_sound_valid(&sound));
     uint32_t id = song_sound_store(&sound); assert(id);
     chain_config.sound[1][0] = chain_config.sound[2][1] = (uint8_t)id;
+    if (patterns) pattern_sound[1][15] = (uint8_t)id;
     project_capture(&proj_scratch); assert(bank_pack(oracle, &proj_scratch, 1));
-    assert(*(uint32_t *)oracle == BANKP_MAGIC);
+    assert(*(uint32_t *)oracle == (patterns ? BANKQ_MAGIC : BANKP_MAGIC));
     assert(proj_image_capture(1)); st_stream_t w;
     assert(!proj_stream_generate(&w, OBJ_BANK0)); assert(!st_stream_publish(&w));
     assert(!ps_saved(OBJ_BANK0, actual) && !memcmp(oracle, actual, sizeof actual));
     project_new_blank(); open_slot(0);
     assert(chain_config.sound[1][0] && chain_config.sound[2][1]);
+    if (patterns) assert(pattern_sound[1][15] && !pattern_sound[0][15]);
     assert(!memcmp(song_sound_get(chain_config.sound[1][0]), &sound, sizeof sound));
     assert(!project_dirty()); assert(!project_rename(0, "SOUND SONG"));
     assert(!track_remove(0));
     assert(!chain_config.sound[1][0] && chain_config.sound[2][0]);
+    if (patterns) assert(pattern_sound[0][15] && !pattern_sound[1][15]);
     assert(!memcmp(song_sound_get(chain_config.sound[2][0]), &sound, sizeof sound));
     assert(!save_slot(1, "MOVED SOUND")); project_new_blank(); open_slot(1);
     assert(chain_config.sound[2][0] && !project_dirty());
+    if (patterns) { assert(pattern_sound[0][15]); pattern_sound[0][14] = pattern_sound[0][15]; assert(project_dirty()); }
     assert(!put_all(2, oracle, sizeof oracle, st_crc32(oracle, sizeof oracle)));
     open_slot(0);
     assert(chain_config.sound[1][0] && chain_config.sound[2][1]);
+    if (patterns) assert(pattern_sound[1][15] && !pattern_sound[0][15]);
     assert(!memcmp(song_sound_get(chain_config.sound[1][0]), &sound, sizeof sound));
     puts("Project stream: FBKP sound copies, exact codec, dirty hash, rename and track removal passed");
 }
@@ -234,7 +239,7 @@ int main(void)
     midi_tracks_stream();
     extended_songs_stream(0);
     extended_songs_stream(1);
-    song_sounds_stream();
+    song_sounds_stream(0); song_sounds_stream(1);
     printf("Project stream: %u complete RAM-codec comparisons, hash/dirty/save/load/rename, failed save and track removal passed\n",cases);
     return 0;
 }

@@ -464,6 +464,7 @@ static int pattern_copy_at(track_t *t, uint32_t source, uint32_t dest, int live)
     pattern_commit(t);
     recording_copy(t, source, dest, 1);
     pattern_write(k, dest, &copy);
+    pattern_sound[k][dest] = pattern_sound[k][source];
     n = 0;
     for (i = 0; i < motion.count; i++) if ((motion.event[i].place >> 6) != k || motion_pattern[i] != dest) {
         motion_pattern[n] = motion_pattern[i]; motion.event[n++] = motion.event[i];
@@ -473,7 +474,7 @@ static int pattern_copy_at(track_t *t, uint32_t source, uint32_t dest, int live)
     for (i = 0; i < n; i++) if ((motion.event[i].place >> 6) == k && motion_pattern[i] == source) {
         motion.event[motion.count] = motion.event[i]; motion_pattern[motion.count++] = (uint8_t)dest;
     }
-    if (dest == t->pattern) pattern_apply(t, dest);
+    if (dest == t->pattern) { pattern_apply(t, dest); if (song.playing) pattern_sound_switch(k, dest); }
     motion_unguard(f);
     return 0;
 }
@@ -500,6 +501,7 @@ static int pattern_clear(track_t *t, uint32_t bank)
     if (bank >= NPAT || bank == t->pattern) return 1;
     f = motion_guard();
     if (chain.running || chain.armed) { motion_unguard(f); return 1; }
+    pattern_sound[k][bank] = 0;
     recording_drop(t, k * NPAT + bank);
     recording_reindex();
     pattern_read(k, bank, &p);

@@ -68,6 +68,10 @@
 # DRUM SID (tests/drum_sid_test.c): KIT SID (src/drum_sid.c): one 6581 on one voice, its three voices taken by
 #                   the hits, frame programs at PAL frames, DIGI on $D418 and its effect on the voices ringing,
 #                   the filter for the routed drums, levels next to the 808; demos in build/sid_kit_demo/.
+# DRUM KITS (tests/drum_kits_test.c): KIT CR78 (src/drum_cr78.c) and KIT FM (src/drum_fm.c) on the lanes of
+#                   src/drum_lanes.c: every drum alone, one voice, a lane struck again without a step, the hat choke,
+#                   a recorded length, kit switches, the knobs' directions, levels next to the 808, no wrapped
+#                   sample, the corners; demos in build/drum_kits_demo/.
 # NOISE (tests/noise_test.c): the engine (src/eng_noise.c): COLR's slope (white, pink, brown), the filter and the
 #                   register clock following the key, META periodic at the key, no DC, no clipping at the
 #                   corners, a note from silence the same twice, the cost per voice; demos in build/noise_demo/.
@@ -356,7 +360,7 @@ if core && [ $TABLES = 1 ]; then
     t "64 pattern banks: chords, ties, independent loop switching, copy and persistence" pattern_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "song: 64 sections, rests, cursor playback, grid edits, phrases and undo" song_mode_test -O1 $FW
-    t "song presets: local sounds, browser restoration, section playback, edits and persistence" song_preset_test -O1 $FW
+    t "song/pattern presets: priority, browser restoration, playback, undo and persistence" song_preset_test -O1 $FW
     t "song punch: timed master FX, repeats, live overrides, edits and persistence" song_punch_test -O1 $FW
     t "compressed pattern pool: dense capacity, prepared switches and state-machine oracle" pattern_pool_test -O1 $FW
     t "16 x 128 shared pool: old dense capacity, atomic exhaustion and switching" pattern_capacity_test -O1 $FW
@@ -461,7 +465,7 @@ if sound && [ $TABLES = 1 ]; then
     t "centered bend fast path: full raw/range oracle and control cost" control_prepare_test -O2 $FW
     job fx_dormancy
     t "mono mixer fast path: output/send/peak/stem reference parity and cost" mix_fast_test -O2 $FW
-    t "master output: exact wet/dry ramps, limiter/DC state and dry-pass cost" master_output_test -O2 $FW
+    t "master output: final volume, held notes/punch tails, exact ramps and dry-pass cost" master_output_test -O2 $FW
     t "CZ: oscillator boundaries, native rate/target envelopes and independent lines" phase_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW
     t "SID: oscillator/LFSR/register semantics, revisions and 32 factory presets" sid_test -O2 $FW
@@ -470,6 +474,8 @@ if sound && [ $TABLES = 1 ]; then
         "$OUT/drum_test" build/drum_demo
     t "DRUM SID: one 6581 on one voice, frame programs, DIGI on \$D418, filter routing, levels" drum_sid_test -O2 $FW -- \
         "$OUT/drum_sid_test" build/sid_kit_demo
+    t "DRUM CR78/FM: eight lanes on one voice, retriggers, choke, length, knobs, levels, corners" drum_kits_test -O2 $FW -- \
+        "$OUT/drum_kits_test" build/drum_kits_demo
     t "NOISE: colour slopes, key-tracked filter and clock, META period, DC, clipping, retrigger, cost, demos" noise_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW -- "$OUT/noise_test" build/noise_demo
     t "FM6: the DX7's algorithms, pitch, levels, envelopes, modulation; DC, clipping, macros, patches, voices, cost, demos" \

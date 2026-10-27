@@ -1342,3 +1342,31 @@ its start through all HOLD continuations. Set/remove and block resizing update
 all covered sound IDs atomically. Earlier FBKO copies that only named the block's
 first section inherit that sound through empty HOLD cells. Other occurrences of
 the same pattern retain independent assignments. The FBKO byte layout is unchanged.
+
+
+Projects with Pattern preset overrides use **FBKQ** (`0x514b4246`). This extends
+FBKP's 16-pattern layout: the song and punch extensions are mandatory, song byte
+2 is 1, and the existing compacted sound extension is followed by `NTRK × NPAT`
+one-byte Pattern sound IDs, in track-major order, before the sparse step banks.
+Zero inherits the default track sound. MIDI-only tracks' banks 8–15 must be zero;
+nonzero assignments on MIDI-only tracks must reference MIDI sounds. At least one
+Pattern assignment is required. Song and Pattern IDs share the same immutable
+sound pool (64 snapshots maximum); saves include only referenced snapshots and
+validate all IDs, engine constraints, snapshots and bounds before restore.
+Projects without Pattern overrides still save as FBKP (or the existing dense
+legacy fallback). Earlier formats load with no Pattern overrides. Firmware that
+predates FBKQ cannot load projects saved with Pattern overrides.
+
+Playback resolves **Song override > Pattern override > Default track sound**.
+HOLD sections inherit the originating block's Pattern assignment when no Song
+sound is assigned; rests have no Pattern fallback. Manual pattern playback uses
+the same Pattern/default resolution, including queued loop-boundary switches.
+STOP restores the default sound. The stopped foreground reserves the baseline
+buffer before publishing/editing/importing assignments; playback starts and
+boundaries copy bounded RAM without allocating or reading the preset library.
+PATTERNS → Set preset/Remove preset edits the selected audio track's active bank.
+Browser acceptance stores an independent snapshot, cancellation restores the
+track, and assignment edits preserve notes and automation. Copy carries the
+assignment; Delete removes it with the pattern and supports the existing undo.
+The assignment map participates in project hashes, compact storage, backups and
+track removal. No new editor wire command is introduced.

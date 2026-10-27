@@ -245,7 +245,9 @@ static void chain_tick(uint32_t n)
  * STOP can always restore the original selections through the bounded fallback. */
 static void pattern_poll(void)
 {
+    song_base_reserved = 0;
     if (!song_sound_count) resource_release(RES_SONG_SOUNDS);
+    if (!song_sounds.mask && !chain.armed && !pattern_sounds_any()) resource_release(RES_SONG_BASE);
     for (uint32_t k = 0; k < NTRK; k++) {
         uint32_t bank = trk[k].pattern_next;
         if (chain.armed) bank = chain_bank(chain.start, k);

@@ -178,8 +178,120 @@ static void whole_pattern_sound(void)
     assert(t->eng_req == base); seq_stop();
     puts("Song presets: all 64 steps, continued notes, middle selection/start, independent occurrences, resize, undo and legacy inheritance passed");
 }
+
+static uint32_t choose_pattern(uint32_t bank, uint32_t engine, uint32_t preset)
+{
+    go_page(GR_PATGRID); assert(!pattern_request(TSEL, bank));
+    uint32_t before = track_sig(TSEL);
+    press(B_OCTUP); sheet_do("Set preset");
+    assert(song_picker.active && song_picker.pattern && song_picker.row == bank);
+    engine_load_of(TSEL, engine, preset); press(B_OCTUP);
+    assert(!song_picker.active && cur_page()->graph == GR_PATGRID && track_sig(TSEL) == before);
+    uint32_t id = pattern_sound[song.sel][bank]; assert(id); return id;
+}
+static void pattern_presets(void)
+{
+    setup(4); uint32_t def = TSEL->eng_req;
+    motion_set_event(TSEL, 0, P_ED_FLT, 12); motion_store_t saved_motion = motion;
+    uint32_t a = choose_pattern(0, ENGI_CZ, 2), b = choose_pattern(1, ENGI_FM6, 3);
+    assert(!chain_config.sound[0][0]);
+    assert(!memcmp(&saved_motion, &motion, sizeof motion));
+    uint32_t tick = seq_div_samples(TSEL->p[P_SDIV]);
+    assert(!pattern_request(TSEL, 0)); seq_start(); events_block(1);
+    assert(TSEL->eng_req == ENGI_CZ);
+    assert(!pattern_request(TSEL, 1)); events_block(tick);
+    assert(TSEL->pattern == 1 && TSEL->eng_req == ENGI_FM6);
+    assert(!pattern_request(TSEL, 2)); for (uint32_t j = 0; j < 64u; j++) events_block(tick);
+    assert(TSEL->pattern == 2 && TSEL->eng_req == def);
+    seq_stop(); assert(TSEL->eng_req == def);
+    assert(!pattern_request(TSEL, 1)); seq_start(); events_block(1);
+    assert(TSEL->eng_req == ENGI_FM6); seq_stop(); assert(TSEL->eng_req == def);
+    go_page(GR_SONG); uint32_t c = choose(1, ENGI_PROPHET, 13);
+    chain_patterns[0][0] = 0; chain_patterns[1][0] = 1; chain_patterns[2][0] = 1; chain_patterns[3][0] = 2;
+    for (uint32_t r = 0; r < 4; r++) chain_config.row[r].slot = chain_patterns[r][0];
+    assert(!chain_prepare_from(0)); events_block(1); assert(TSEL->eng_req == ENGI_CZ);
+    events_block(tick); assert(chain.row == 1 && TSEL->eng_req == ENGI_PROPHET);
+    for (uint32_t j = 0; j < (uint32_t)pattern_timing(0, 1, 0); j++) events_block(tick); assert(chain.row == 2 && TSEL->eng_req == ENGI_FM6);
+    for (uint32_t j = 0; j < (uint32_t)pattern_timing(0, 1, 0); j++) events_block(tick); assert(chain.row == 3 && TSEL->eng_req == def);
+    seq_stop(); assert(TSEL->eng_req == def);
+    assert(!chain_prepare_from(2)); events_block(1); assert(TSEL->eng_req == ENGI_FM6); seq_stop();
+    assert(!pattern_copy(TSEL, 0, 3) && pattern_sound[0][3] == a);
+    assert(!pattern_empty(0, 3));
+    song_sound_t pa = *song_sound_get(a), pb = *song_sound_get(b), sc = *song_sound_get(c);
+    assert(!project_save(0)); assert(*(uint32_t *)proj_bank_slot[0] == BANKQ_MAGIC);
+    uint8_t raw[BANK_STORE_SIZE]; memcpy(raw, proj_bank_slot[0], sizeof raw);
+    project_new_blank(); project_load(0);
+    assert(!memcmp(song_sound_get(pattern_sound[0][0]), &pa, sizeof pa));
+    assert(!memcmp(song_sound_get(pattern_sound[0][1]), &pb, sizeof pb));
+    assert(!memcmp(song_sound_get(chain_config.sound[1][0]), &sc, sizeof sc));
+    assert(TSEL->eng_req == def);
+    assert(resource[RES_SONG_BASE].size);
+    assert(!pattern_request(TSEL, 0)); seq_start(); events_block(1); assert(TSEL->eng_req == ENGI_CZ); seq_stop();
+    uint32_t off = BANK_ACTIVE_OFF + bank_pattern_off();
+    raw[off] = CHAIN_SOUNDS + 1u; bank_checksum(raw); assert(!bank_valid(raw, sizeof raw));
+    memcpy(raw, proj_bank_slot[0], sizeof raw); raw[off + NPART * NPAT] = raw[off]; bank_checksum(raw);
+    assert(!bank_valid(raw, sizeof raw));
+    assert(!bank_valid((uint8_t[12]){0}, 12));
+    go_page(GR_PATGRID); assert(!pattern_request(TSEL, 0));
+    pattern_preset_open(); engine_load_of(TSEL, ENGI_PROPHET, 8); press(B_OCTDN);
+    assert(TSEL->eng_req == def && !memcmp(song_sound_get(pattern_sound[0][0]), &pa, sizeof pa));
+    pattern_preset_remove(); assert(!pattern_sound[0][0] && pattern_sound[0][1]);
+    undo_step(0); assert(pattern_sound[0][0]); undo_step(1); assert(!pattern_sound[0][0]);
+    undo_step(0); assert(pattern_sound[0][0]);
+    seq_clear_now(CF_DEL_PAT, 0); assert(!pattern_sound[0][0]);
+    undo_step(0); assert(pattern_sound[0][0]); undo_step(1); assert(!pattern_sound[0][0]);
+    project_new_blank(); assert(!pattern_sounds_any());
+    assert(!project_save(1)); assert(*(uint32_t *)proj_bank_slot[1] == BANKP_MAGIC);
+    project_load(1); assert(!pattern_sounds_any());
+    puts("Pattern presets: browser, manual switches, Song > Pattern > Default, direct start, copy, save/load, legacy and invalid IDs passed");
+}
+
+static void pattern_native_and_recorded_undo(void)
+{
+    const uint32_t engines[] = {ENGI_FM6, ENGI_CZ, ENGI_PROPHET, ENGI_DRUM, 3};
+    for (uint32_t e = 0; e < NELEM(engines); e++) {
+        setup(0); engine_load_of(TSEL, ENGI_FM6, 9);
+        song_sound_t base, live;
+        song_sound_capture(&base, TSEL, "");
+        uint32_t id = choose_pattern(0, engines[e], 2);
+        song_sound_t sound = *song_sound_get(id);
+        seq_start(); events_block(1);
+        song_sound_capture(&live, TSEL, "");
+        assert(live.engine == sound.engine && !memcmp(&live.patch, &sound.patch, sizeof live.patch));
+        seq_stop(); song_sound_capture(&live, TSEL, ""); assert(!memcmp(&base, &live, sizeof base));
+        assert(!project_save(0)); project_new_blank(); project_load(0);
+        assert(!memcmp(song_sound_get(pattern_sound[0][0]), &sound, sizeof sound));
+        seq_start(); events_block(1); assert(TSEL->eng_req == engines[e]); seq_stop();
+    }
+    setup(0); uint32_t id = choose_pattern(0, ENGI_CZ, 4);
+    recorded_note_t note = {.step=0,.on=5000,.note7=60,.vel=80,.duration=RECORD_UNIT/2};
+    recorded_set_owner(&note, recording_owner(TSEL));
+    recording[0] = note; TSEL->step[0].flags |= SF_RECORDED; recording_reindex();
+    seq_clear_now(CF_DEL_PAT, 0); assert(!pattern_sound[0][0] && !recording[0].vel);
+    pattern_poll(); assert(!resource[RES_SONG_BASE].size);
+    undo_step(0); assert(pattern_sound[0][0] == id && !memcmp(&recording[0], &note, sizeof note));
+    assert(resource[RES_SONG_BASE].size);
+    undo_step(1); assert(!pattern_sound[0][0] && !recording[0].vel);
+    undo_step(0); assert(pattern_sound[0][0] == id && recording[0].vel);
+    seq_start(); events_block(1); assert(TSEL->eng_req == ENGI_CZ); seq_stop();
+    setup(1); engine_load_of(TSEL, ENGI_FM6, 9);
+    song_sound_t base, stopped; song_sound_capture(&base, TSEL, "");
+    id = choose_pattern(0, ENGI_CZ, 4);
+    pattern_preset_open(); engine_load_of(TSEL, ENGI_PROPHET, 8);
+    press(B_PLAY); assert(!song.playing && song_picker.active);
+    transport_req = 1; events_block(1); frame();
+    assert(song.playing && !song_picker.active && TSEL->eng_req == ENGI_CZ);
+    seq_stop(); song_sound_capture(&stopped, TSEL, ""); assert(!memcmp(&base, &stopped, sizeof base));
+    pattern_preset_open(); engine_load_of(TSEL, ENGI_PROPHET, 8);
+    assert(!chain_prepare_from(0)); events_block(1); frame();
+    assert(chain.running && !song_picker.active && TSEL->eng_req == ENGI_CZ);
+    seq_stop(); song_sound_capture(&stopped, TSEL, ""); assert(!memcmp(&base, &stopped, sizeof base));
+    puts("Pattern presets: native snapshots, exact default restoration, recorded Delete undo and external start during audition passed");
+}
+
 int main(void)
 {
+    pattern_presets(); pattern_native_and_recorded_undo();
     browser_and_history(); playback(); native_and_persistence(); arrangement_edits(); automation_and_failures(); whole_pattern_sound();
     puts("Song presets: passed"); return 0;
 }

@@ -941,6 +941,7 @@ static void seq_start(void)
     seq_erase_request = 0;
     seq_erase_transport++;
     memset(seq_erase_seen, 0, sizeof seq_erase_seen);
+    if (!chain.armed && !song.playing) pattern_sound_begin();
     motion_begin();
     chain_start();
     chain.seek_chase = 0;
