@@ -39,8 +39,10 @@ Stop, project changes and modal cancellation end a request.
 
 ## Audio and memory
 
-The stereo master sum, including shared returns and master gain, enters punch
-DSP before the DC blocker and limiter. Stereo USB capture receives that master;
+The stereo master sum, including shared returns, enters punch DSP before the
+DC blocker and limiter. Master volume attenuates their finished output, so held
+loops, freeze and other sounding tails follow the volume knob, including silence
+at zero. Stereo USB capture receives that master;
 USB stems remain individual tracks. Buffered SLOOP effects intentionally use a
 mono PCM16 history, as upstream; filters/kills retain independent stereo state.
 Loops/gate align to local or externally clocked transport phase, and loop

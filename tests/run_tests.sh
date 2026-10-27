@@ -465,7 +465,7 @@ if sound && [ $TABLES = 1 ]; then
     t "centered bend fast path: full raw/range oracle and control cost" control_prepare_test -O2 $FW
     job fx_dormancy
     t "mono mixer fast path: output/send/peak/stem reference parity and cost" mix_fast_test -O2 $FW
-    t "master output: exact wet/dry ramps, limiter/DC state and dry-pass cost" master_output_test -O2 $FW
+    t "master output: final volume, held notes/punch tails, exact ramps and dry-pass cost" master_output_test -O2 $FW
     t "CZ: oscillator boundaries, native rate/target envelopes and independent lines" phase_test \
         -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW
     t "SID: oscillator/LFSR/register semantics, revisions and 32 factory presets" sid_test -O2 $FW

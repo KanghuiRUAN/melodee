@@ -291,6 +291,7 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
 static __attribute__((noinline,section(".dsp_text"))) void master_samples(int32_t *out,uint32_t n)
 {
     int32_t gain=fx_bus_mix,target=fx_bus_target;
+    int32_t master=(int32_t)song.master_q12;
     /* With no wet result the sample pass only rewrites the dry mix. Advance
      * its monotone return ramp once; keep per-sample rounding when audible. */
     if(!fx_bus_result)gain+=clamp(target-gain,-(int32_t)n*128,(int32_t)n*128);
@@ -298,12 +299,14 @@ static __attribute__((noinline,section(".dsp_text"))) void master_samples(int32_
         if(gain!=target)gain+=clamp(target-gain,-128,128);
         int32_t l=mix_l[i],r=mix_r[i];
         {uint32_t ret=(uint32_t)gain*2u;
-            l+=((fx_scale(fx_left[i],ret)>>2)*(int32_t)song.master_q12)>>10;
-            r+=((fx_scale(fx_right[i],ret)>>2)*(int32_t)song.master_q12)>>10;}
+            l+=(fx_scale(fx_left[i],ret)>>2)*4;
+            r+=(fx_scale(fx_right[i],ret)>>2)*4;}
         mix_l[i]=l;mix_r[i]=r;
     }
     punch_process(mix_l,mix_r,n);
-    for(uint32_t i=0;i<n;i++){int32_t l=mix_l[i],r=mix_r[i];master_out(&l,&r);out[2u*i]=l;out[2u*i+1u]=r;}
+    /* Attenuate the finished output: punch history, freeze and the DC blocker
+     * keep running at unity, so even an already sounding tail follows MASTER. */
+    for(uint32_t i=0;i<n;i++){int32_t l=mix_l[i],r=mix_r[i];master_out(&l,&r);out[2u*i]=(l*master)>>12;out[2u*i+1u]=(r*master)>>12;}
     fx_bus_mix=gain;
 }
 static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
@@ -328,8 +331,9 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
     batch_ready=0;part_buf=part_storage;spread_buf=spread_storage;
 #endif
     fx_bus_start(n);
-    /* Dry gain overlaps the shared wet processing; limiter sees their sum. */
-    for(uint32_t i=0;i<n;i++){mix_l[i]=((mix_l[i]>>2)*(int32_t)song.master_q12)>>10;mix_r[i]=((mix_r[i]>>2)*(int32_t)song.master_q12)>>10;}
+    /* Preserve the existing unity mix rounding while shared wet processing runs.
+     * MASTER is applied once, after punch FX and the limiter/DC blocker. */
+    for(uint32_t i=0;i<n;i++){mix_l[i]=(mix_l[i]>>2)*4;mix_r[i]=(mix_r[i]>>2)*4;}
     fx_bus_join();
     void (*volatile run)(int32_t *,uint32_t)=master_samples;
     AP_START(output_start);run(out,n);AP_END(AP_OUTPUT,output_start);
