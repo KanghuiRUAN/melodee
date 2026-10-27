@@ -36,11 +36,11 @@ static __attribute__((noinline)) int capture_reference(track_t *t, uint32_t note
     if (on > 65535u) on = 65535u;
     for (uint32_t i = 0; i < RECORD_MAX; i++) {
         recorded_note_t *r = &recording[i];
-        if ((r->owner & 31u) == owner && (recording_flags[i] & 1u) && r->note == note) recording_finish(i);
+        if ((r->owner & 31u) == owner && (recording_flags[i] & 1u) && recorded_note(r) == note) recording_finish(i);
         /* Repeated passes replace the same pitch at the same captured time.
          * Distinct hits in one step remain separate events. */
         uint32_t same_time = r->on == on;
-        if (r->vel && (r->owner & 31u) == owner && r->note == note && (r->step & 63u) == actual && same_time) free = i;
+        if (r->vel && (r->owner & 31u) == owner && recorded_note(r) == note && (r->step & 63u) == actual && same_time) free = i;
         else if (free == RECORD_MAX && (!r->vel || (!recording_present(r) && !recording_sounding(i) && !(recording_flags[i] & 1u)))) free = i;
     }
     if (free == RECORD_MAX) { recording_full = 1; return 0; }
@@ -48,7 +48,7 @@ static __attribute__((noinline)) int capture_reference(track_t *t, uint32_t note
     if (recording_sounding(free)) recording_end(&trk[(recording[free].owner & 31u) / NPAT], free);
     recording_unlink(free);
     recorded_note_t *r = &recording[free];
-    *r = (recorded_note_t){.on=(uint16_t)on, .duration=1, .note=(uint8_t)note, .vel=(uint8_t)vel, .owner=(uint8_t)owner, .step=(uint8_t)(actual | (step != actual ? 64u : 0u) | (step == 0u && actual ? 128u : 0u))};
+    *r = (recorded_note_t){.on=(uint16_t)on, .duration=1, .note7=(uint8_t)note, .vel=(uint8_t)vel, .owner=(uint8_t)owner, .step=(uint8_t)(actual | (step != actual ? 64u : 0u) | (step == 0u && actual ? 128u : 0u))};
     recording_insert(t, free);
     memset(&recording_run[free], 0, sizeof recording_run[free]);
     recording_flags[free] = 13;
@@ -127,7 +127,7 @@ static void classify(const track_t *t, uint32_t note)
     for (uint32_t i = 0; i < RECORD_MAX; i++) {
         const recorded_note_t *r = &recording[i];
         uint32_t mine = r->vel && (r->owner & 31u) == owner, present = r->vel && recording_present(r);
-        if (mine && present && r->note == note) {
+        if (mine && present && recorded_note(r) == note) {
             seal |= recording_flags[i] & 1u;
             match |= (r->step & 63u) == actual && r->on == on;
         }

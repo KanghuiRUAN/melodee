@@ -42,14 +42,14 @@ int main(void)
     bad+=check("fractional movement into an unselected manual note rolls back atomically",TSEL->step[1].note[0]==60&&TSEL->step[2].note[0]==62&&!recording[0].vel);
     setup();manual(1,60,1);cursor_set(1);frame();turn(EN_K3,1);transport_req=1;events_block(CTL);
     bad+=check("starting playback releases temporary editor history before synthesis",song.playing&&!resource[RES_NOTE_HISTORY].size);
-    setup();recorded_note_t a={.step=2,.on=5000,.note=60,.vel=70,.duration=RECORD_UNIT/2,.owner=(uint8_t)recording_owner(TSEL)};
-    recorded_note_t b=a;b.step=4;b.on=9000;b.note=64;b.vel=99;
+    setup();recorded_note_t a={.step=2,.on=5000,.note7=60,.vel=70,.duration=RECORD_UNIT/2,.owner=(uint8_t)recording_owner(TSEL)};
+    recorded_note_t b=a;b.step=4;b.on=9000;recorded_set_note(&b,64);b.vel=99;
     recording_restore_note(TSEL,0,a);recording_restore_note(TSEL,1,b);note_rebuild_all();TSEL->step[2].probability=73;
     select_range(2,2);note_move_snapped(1,RECORD_UNIT/4,0);
     bad+=check("recorded bulk movement snaps the first onset and preserves relative offsets",recording[0].on==RECORD_UNIT/4&&recording[1].on==RECORD_UNIT/4+4000&&recording[0].vel==70&&recording[1].vel==99&&TSEL->step[2].probability==73);
     setup();manual(1,67,2);manual(3,60,3);manual(10,72,3);
     TSEL->step[3].flags|=SF_RECORDED;
-    a=(recorded_note_t){.step=3,.on=22000,.note=60,.vel=83,.duration=40960,.owner=(uint8_t)(recording_owner(TSEL)|(2u<<5))};
+    a=(recorded_note_t){.step=3,.on=22000,.note7=60,.vel=83,.duration=40960,.owner=(uint8_t)(recording_owner(TSEL)|(2u<<5))};
     recording_restore_note(TSEL,0,a);select_range(1,2);
     btn_down(B_SCL);frame();turn(EN_SELECT,1);btn_up(B_SCL);frame();
     bad+=check("mixed bulk move can enter a recorded note's own rounded tie tail",!strcmp(ui.msg,"Moving..")&&recording[0].on==22000+RECORD_UNIT/4&&recording[1].on==RECORD_UNIT/4&&duration(0)==5u*RECORD_UNIT/2u&&duration(1)==2u*RECORD_UNIT);
@@ -71,8 +71,8 @@ int main(void)
     bad+=check("Copy note duplicates once then KNOB 1 moves that duplicate",!ui.note_copy&&ui.note_move&&recording[0].on==RECORD_UNIT/4u&&recording[1].on==3u*RECORD_UNIT/4u);
     track_select(1);frame();bad+=check("switching tracks cancels a single-note move",!ui.note_move&&!ui.note_copy);
     setup();manual(1,67,2);manual(3,60,2);manual(10,72,2);TSEL->step[3].flags|=SF_RECORDED;
-    a=(recorded_note_t){.step=3,.on=22000,.note=60,.vel=83,.duration=40960,.owner=(uint8_t)(recording_owner(TSEL)|(2u<<5))};
-    b=a;b.step=7|64u;b.on=40000;b.note=65;b.vel=97;
+    a=(recorded_note_t){.step=3,.on=22000,.note7=60,.vel=83,.duration=40960,.owner=(uint8_t)(recording_owner(TSEL)|(2u<<5))};
+    b=a;b.step=7|64u;b.on=40000;recorded_set_note(&b,65);b.vel=97;
     recording_restore_note(TSEL,0,a);recording_restore_note(TSEL,1,b);TSEL->step[8]=(step_t){{65},1,ST_NOTE,SF_RECORDED,97};
     select_range(1,2);hold(B_OCTUP);
     bad+=check("holding OCT+ with a range opens selected-note tools",pop.on==POP_SHEET&&!strcmp(pop.title,"Selected notes"));
@@ -83,7 +83,7 @@ int main(void)
     bad+=check("quantize undo restores mixed precise events and manual tie data",!memcmp(&recording[0],&a,sizeof a)&&!memcmp(&recording[1],&b,sizeof b)&&TSEL->step[1].note[0]==67&&!(TSEL->step[1].flags&SF_RECORDED)&&TSEL->step[2].time==ST_TIE&&TSEL->step[4].time==ST_TIE&&!recording[2].vel);
     setup();manual(6,67,2);a.step=3;a.on=22000;b.step=15|64u|128u;b.on=50000;
     recording_restore_note(TSEL,0,a);recording_restore_note(TSEL,1,b);note_rebuild_all();cursor_set(3);frame();hold(B_OCTUP);sheet_do("Quantize");
-    bad+=check("pattern Quantize defaults to nearest whole steps and wraps the final onset",!recording[0].on&&(recording[0].step&63u)==3&&!recording[1].on&&(recording[1].step&63u)==0&&recording[0].vel==83&&recording[1].vel==97&&duration(0)==5u*RECORD_UNIT/2u&&duration(1)==5u*RECORD_UNIT/2u&&recording[2].note==67&&duration(2)==2u*RECORD_UNIT);
+    bad+=check("pattern Quantize defaults to nearest whole steps and wraps the final onset",!recording[0].on&&(recording[0].step&63u)==3&&!recording[1].on&&(recording[1].step&63u)==0&&recording[0].vel==83&&recording[1].vel==97&&duration(0)==5u*RECORD_UNIT/2u&&duration(1)==5u*RECORD_UNIT/2u&&recorded_note(&recording[2])==67&&duration(2)==2u*RECORD_UNIT);
     hold(B_EDIT);bad+=check("whole-pattern quantize is one undoable operation",!memcmp(&recording[0],&a,sizeof a)&&!memcmp(&recording[1],&b,sizeof b)&&!recording[2].vel&&TSEL->step[7].time==ST_TIE);
     note_quantize(RECORD_UNIT/2u);bad+=check("half-step quantize rounds independently and retains note lengths",recording[0].on==RECORD_UNIT/2u&&recording[1].on==0u&&(recording[1].step&63u)==0&&duration(0)==5u*RECORD_UNIT/2u);
     uint32_t gen=recording_generation;note_quantize(RECORD_UNIT/2u);
@@ -92,7 +92,7 @@ int main(void)
     song.playing=1;note_quantize(RECORD_UNIT);
     bad+=check("quantize refuses playback before touching any event",!strcmp(ui.msg,"STOP TO EDIT")&&!memcmp(&recording[0],&a,sizeof a)&&TSEL->step[1].note[0]==60);
     setup();manual(1,60,1);cursor_set(1);frame();
-    for(uint32_t k=0;k<RECORD_MAX;k++)recording[k]=(recorded_note_t){.step=0,.note=64,.vel=90,.owner=1,.duration=1000};recording_reindex();
+    for(uint32_t k=0;k<RECORD_MAX;k++)recording[k]=(recorded_note_t){.step=0,.note7=64,.vel=90,.owner=1,.duration=1000};recording_reindex();
     note_move_snapped(1,RECORD_UNIT/4,1);
     bad+=check("a full recording pool rejects conversion/copy before changing any source",TSEL->step[1].note[0]==60&&!(TSEL->step[1].flags&SF_RECORDED)&&recording[0].owner==1&&recording[RECORD_MAX-1].vel==90);
     setup();set_engine_of(TSEL,ENGI_FM6);go_page(GR_USER);frame();

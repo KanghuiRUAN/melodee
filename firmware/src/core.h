@@ -54,6 +54,10 @@
 #define NPAT 16u
 #endif
 #define NPAT_MIDI 8u
+#define PROJ_SLOTS 32u                   /* projects: 1..32, an empty one owns no flash (storage.c) */
+#ifndef RES_OK
+#define RES_OK() 1                               /* melodee.c: the resource region (res.c) is installed */
+#endif
 #define NPAT_V1 8u
 #define trk_npat(k) ((uint32_t)(k) < NPART ? NPAT : NPAT_MIDI)   /* the patterns track k has */
 _Static_assert(NSTEP <= 128u && NTRK * NPAT <= 128u, "recorded-note identifiers (seven bits)");

@@ -177,7 +177,7 @@ static void sequencing(void)
     seq_advance(600); input_on(t, 64, 83); pop_midi(0x90, 64, 83);
     seq_advance(300); input_off(t, 64); pop_midi(0x80, 64, 0);
     seq_stop(); song.rec = song.rec_latch = 0;
-    assert(recording[0].note == 64 && recording[0].vel == 83 && recording[0].duration);
+    assert(recorded_note(&recording[0]) == 64 && recording[0].vel == 83 && recording[0].duration);
     mo_r = mo_w; seq_start(); seq_advance(0); empty_midi();
     seq_advance(600); pop_midi(0x90, 64, 83);
     seq_advance(300); pop_midi(0x80, 64, 0); seq_stop(); empty_midi();
@@ -339,7 +339,7 @@ static void midi_only_tracks(void)
     bank_fill(6, 2, 70, 5, 8); trk[6].p[P_E0] = 11;
     pattern_switch(&trk[6], 2); assert(trk[6].pattern == 2);
     chain_defaults(&chain_config); chain_config.count = 2; chain_patterns[1][4] = 3; chain_patterns[0][6] = 2;
-    recorded_note_t r = {0}; r.note = 61; r.vel = 77; r.duration = 100; recorded_set_owner(&r, 6u * NPAT + 2u);
+    recorded_note_t r = {0}; recorded_set_note(&r,61); r.vel = 77; r.duration = 100; recorded_set_owner(&r, 6u * NPAT + 2u);
     recorded_set_step(&r, 1, 0, 0); recording[RECORD_MAX - 1u] = r; recording_reindex();
     bank_fill(1, 1, 30, 7, 32);                         /* (a part's other bank: sparse in FBKL too) */
     song.sel = 6;
@@ -354,7 +354,7 @@ static void midi_only_tracks(void)
     {
         uint32_t found = 0;
         for (uint32_t i = 0; i < RECORD_MAX; i++)
-            found += recording[i].vel == 77u && recorded_owner(&recording[i]) == 6u * NPAT + 2u && recording[i].note == 61u;
+            found += recording[i].vel == 77u && recorded_owner(&recording[i]) == 6u * NPAT + 2u && recorded_note(&recording[i]) == 61u;
         assert(found == 1u);
     }
     /* removing track 2: track 5 (MIDI) to place 4, its banks and channel with it; the last place empty */

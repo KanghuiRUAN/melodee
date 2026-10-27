@@ -147,7 +147,7 @@ static void rec_put(track_t *t, uint32_t actual, uint32_t note, uint32_t bits, u
     recorded_note_t r = {0};
     uint32_t i = 0;
     while (recording[i].vel) i++;
-    r.on = 1000; r.note = (uint8_t)note; r.vel = 100; r.owner = (uint8_t)recording_owner(t);
+    r.on = 1000; recorded_set_note(&r,(uint8_t)note); r.vel = 100; r.owner = (uint8_t)recording_owner(t);
     r.step = (uint8_t)(actual | bits);
     note_duration(&r, RECORD_UNIT);
     recording_restore_note(t, i, r);
@@ -156,7 +156,7 @@ static void rec_put(track_t *t, uint32_t actual, uint32_t note, uint32_t bits, u
 static int rec_has(const track_t *t, uint32_t note, uint32_t step)   /* (step: the byte as stored) */
 {
     for (uint32_t i = 0; i < RECORD_MAX; i++)
-        if (recording[i].vel && (recording[i].owner & 31u) == recording_owner(t) && recording[i].note == note &&
+        if (recording[i].vel && (recording[i].owner & 31u) == recording_owner(t) && recorded_note(&recording[i]) == note &&
             recording[i].step == step) return 1;
     return 0;
 }

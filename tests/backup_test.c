@@ -247,7 +247,7 @@ static int expanded_recording_archive(void)
         pattern_request(&trk[k],b);
         trk[k].step[3]=(step_t){{60},1,ST_NOTE,SF_RECORDED,100,0,0,0};
     }
-    for(uint32_t i=0;i<RECORD_MAX;i++)recording[i]=(recorded_note_t){.on=(uint16_t)(i*61u), .duration=1234, .note=60, .vel=100, .owner=(uint8_t)(i%32u), .step=3};
+    for(uint32_t i=0;i<RECORD_MAX;i++)recording[i]=(recorded_note_t){.on=(uint16_t)(i*61u), .duration=1234, .note7=60, .vel=100, .owner=(uint8_t)(i%32u), .step=3};
     recording_reindex();
     static recorded_note_t saved[RECORD_MAX];uint32_t at=0;for(uint32_t owner=0;owner<32;owner++)for(uint32_t i=0;i<RECORD_MAX;i++)if((recording[i].owner&31u)==owner)saved[at++]=recording[i];
     int ok=!project_save_as(0,"FULL TAKE");

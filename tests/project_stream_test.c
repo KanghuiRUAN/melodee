@@ -20,7 +20,7 @@ static void midi_tracks_stream(void)
         pattern_switch(&trk[k],k%NPAT);
     }
     for(uint32_t i=0;i<RECORD_MAX;i++){
-        recorded_note_t r={.on=(uint16_t)(i*61u),.duration=123,.note=60,.vel=100};
+        recorded_note_t r={.on=(uint16_t)(i*61u),.duration=123,.note7=60,.vel=100};
         recorded_set_owner(&r,i%(NTRK*NPAT)); recorded_set_step(&r,63,0,0);
         recording[i]=r;
     }
@@ -149,7 +149,7 @@ static void workload(uint32_t count,uint32_t spread,uint32_t tail,uint32_t quant
         }
     }
     for(uint32_t i=0;i<count;i++){
-        recorded_note_t r={.on=quant?0:(uint16_t)(8192u+i*1777u),.duration=(uint16_t)(14000u+i*109u),.note=48+i%40,.vel=70+i%58,.step=3,.pitch=(int8_t)(i%49u)-24,.length=i&1u};
+        recorded_note_t r={.on=quant?0:(uint16_t)(8192u+i*1777u),.duration=(uint16_t)(14000u+i*109u),.note7=48+i%40,.vel=70+i%58,.step=3,.pitch=(int8_t)(i%49u)-24,.length=i&1u};
         r.owner=(spread?i%32u:7u)|(tail?3u<<5:0u);recording[i]=r;assert(recording_valid(&r));
     }
     recording_reindex();chain_config.count=1;chain_config.row[0]=(chain_row_t){0,2};
@@ -202,7 +202,7 @@ int main(void)
     for(uint32_t i=0;i<RECORD_MAX;i++){
         const recorded_note_t *r=&expected.recording[i];uint8_t *v=legacy+at+i*10u;
         v[0]=r->on;v[1]=r->on>>8;v[2]=r->duration;v[3]=r->duration>>8;
-        v[4]=r->note;v[5]=r->vel;v[6]=r->owner;v[7]=r->step;v[8]=r->pitch;v[9]=recorded_legacy_length(r);
+        v[4]=recorded_note(r);v[5]=r->vel;v[6]=r->owner;v[7]=r->step;v[8]=r->pitch;v[9]=recorded_legacy_length(r);
     }
     memcpy(legacy+at+RECORD_MAX*10u,(const uint8_t *)&expected+end,sizeof expected-end);
     uint32_t len=sizeof legacy,sum;memcpy(legacy+4,&len,4);sum=proj_hash(legacy,len-4u);memcpy(legacy+len-4u,&sum,4);

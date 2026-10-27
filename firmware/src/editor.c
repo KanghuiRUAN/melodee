@@ -295,7 +295,9 @@ static int ed_flash_stop(void)
 #if MELODEE_BLE
 #include "editor_ble.c"
 #endif
+#ifdef RES_BASE                          /* (the firmware: res.c) */
 #include "editor_res.c"
+#endif
 #include "editor_backup.c"
 #include "editor_fm6.c"
 #include "editor_cz.c"
@@ -367,7 +369,9 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
 #if MELODEE_BLE
     if (ed_ble_handle(cmd, a, na)) { ed_send(); return; }
 #endif
+#ifdef RES_BASE
     if (ed_res_handle(cmd, a, na)) { ed_send(); return; }
+#endif
     if (ed_ui_handle(cmd, a, na)) { ed_send(); return; }
     if (ed_backup_handle(cmd, a, na)) { ed_send(); return; }
     if (ed_fm6_handle(cmd, a, na)) { ed_send(); return; }

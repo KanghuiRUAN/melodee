@@ -77,7 +77,7 @@ static void exhaustion(void)
     uint16_t used=pattern_pool_used,peak=pattern_pool_peak;
     assert(!pattern_write(0,15,&p) && pattern_full);
     assert(pattern_stage[0].bank==1 && pattern_pool_used==used && pattern_pool_peak==peak);verify();
-    recorded_note_t r={.duration=1000,.vel=100,.note=60};
+    recorded_note_t r={.duration=1000,.vel=100,.note7=60};
     recorded_set_owner(&r,1);recorded_set_step(&r,100,0,0);recording[0]=r;recording_reindex();
     motion.count=1;motion.event[0]=(motion_event_t){0,P_PAN,12};motion_pattern[0]=1;
     uint32_t generation=recording_generation;

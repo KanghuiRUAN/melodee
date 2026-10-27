@@ -1441,7 +1441,9 @@ static void persist_boot(void)                    /* before settings_init / pane
     fl_plain_window_init();                        /* flash above 0x93000 reads as plaintext through XIP
                                                     * (user sample sets are played from there) */
     st_small_migrate(wire_take(), sizeof proj_wire_u);   /* preset banks still in old pairs: into the preset pool */
+#ifdef RES_BASE
     res_check();                                   /* the resource region (res.c) installed? */
+#endif
 #if MELODEE_SLICE
     slc_store_boot();                              /* (the scans read each slot's stored slices) */
 #endif

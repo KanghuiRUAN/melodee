@@ -83,7 +83,6 @@ static const char *const N_DRUMCH[] = {"OFF", "1", "2", "3", "4", "5", "6", "7",
  * project's: the column shows drumch_cell (seq.c midi_track) */
 static uint8_t settings_drumch = 10;
 static int16_t drumch_cell;
-#define PROJ_SLOTS 32u                                   /* projects: 1..32, an empty one owns no flash (storage.c) */
 #define PROJ_TMPL 33                                     /* SLOT 33: the template (project.c tmpl) */
 /* SAVE > PROJECT KNOB 2, BOOT: the project power-on loads (OFF, A..D; OFF or an empty slot: the template, if one is
  * saved). A device setting kept with the settings (ext.boot), not the project's: the column shows boot_cell */

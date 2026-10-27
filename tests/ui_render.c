@@ -1053,7 +1053,7 @@ static void setup(int s)
             static const uint8_t step[]={0,0,64,1,15|64|128}, note[]={60,64,60,67,72};
             uint32_t start=count==RECORD_MAX?(i+1u)*60u:on[i];
             uint8_t pos=count==RECORD_MAX?(start>=32768u?64u:0u):step[i];
-            recording[i]=(recorded_note_t){.on=(uint16_t)start, .duration=(uint16_t)(count==RECORD_MAX?96:32768), .note=(uint8_t)(s==S_NOTES_DRUM?(i%2u?38:36):count==RECORD_MAX?60:note[i]), .vel=(uint8_t)(90+i%38u), .owner=(uint8_t)recording_owner(t), .step=pos};
+            recording[i]=(recorded_note_t){.on=(uint16_t)start, .duration=(uint16_t)(count==RECORD_MAX?96:32768), .note7=(uint8_t)(s==S_NOTES_DRUM?(i%2u?38:36):count==RECORD_MAX?60:note[i]), .vel=(uint8_t)(90+i%38u), .owner=(uint8_t)recording_owner(t), .step=pos};
             uint32_t view=recording_view(t,&recording[i]);t->step[view].time=ST_NOTE;t->step[view].flags=SF_RECORDED;
         }
         recording_reindex();
@@ -1449,7 +1449,7 @@ static void setup(int s)
         drum(s==S_DRUM_SOUND_808?DK_808:DK_909);eng(ENGI_DRUM);TSEL->p[P_E0]=s==S_DRUM_SOUND_808?DK_808:DK_909;TSEL->engine=TSEL->eng_req;TSEL->preset=s==S_DRUM_SOUND_808?0:1;song.playing=0;
         ui.drum_sound=s==S_DRUM_SOUND_808?12:D9_SD;ui.lane=(uint8_t)drum_lane(drum_sound_note(TSEL,ui.drum_sound));ui.cursor=4;
         drum_patch_of(song.sel)->c[ui.drum_sound][0]=-12;drum_patch_of(song.sel)->c[ui.drum_sound][1]=31;drum_patch_of(song.sel)->c[ui.drum_sound][2]=16;drum_patch_of(song.sel)->c[ui.drum_sound][3]=40;
-        if(s==S_DRUM_HIT_909 || s==S_DRUM_HIT_FREE || s==S_DRUM_HIT_LONG){recording_restore_note(TSEL,0,(recorded_note_t){.on=27000, .duration=16384, .note=38, .vel=100, .owner=(uint8_t)recording_owner(TSEL), .step=4, .pitch=7, .length=s==S_DRUM_HIT_909});if(s==S_DRUM_HIT_LONG){recording[0].duration=65535;recording[0].owner|=224;recording[0].length=1;}ui.note_pick=1;ui.note_identity=recording[0];ui.note_generation=recording_generation;TSEL->step[4].flags|=SF_RECORDED;go_title("DRUM HIT");}
+        if(s==S_DRUM_HIT_909 || s==S_DRUM_HIT_FREE || s==S_DRUM_HIT_LONG){recording_restore_note(TSEL,0,(recorded_note_t){.on=27000, .duration=16384, .note7=38, .vel=100, .owner=(uint8_t)recording_owner(TSEL), .step=4, .pitch=7, .length=s==S_DRUM_HIT_909});if(s==S_DRUM_HIT_LONG){recording[0].duration=65535;recording[0].owner|=224;recording[0].length=1;}ui.note_pick=1;ui.note_identity=recording[0];ui.note_generation=recording_generation;TSEL->step[4].flags|=SF_RECORDED;go_title("DRUM HIT");}
         else go_title(s==S_DRUM_MIX_909?"DRUM MIX":"DRUM SOUND");
         ui.hot_col=2;ui.hot_t=30;break;
     case S_DRUM_HIT_TOMS:                               /* KNOB 2 on TOM M: its hits filled, TOM L's and H's hollow, the lane MT */

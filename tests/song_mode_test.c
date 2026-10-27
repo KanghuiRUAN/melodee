@@ -60,7 +60,7 @@ static int rests(void)
     track_t *t = &trk[0]; t->p[P_SLEN] = 1;
     t->step[0] = (step_t){{60}, 1, ST_NOTE, 0, 96}; pattern_commit(t);
     motion_set_event(t, 0, P_LEVEL, 12);
-    recording[0] = (recorded_note_t){.duration=RECORD_UNIT,.note=72,.vel=96};
+    recording[0] = (recorded_note_t){.duration=RECORD_UNIT,.note7=72,.vel=96};
     recorded_set_owner(&recording[0], recording_owner(t)); recording_reindex();
     arrangement(3); memset(chain_patterns, 0, sizeof chain_patterns);
     for (uint32_t r = 0; r < 3; r++) chain_config.row[r].slot = 0;
@@ -187,7 +187,7 @@ static int recorded_block(void)
 {
     int bad=0; ui_power_on(); trk[0].p[P_SLEN]=1; trk[1].p[P_SLEN]=8;
     pattern_commit(&trk[0]); pattern_commit(&trk[1]);
-    recorded_note_t note={.duration=32768,.note=72,.vel=96};
+    recorded_note_t note={.duration=32768,.note7=72,.vel=96};
     recorded_set_exponent(&note,3); recorded_set_owner(&note,recording_owner(&trk[1]));
     recording_restore_note(&trk[1],0,note); recording_reindex();
     trk[1].step[0] = (step_t){{72},1,ST_NOTE,SF_RECORDED,96};

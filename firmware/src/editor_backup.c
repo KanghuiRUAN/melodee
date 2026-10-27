@@ -12,7 +12,7 @@
 /* 2..5: projects 1..4; 64..91: projects 5..32 (project.c PROJ_SLOTS) */
 static const uint8_t ED_BK_IDS[57] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91};
 #define ED_BK_N ((uint32_t)sizeof ED_BK_IDS)
-#define ED_BK_MAX (BANK_STORE_SIZE + PJ_HEAD)   /* a raw record, or a compact one (project_stream.c) */
+#define ED_BK_MAX (BANK_STORE_SIZE + 32u)   /* a raw record, or a compact one (project_stream.c PJ_HEAD) */
 #define ED_BK_RAW (wire_take())             /* reuse the existing serialized main-loop scratch */
 #define ed_bk_set set_rec    /* id 1: the settings record (+ the template), in the settings save's staging (project.c):
                              * a save while a backup runs rewrites it, and the archive's CRC then fails */
@@ -24,11 +24,11 @@ static uint32_t ed_bk_source_obj, ed_bk_source_copy, ed_bk_source_crc;
 /* Runtime LIST snapshots and PUT uploads have exclusive lifetimes. Neither
  * has a committed header until an explicitly validated saved-slot restore. */
 static st_stream_t ed_bk_stage;
-static int ed_bk_project(uint32_t id){return id==0u || (id>=2u && id<=5u) || (id>=64u && id<60u+PROJ_SLOTS);}
 /* Profiling builds keep the original RAM-only archive workspace. Guarded
  * sessions must capture and restore live music without any flash mutation. */
 static int ed_bk_ram_only(void){return AUDIO_LAB_GUARDED();}
 #endif
+static int ed_bk_project(uint32_t id){return id==0u || (id>=2u && id<=5u) || (id>=64u && id<60u+PROJ_SLOTS);}
 static uint32_t ed_bk_slot(uint32_t id) { return id < 6u ? id - 2u : id - 60u; }   /* a saved project's id -> slot */
 static void ed_bk_u32(uint32_t n) { for (uint32_t i = 0; i < 5u; i++) ed_b((n >> (i * 7u)) & 127u); }
 static uint32_t ed_bk_r32(const uint8_t *p)
