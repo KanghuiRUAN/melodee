@@ -72,7 +72,7 @@ static const uint8_t *ed_bk_object(uint32_t id,uint32_t *len)
     if (id == 0u) {
         *len=BANK_STORE_SIZE;
 #if MELODEE_FLASH
-        if(!ed_bk_ram_only()){ed_bk_source_obj=ed_bk_stage.obj;ed_bk_source_copy=ed_bk_stage.head.slot;ed_bk_source_crc=ed_bk_stage.head.crc;}
+        if(!ed_bk_ram_only()){*len=ed_bk_stage.head.len;ed_bk_source_obj=ed_bk_stage.obj;ed_bk_source_copy=ed_bk_stage.head.slot;ed_bk_source_crc=ed_bk_stage.head.crc;}   /* (compact) */
 #endif
         return ED_BK_RAW;
     }
@@ -194,7 +194,7 @@ static uint32_t ed_bk_commit_inner(void)
     if (ed_bk_project(ed_bk_id)) {
 #if !MELODEE_FLASH || MELODEE_AUDIO_PROFILE
         int full = bank_full(ed_bk_len);
-        bank_wide = 0;
+        bank_wide = bank_p16 = 0;
         if (ed_bk_len && !(full ? bank_valid(raw, ed_bk_len) : proj_import(&proj_scratch, raw, (int)ed_bk_len))) return 2;
         if (ed_bk_id == 0u) {
             if (!ed_bk_len) return 2;
