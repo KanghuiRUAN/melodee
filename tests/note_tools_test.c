@@ -91,6 +91,11 @@ int main(void)
     setup();manual(1,60,1);a.step=4;a.on=22000;recording_restore_note(TSEL,0,a);note_rebuild_all();
     song.playing=1;note_quantize(RECORD_UNIT);
     bad+=check("quantize refuses playback before touching any event",!strcmp(ui.msg,"STOP TO EDIT")&&!memcmp(&recording[0],&a,sizeof a)&&TSEL->step[1].note[0]==60);
+    setup();manual(2,60,1);manual(5,72,1);cursor_set(2);frame();song.playing=1;ui.msg[0]=0;
+    turn(EN_K3,-1);i=notes_selected(TSEL);
+    bad+=check("manual LENGTH while playing converts to a 0.75-step event without STOP TO EDIT",i<RECORD_MAX&&duration(i)==3u*RECORD_UNIT/4u&&strcmp(ui.msg,"STOP TO EDIT")&&TSEL->step[5].note[0]==72);
+    turn(EN_K3,2);bad+=check("  further turns while playing edit that event (1.25 steps)",notes_selected(TSEL)==i&&duration(i)==5u*RECORD_UNIT/4u);
+    song.playing=0;
     setup();manual(1,60,1);cursor_set(1);frame();
     for(uint32_t k=0;k<RECORD_MAX;k++)recording[k]=(recorded_note_t){.step=0,.note7=64,.vel=90,.owner=1,.duration=1000};recording_reindex();
     note_move_snapped(1,RECORD_UNIT/4,1);

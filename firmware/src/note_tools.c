@@ -144,18 +144,25 @@ static void note_rebuild_all(void)
     }
     for(uint32_t i=0;i<NSTEP;i++)if(TSEL->step[i].flags&SF_RECORDED)notes_rebuild(TSEL,i);
 }
-/* Manual fractional length: all chord members retain their common duration. */
+/* Manual fractional length: all chord members retain their common duration.
+ * Playback frees the note history every block, so a playing edit has no
+ * snapshot: the conversion preflights itself and later turns edit the event. */
 static void note_manual_length(int32_t delta,uint32_t quantum)
 {
-    if(song.playing||chain_busy()||live_rec_sel()){ui_message("STOP TO EDIT");return;}
+    if(chain_busy()||live_rec_sel()){ui_message("STOP TO EDIT");return;}
     uint32_t at=notes_manual_start(TSEL);if(at>=NSTEP){ui_message("SELECT A NOTE");return;}
-    fm1_irq_off();if(!note_transaction_begin()){fm1_irq_on();return;}
-    if(!note_convert(at)){note_transaction.valid=0;fm1_irq_on();return;}
+    uint32_t snapshot=!song.playing;
+    fm1_irq_off();
+    if(!snapshot)recording_prune(TSEL);
+    else if(!note_transaction_begin()){fm1_irq_on();return;}
+    if(!note_convert(at)){if(snapshot)note_transaction.valid=0;fm1_irq_on();return;}
     for(uint32_t i=recording_head[recording_owner(TSEL)];i<RECORD_MAX;i=recording_next[i])if(recorded_step(&recording[i])==at){
         uint32_t duration=recording[i].duration*(1u<<(recorded_exponent(&recording[i])));
         note_duration(&recording[i],(uint32_t)clamp(note_snap((int32_t)duration,delta,quantum),(int32_t)quantum,128*RECORD_UNIT));
     }
-    recording_generation++;ui.note_pick=0;notes_selected(TSEL);note_transaction_end();fm1_irq_on();
+    recording_generation++;ui.note_pick=0;notes_selected(TSEL);
+    if(snapshot)note_transaction_end();else{step_history_clear();ui.force=1;}
+    fm1_irq_on();
 }
 /* Fine moves and range transforms snap to quarter-step boundaries. A range's
  * offsets stay intact; copy shifts a duplicate. */
