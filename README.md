@@ -1025,7 +1025,7 @@ The list also includes **54 microtonal selections**, for **70 scales in total**:
 selected equal divisions from 5 to 53, just intonation, harmonic scales, Partch, historical temperaments,
 maqam models, shruti, gamelan examples and Bohlen–Pierce. See the [complete catalogue and
 playing notes](assets/scales/README.md). QNT WHITE, ALL and MPC play consecutive degrees;
-SNAP rounds the keyboard and incoming MIDI pitches down to a scale degree. QNT OFF bypasses
+SNAP rounds the keyboard and incoming MIDI pitches to the nearest scale degree. QNT OFF bypasses
 microtonal tuning. ROOT and TRN shift pitch in ordinary semitones. The octave buttons,
 ARP OCT and chord voicings move by the scale's repeat period (3:1 for Bohlen–Pierce).
 Microtonal notes display as degrees, such as D1 and D3+1, and retain separate identities
