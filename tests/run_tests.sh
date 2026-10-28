@@ -85,6 +85,7 @@
 # retain every unaffected golden / CPU / target entry. VERBOSE=1: every render.
 export AC79_SDK="${AC79_SDK:-$HOME/fw-AC79_AIoT_SDK}"
 cd "$(dirname "$0")/.."
+PY="${PYTHON:-python3}"                           # (as build.sh: the Python with Pillow, Raqm and the build tools)
 # Pillow's Raqm (text spacing, renders): macOS strips DYLD_* on the way into /bin/sh (build.sh)
 [ "$(uname -s)" = Darwin ] && export DYLD_FALLBACK_LIBRARY_PATH="${DYLD_FALLBACK_LIBRARY_PATH:-/opt/homebrew/lib:/usr/local/lib:/usr/lib}"
 OUT=build/host
@@ -98,18 +99,18 @@ case $SOUND in 0 | 1 | only) ;; *) echo "SOUND=0, 1 or only"; exit 2 ;; esac
 UI=${UI:-}
 case $UI in "" | renders) ;; *) echo "UI=renders or empty"; exit 2 ;; esac
 if [ "$UI" = renders ]; then
-    python3 -c "import PIL" 2>/dev/null || { echo "UI renders need Pillow (python3 -m pip install Pillow)" >&2; exit 1; }
+    "$PY" -c "import PIL" 2>/dev/null || { echo "UI renders need Pillow ($PY -m pip install Pillow)" >&2; exit 1; }
 fi
 [ "$PARALLEL" -ge 1 ] 2>/dev/null || { echo "PARALLEL=n, n >= 1"; exit 2; }
-python3 tools/gen_scales.py --check || exit 1
-python3 tools/audio_contract.py --check || exit 1
+"$PY" tools/gen_scales.py --check || exit 1
+"$PY" tools/audio_contract.py --check || exit 1
 if [ "$UI" = renders ]; then
     [ -f build/gen/melodee_tables.h ] || { echo "run ./build.sh first"; exit 1; }
 else
     [ -f build/melodee.fwsc ] || { echo "run ./build.sh first"; exit 1; }
 fi
 TABLES=0; [ -f build/gen/melodee_tables.h ] && TABLES=1
-PIL=0; python3 -c "import PIL" 2>/dev/null && PIL=1
+PIL=0; "$PY" -c "import PIL" 2>/dev/null && PIL=1
 mkdir -p "$OUT" "$LOG"
 rm -f "$LOG"/*
 start=$(date +%s)
@@ -188,11 +189,11 @@ web_tests() {                                     # the editor mock's tables mus
 desc_json() { "$OUT/descdump" > "$OUT/desc.json"; }
 old_to_new() {                                    # a package of another app (this one cut short) -> this build
     head -c 200000 build/melodee.bin > "$OUT/old_app.bin" &&
-        python3 tools/fm1pkg_make.py "$OUT/old_app.bin" build/loader/ota.bin "$OUT/old.fwsc" >/dev/null &&
+        "$PY" tools/fm1pkg_make.py "$OUT/old_app.bin" build/loader/ota.bin "$OUT/old.fwsc" >/dev/null &&
         "$OUT/ldr_test" "$OUT/old.fwsc" build/melodee.fwsc
 }
 powercut_tests() {
-    python3 tests/boot_fixtures.py &&
+    "$PY" tests/boot_fixtures.py &&
         "$OUT/loader_powercut_test" build/host/boot-fixtures/legacy.fwsc build/melodee.fwsc \
         build/host/boot-fixtures/same-stub.fwsc build/host/boot-fixtures/other-legacy.fwsc \
         build/host/boot-fixtures/old-stub.fwsc
@@ -209,11 +210,11 @@ ui_renders() {
     rm -rf build/ui_band_reference build/ui_band_slot
     mkdir -p build/ui_band_reference/ppm build/ui_band_slot
     step "UI canvas: whole-canvas reference" "$OUT/ui_render_whole" build/ui_band_reference build/ui_band_slot
-    step "UI canvas: exact band replay pixels" python3 tests/canvas_bands_compare.py build/ui_new build/ui_band_reference
-    step "UI canvas: exact rolling frames" python3 tests/canvas_bands_compare.py build/ui_slot build/ui_band_slot
+    step "UI canvas: exact band replay pixels" "$PY" tests/canvas_bands_compare.py build/ui_new build/ui_band_reference
+    step "UI canvas: exact rolling frames" "$PY" tests/canvas_bands_compare.py build/ui_slot build/ui_band_slot
     if [ $PIL = 1 ]; then
-        python3 tests/ui_render.py build/ui_new build/ui_slot || fail "tests/ui_render.py"
-        python3 tools/ui_mockcmp.py build/ui_new build/ui_mock || fail "tools/ui_mockcmp.py" # redesign parity (docs/design): a report, no gate yet
+        "$PY" tests/ui_render.py build/ui_new build/ui_slot || fail "tests/ui_render.py"
+        "$PY" tools/ui_mockcmp.py build/ui_new build/ui_mock || fail "tools/ui_mockcmp.py" # redesign parity (docs/design): a report, no gate yet
     fi
 }
 if [ "$UI" = renders ]; then
@@ -299,16 +300,16 @@ if core; then
     t "cache RAM startup, memory faults and safe fallback" cache_ram_test
     t "system clock: read only, never written" clock_test -O1
     t "stock V15 supply startup, timeouts and read-back faults" power_test -O1
-    job step "nightly and synth-only site preserve release and editor" python3 tests/nightly_site_test.py
-    run "audio diagnostics schema compatibility" python3 tests/usb_audio_stats_test.py
+    job step "nightly and synth-only site preserve release and editor" "$PY" tests/nightly_site_test.py
+    run "audio diagnostics schema compatibility" "$PY" tests/usb_audio_stats_test.py
     t "audio profiling: histogram bounds and timer wrap" audio_profile_test
     t "batch profiling: per-core accounting and failed-worker drops" audio_batch_profile_test
-    run "CPU baseline tool: bounded RAM restore and diagnostic decoding" python3 tests/audio_cpu_device_test.py
-    run "Normal firmware stress: continuous ten-minute polling, faults, wrap and native driver stderr" python3 tests/audio_cpu_stress_test.py
-    run "CPU USB capture: stereo/stems, actual frames and final driver errors" python3 tests/audio_cpu_usb_test.py
-    run "CPU sequence runner: memory fixtures, external-clock timing and guarded restoration" python3 tests/audio_cpu_sequence_test.py
-    run "CPU live takes: native replay comparison, timed input, failure cleanup and guarded restoration" python3 tests/audio_cpu_take_test.py
-    run "target budget: natural loops and FPU decoding" python3 tests/target_budget_test.py
+    run "CPU baseline tool: bounded RAM restore and diagnostic decoding" "$PY" tests/audio_cpu_device_test.py
+    run "Normal firmware stress: continuous ten-minute polling, faults, wrap and native driver stderr" "$PY" tests/audio_cpu_stress_test.py
+    run "CPU USB capture: stereo/stems, actual frames and final driver errors" "$PY" tests/audio_cpu_usb_test.py
+    run "CPU sequence runner: memory fixtures, external-clock timing and guarded restoration" "$PY" tests/audio_cpu_sequence_test.py
+    run "CPU live takes: native replay comparison, timed input, failure cleanup and guarded restoration" "$PY" tests/audio_cpu_take_test.py
+    run "target budget: natural loops and FPU decoding" "$PY" tests/target_budget_test.py
     t "retired synth identities, project/user patch preservation and favorites" engine_retirement_test -O2 $FW
     t "capture gating, derived caches and silent-track clocks" performance_test -DMELODEE_LEGACY_EXTRAS=1 -O2 $FW
     t "canvas drawing overlaps DMA without changing pending pixels" lcd_overlap_test -O1 -w -Ibuild/gen
@@ -321,14 +322,14 @@ if core; then
     t "USB audio: routing, clock drift and stream recovery" usb_audio_test
     t "USB audio: endpoint lifecycle and packet ownership" usb_audio_driver_test
     t "USB MIDI host: duplex I/O, enumeration, ACK ownership, back-pressure and recovery" usb_host_test -O1 -fsanitize=address,undefined
-    run "USB descriptors: MIDI, CDC and audio configurations" python3 tests/usb_audio_desc_test.py
-    run "boot audio: packed image, decoder bounds, malformed streams and XIP dependencies" python3 tests/boot_audio_test.py
-    run "BLE MIDI: protocol, encryption, pairing, radio driver and Melodee integration" python3 tests/ble_tests.py
-    run "BLE HCI size probe: shared events preserved and SDK drift rejected" python3 tests/ble_hci_probe_test.py
-    run "size attributes: preserve hot loops and outline foreground transactions" python3 tests/size_fns_test.py
-    run "stack budgets: callbacks, re-entry, nested IRQs and overflow rejection" python3 tests/stack_budget_test.py
-    run "resident audio: call graph and flash/RAM ABI boundaries" python3 tests/audio_ram_test.py
-    run "performance defaults: local/compiler agreement and explicit reference overrides" python3 tests/performance_defaults_test.py
+    run "USB descriptors: MIDI, CDC and audio configurations" "$PY" tests/usb_audio_desc_test.py
+    run "boot audio: packed image, decoder bounds, malformed streams and XIP dependencies" "$PY" tests/boot_audio_test.py
+    run "BLE MIDI: protocol, encryption, pairing, radio driver and Melodee integration" "$PY" tests/ble_tests.py
+    run "BLE HCI size probe: shared events preserved and SDK drift rejected" "$PY" tests/ble_hci_probe_test.py
+    run "size attributes: preserve hot loops and outline foreground transactions" "$PY" tests/size_fns_test.py
+    run "stack budgets: callbacks, re-entry, nested IRQs and overflow rejection" "$PY" tests/stack_budget_test.py
+    run "resident audio: call graph and flash/RAM ABI boundaries" "$PY" tests/audio_ram_test.py
+    run "performance defaults: local/compiler agreement and explicit reference overrides" "$PY" tests/performance_defaults_test.py
     t "removed effects: old songs and motion, MIDI, physical input and dry output" no_effects_test -O1 $FW
     t "resident audio: four-track resource budget and removed buses" ram_audio_test -O2 $FW
     t "resident/cache undo: validated eight levels and bounded fallback" ui_resident_cache:ui_test -DMELODEE_RAM_AUDIO=1 -DMELODEE_CACHE_RAM=1 $FW
@@ -336,16 +337,16 @@ if core; then
     t "audio: calibrated reservations, release tails and overlapping hits" audio_admission_test -O2 $FW
     t "USB audio: four isolated track stems through the real mixer" usb_audio_tracks_test -O2 $FW
     t "boot stub: CRCs, rescue keys, damaged staging and retry fallback" boot_stub_test -O2
-    run "boot packages: constant entry sector and valid directory CRCs" python3 tests/boot_stub_pkg_test.py
+    run "boot packages: constant entry sector and valid directory CRCs" "$PY" tests/boot_stub_pkg_test.py
     t "power cuts: every erase/page, resume and unchanged boot sector" loader_powercut_test -O2 -- powercut_tests
     t "M-UPGRADE entry (own loader and pinned boot installer)" ota_test -DOWN_PKG=1 -- "$OUT/ota_test" build/melodee.fwsc web/m-bootloader/fm1-uboot.fwsc
     t "installer crash report (read only)" installer_report_test
     t "update loader: other app -> this build" ldr_test -- old_to_new
-    run "installer CLI (fm1_install.py) against a simulated FM-1" python3 tests/install_test.py
-    run "ROM USB recovery: backup, protected regions, interrupted writes and transport failures" python3 tests/recovery_test.py
-    run "recovery diagnostics: legacy and boot-protected retained RAM" python3 tests/retained_ram_test.py
-    run "release assets: firmware identity, application bytes, native provenance and ZIP integrity" python3 tests/release_assets_test.py
-    run "recovery correction: preserve signed firmware and verify public replacement assets" python3 tests/recovery_correction_test.py
+    run "installer CLI (fm1_install.py) against a simulated FM-1" "$PY" tests/install_test.py
+    run "ROM USB recovery: backup, protected regions, interrupted writes and transport failures" "$PY" tests/recovery_test.py
+    run "recovery diagnostics: legacy and boot-protected retained RAM" "$PY" tests/retained_ram_test.py
+    run "release assets: firmware identity, application bytes, native provenance and ZIP integrity" "$PY" tests/release_assets_test.py
+    run "recovery correction: preserve signed firmware and verify public replacement assets" "$PY" tests/recovery_correction_test.py
 fi
 
 if core && [ $TABLES = 1 ]; then
@@ -376,7 +377,7 @@ if core && [ $TABLES = 1 ]; then
     t "16 x 128 recording core: positions, release queues, copies and pitch cache" recording_capacity_test -O1 -DMELODEE_RECORD_INDEX=1 $FW
     t "Recording scheduler: reference-state parity, cache invalidation and live lists" recording_scheduler_test -O1 $FW
     t "Recording RAM: shared capture/deadline counters and mode handoffs" recording_runtime_test -O1 $FW
-    run "Recording storage codec probe: lossless roundtrip and malformed data" python3 tools/recording_storage_probe.py
+    run "Recording storage codec probe: lossless roundtrip and malformed data" "$PY" tools/recording_storage_probe.py
     t "Recording ownership: independent scanner, edits, duplicates, sparse/dense queries and rebuild cost" recording_index_test -O2 $FW
     t "Timestamped releases: rollover, retrigger, 1024 cancellations, edits and track isolation" recording_queue_test -O1 $FW
     t "Recording scheduler oracle against the countdown cursor" recording_scheduler_countdown:recording_scheduler_test -O1 $FW -DMELODEE_RECORD_QUEUE=0
@@ -392,7 +393,7 @@ if core && [ $TABLES = 1 ]; then
     t "text: pens, kerning and pixels equal the reference renderer" text_ref_test -O1 $FW
     if [ $PIL = 1 ]; then
         run "text spacing: glyph gaps against the font's own (16x supersampled), S M <= 0.25 px, L <= 0.5 px" \
-            python3 tests/text_spacing_test.py build/gen/ui_fonts.h
+            "$PY" tests/text_spacing_test.py build/gen/ui_fonts.h
     fi
     t "settings: PER5 records, palette ids and preference preservation" settings_test -O1 -w -Ibuild/gen
     t "UI: sounds keep steps, undo, recording, MIDI overflow, pending saves, panel recovery, drum grid, song chain, MONO gray" \
@@ -488,7 +489,7 @@ if sound && [ $TABLES = 1 ]; then
     fi
 fi
 if sound; then
-    run "regression: target cost of the render loops (pi32v2 disassembly)" python3 tests/target_budget.py \
+    run "regression: target cost of the render loops (pi32v2 disassembly)" "$PY" tests/target_budget.py \
         build/melodee.dis tests/target_budget.txt
 fi
 [ $TABLES = 1 ] || note "== skip hostsim (run ./build.sh once)"
