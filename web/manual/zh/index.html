@@ -1,0 +1,1385 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Chinese translation of the SLOOP 2.6 manual (M-VAVE FM-1 open firmware).
+     Generated from the official SLOOP 2.6 CN PDF. -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLOOP 2.6 操作指南 · Melodee</title>
+<meta name="description" content="SLOOP 2.6 完整操作指南（中文）：M-VAVE FM-1 开源固件的全部功能、按键组合与参数页面。">
+<style>
+  :root { --bg:#fff; --fg:#000; --dim:#666; --line:#ccc; --chip:#f4f4f4; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#000; --fg:#fff; --dim:#888; --line:#444; --chip:#141414; }
+  }
+  :root[data-theme="dark"] { --bg:#000; --fg:#fff; --dim:#888; --line:#444; --chip:#141414; }
+  html { color-scheme: light dark; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.7 -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC",
+              "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; }
+  main { max-width:1040px; margin:0 auto; padding:48px 16px 64px; }
+  h1 { font-size:24px; font-weight:600; margin:0 0 8px; }
+  h2 { font-size:18px; font-weight:600; margin:0 0 10px; padding-bottom:3px;
+       border-bottom:1px solid var(--fg); }
+  h3 { font-size:15px; font-weight:600; margin:22px 0 8px; }
+  h4 { font-size:13px; font-weight:600; margin:18px 0 6px; color:var(--dim);
+       text-transform:uppercase; letter-spacing:0.04em; }
+  p { margin:0 0 12px; }
+  a { color:inherit; }
+  a:focus-visible { outline:1px solid var(--fg); outline-offset:2px; }
+  .site { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+          margin:0 0 24px; padding-bottom:8px; border-bottom:1px solid var(--line);
+          flex-wrap:wrap; }
+  .site .brand { font-size:24px; font-weight:600; }
+  .site .links { display:flex; gap:16px; font-size:13px; flex-wrap:wrap; }
+  .site .links a { color:var(--dim); text-decoration:none; }
+  .site .links a:hover { color:var(--fg); }
+  .site .links a[aria-current="page"] { color:var(--fg); }
+  .small { color:var(--dim); font-size:13px; }
+  .lede { color:var(--dim); margin:0 0 24px; }
+  .layout { display:grid; grid-template-columns:minmax(0,1fr); gap:8px 32px;
+            align-items:start; }
+  .toc { margin:0 0 8px; }
+  .toc-label { margin:0 0 8px; color:var(--dim); font-size:13px; }
+  .toc a { display:block; color:var(--dim); text-decoration:none; font-size:13px;
+           line-height:1.5; padding:1px 0; }
+  .toc a:hover { color:var(--fg); }
+  .toc a.here { color:var(--fg); font-weight:600; }
+  .toc a.sub { padding-left:14px; }
+  section { margin:0 0 40px; scroll-margin-top:24px; }
+  ul, ol { margin:0 0 14px; padding-left:1.4em; }
+  li { margin:0 0 4px; }
+  li::marker { color:var(--dim); }
+  .chaplist { margin:0 0 12px; }
+  .chaplist ol { padding-left:0; list-style:none; counter-reset:none; }
+  .chaplist li { margin:0; border-bottom:1px solid var(--line); }
+  .chaplist li:first-child { border-top:1px solid var(--line); }
+  .chaplist a { display:flex; gap:12px; padding:6px 2px; text-decoration:none;
+                font-size:14px; }
+  .chaplist a:hover { color:var(--dim); }
+  .chaplist b { color:var(--dim); font-weight:400; min-width:1.6em;
+                font-variant-numeric:tabular-nums; }
+  .tw { overflow-x:auto; margin:0 0 16px; -webkit-overflow-scrolling:touch; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th { font-weight:400; color:var(--dim); text-align:left; white-space:nowrap; }
+  td, th { border-bottom:1px solid var(--line); padding:6px 14px 6px 0;
+           vertical-align:top; }
+  td:first-child { white-space:nowrap; }
+  tbody tr:hover { background:var(--chip); }
+  kbd { font:12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        border:1px solid var(--line); border-radius:3px; padding:0 4px;
+        white-space:nowrap; }
+  code { font:12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  footer { margin-top:32px; padding-top:12px; border-top:1px solid var(--line);
+           color:var(--dim); font-size:13px; }
+  .top { margin-top:12px; font-size:13px; }
+  .top a { color:var(--dim); text-decoration:none; }
+  .top a:hover { color:var(--fg); }
+  @media (max-width:799px) {
+    .toc { display:flex; flex-wrap:wrap; gap:2px 10px; }
+    .toc-label { width:100%; }
+    .toc a { display:inline-block; }
+    .toc a.sub { padding-left:0; }
+  }
+  @media (min-width:800px) {
+    .layout { grid-template-columns:220px minmax(0,1fr); }
+    .toc { position:sticky; top:24px; max-height:calc(100vh - 48px); overflow:auto;
+           padding-right:8px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <nav class="site">
+    <span class="brand">Melodee</span>
+    <div class="links">
+      <a href="../../editor/">Patch Editor</a>
+      <a href="../../installer/">Installer</a>
+      <a href="../" >Manual</a>
+      <a href="./" aria-current="page">中文指南</a>
+    </div>
+  </nav>
+  <p class="lede">M-VAVE FM-1 开源固件 SLOOP 2.6 的完整中文操作指南：26 章，涵盖安装、面板、音序器、合成引擎、效果器、MIDI 与网页编辑器。英文版见 <a href="../">Manual</a>。</p>
+
+  <div class="layout">
+    <nav class="toc" id="toc" aria-label="目录">
+    <p class="toc-label">目录</p>
+    <a href="#intro">概览</a>
+    <a href="#ch1">安装与更新</a>
+    <a href="#ch2">面板布局</a>
+    <a href="#ch3">核心概念：轨道、颜色、轻按与按住</a>
+    <a class="sub" href="#ch3.1">四个轨道</a>
+    <a class="sub" href="#ch3.2">轻按 (Tap) 与按住 (Hold)</a>
+    <a href="#ch4">60 秒快速上手（制作一段 Beat）</a>
+    <a href="#ch5">单按键功能详解</a>
+    <a class="sub" href="#ch5.1">开机与开机状态下的组合快捷键</a>
+    <a href="#ch6">键盘演奏模式</a>
+    <a class="sub" href="#ch6.1">合成器轨道 (1–3)</a>
+    <a class="sub" href="#ch6.2">鼓轨道 (4)</a>
+    <a class="sub" href="#ch6.3">力度与音量分级</a>
+    <a href="#ch7">鼓轨道详解</a>
+    <a class="sub" href="#ch7.1">16 种鼓音色映射</a>
+    <a class="sub" href="#ch7.2">鼓套组 (Kits)</a>
+    <a class="sub" href="#ch7.3">DRUMS 鼓机专属界面</a>
+    <a href="#ch8">录音与循环录制</a>
+    <a class="sub" href="#ch8.1">REC 按键功能逻辑</a>
+    <a class="sub" href="#ch8.2">REC 准备界面（未弹下首音前）</a>
+    <a class="sub" href="#ch8.3">自由录音模式 (Free Take)：速度随您而定</a>
+    <a class="sub" href="#ch8.4">节拍器与 Swing 摇摆感</a>
+    <a class="sub" href="#ch8.5">录制内容细则</a>
+    <a href="#ch9">快捷图层（按住按键）</a>
+    <a class="sub" href="#ch9.1">FX — Punch-in 实时特效图层</a>
+    <a class="sub" href="#ch9.2">EDIT — 擦除与修改图层</a>
+    <a class="sub" href="#ch9.3">ARP — 连打滚奏图层 (Note-repeat)</a>
+    <a class="sub" href="#ch9.4">SEQ — 步进编辑图层</a>
+    <a class="sub" href="#ch9.5">SEL — 调性与和弦图层</a>
+    <a class="sub" href="#ch9.6">GLO — 混音控制图层</a>
+    <a class="sub" href="#ch9.7">SAVE — Song 曲目图层</a>
+    <a href="#ch10">步进序列表：Steps、微调、参数锁定、Fill 条件</a>
+    <a class="sub" href="#ch10.1">Nudge ( 微调 / 微观时序)</a>
+    <a class="sub" href="#ch10.2">参数锁定 (Parameter Locks)</a>
+    <a class="sub" href="#ch10.3">Fill 条件 (Fill Conditions)</a>
+    <a class="sub" href="#ch10.4">时值划分 (Divisions)</a>
+    <a href="#ch11">调性、音阶、和弦与 CHORD+</a>
+    <a class="sub" href="#ch11.1">调性与音阶</a>
+    <a class="sub" href="#ch11.2">和弦模式：单指一键触发和弦</a>
+    <a class="sub" href="#ch11.3">CHORD+：黑键修改和弦属性</a>
+    <a class="sub" href="#ch11.4">SEL 2：扫弦 (STRUM) 与声部导向 (VLEAD)</a>
+    <a href="#ch12">混音：音量、静音、独奏、Fill 与打拍定速</a>
+    <a href="#ch13">撤销、清除、保存、工程与自动保存</a>
+    <a class="sub" href="#ch13.1">SAVE 保存设置页面（轻按 SAVE 翻页）</a>
+    <a href="#ch14">Song 模式：段落、链式播放与完整歌曲</a>
+    <a class="sub" href="#ch14.1">现场实时编排与录制</a>
+    <a class="sub" href="#ch14.2">SONG 歌曲编辑界面</a>
+    <a href="#ch15">屏幕界面一览</a>
+    <a href="#ch16">所有参数页面与旋钮功能</a>
+    <a href="#ch17">音色库与 12 款合成引擎</a>
+    <a class="sub" href="#ch17.1">内置音色库</a>
+    <a class="sub" href="#ch17.2">12 款合成引擎</a>
+    <a class="sub" href="#ch17.3">FM6 引擎与 DX7 音色文件</a>
+    <a href="#ch18">效果器：主效果、Punch-in 效果、单轨效果</a>
+    <a class="sub" href="#ch18.1">信号流走向</a>
+    <a class="sub" href="#ch18.2">主混音效果：DUST, DUCK, FILT, ROLL</a>
+    <a class="sub" href="#ch18.3">Punch-in 实时特效</a>
+    <a class="sub" href="#ch18.4">Texture 质感铺底 (2.6)</a>
+    <a class="sub" href="#ch18.5">单轨专属效果</a>
+    <a href="#ch19">音频可视化效果器</a>
+    <a href="#ch20">HOME 菜单与灯光设置</a>
+    <a class="sub" href="#ch20.1">背光灯光逻辑</a>
+    <a class="sub" href="#ch20.2">硬件校准 (Hardware Calibration)</a>
+    <a href="#ch21">MIDI 连接与控制</a>
+    <a class="sub" href="#ch21.1">MIDI 信号输入途径</a>
+    <a class="sub" href="#ch21.2">完整 MIDI 参数配置：GLO → MIDI 与 MIDI 2 (2.6)</a>
+    <a class="sub" href="#ch21.3">MIDI 输出与 Clock 时钟同步 (GLO → SYSTEM)</a>
+    <a class="sub" href="#ch21.4">MIDI CC 控制器映射 (2.5)</a>
+    <a class="sub" href="#ch21.5">MIDI LEARN 自定义映射 (2.6)</a>
+    <a href="#ch22">USB 声卡功能</a>
+    <a href="#ch23">自定义采样与鼓组制作</a>
+    <a class="sub" href="#ch23.1">制作旋律乐器 (编辑器 → Samples 页面)</a>
+    <a class="sub" href="#ch23.2">制作鼓套组 (编辑器 → Drum kit 页面)</a>
+    <a class="sub" href="#ch23.3">自定义合成鼓组 (SYN1–SYN4)</a>
+    <a href="#ch24">Web 网页端编辑器</a>
+    <a class="sub" href="#ch24.1">钢琴卷帘窗与 MIDI 文件导入导出 (Sequencer)</a>
+    <a href="#ch25">备份、救砖恢复、降级与故障排查</a>
+    <a class="sub" href="#ch25.1">备份与还原</a>
+    <a class="sub" href="#ch25.2">硬件救砖模式 (USB Rescue Mode)</a>
+    <a class="sub" href="#ch25.3">固件更新模式 (UBOOT)</a>
+    <a class="sub" href="#ch25.4">降级至旧版固件 (如 2.3 或更早)</a>
+    <a class="sub" href="#ch25.5">常见故障排查 (Troubleshooting)</a>
+    <a href="#ch26">速查表</a>
+    <a class="sub" href="#ch26.1">快捷键组合速查</a>
+    <a class="sub" href="#ch26.2">全局参数页面结构速查</a>
+    </nav>
+
+    <article id="doc">
+<section id="intro">
+<h1 class="doc-title">SLOOP 2.6 — 完整操作指南</h1>
+<p>这里包含了 SLOOP 的所有功能、按键组合与菜单页面。本指南建议初次使用时顺着阅读；文末的速查表整理了所有按键组合，方便随时查阅。</p>
+<p>SLOOP 是一款针对 M-VAVE FM-1 乐器设计的免费开源 (GPL-3.0) 固件，基于 Leo Kuroshita / Hügelton Instruments 的 Felucca 项目二次开发。简易手册请参阅 SLOOP.md；项目主页请参阅 README.md。</p>
+<h2>表达方式说明</h2>
+<div class="tw"><table>
+<thead><tr>
+<th>符号 / 描述</th>
+<th>含义</th>
+</tr></thead><tbody>
+<tr><td>轻按 <kbd>FX</kbd></td><td>按一下 <kbd>FX</kbd> 键并迅速松开（按压时间短于半秒）</td></tr>
+<tr><td>按住 <kbd>FX</kbd></td><td>保持按住 <kbd>FX</kbd> 键不放</td></tr>
+<tr><td><kbd>FX</kbd> + 琴键 3</td><td>按住 <kbd>FX</kbd> 键的同时，按下第 3 个白键</td></tr>
+<tr><td><kbd>FX</kbd> + 旋钮 2</td><td>按住 <kbd>FX</kbd> 键的同时，旋转旋钮 2</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + 旋钮 4</td><td>按住 <kbd>SEQ</kbd> 键，按住某个步进键，同时旋转旋钮 4</td></tr>
+<tr><td>琴键 1 … 琴键 16</td><td>键盘上的 16 个白键，从最低音 (F3 = 琴键 1) 到最高音 (G5 = 琴键 16)</td></tr>
+<tr><td>二次确认 (GO)</td><td>涉及关键操作的值（如 LOAD、<kbd>SAVE</kbd>、NEW 等）：顺时针转动一格显示 AGAIN: …提示，1.5 秒内再转一格即可确认执行</td></tr>
+</tbody></table></div>
+<p>16 个白键的编号与音高对应表：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>琴键</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+<th>10</th>
+<th>11</th>
+<th>12</th>
+<th>13</th>
+<th>14</th>
+<th>15</th>
+<th>16</th>
+</tr></thead><tbody>
+<tr><td>音符</td><td>F3</td><td>G3</td><td>A3</td><td>B3</td><td>C4</td><td>D4</td><td>E4</td><td>F4</td><td>G4</td><td>A4</td><td>B4</td><td>C5</td><td>D5</td><td>E5</td><td>F5</td><td>G5</td></tr>
+</tbody></table></div>
+<p>11 个黑键依次为：F#3、G#3、A#3、C#4、D#4、F#4、G#4、A#4、C#5、D#5、F#5。“前四个黑键”指的是 F#3、G#3、A#3 和 C#4。</p>
+<h2>目录</h2>
+<nav class="chaplist" aria-label="章节列表"><ol>
+<li><a href="#ch1"><b>1</b>安装与更新</a></li>
+<li><a href="#ch2"><b>2</b>面板布局</a></li>
+<li><a href="#ch3"><b>3</b>核心概念：轨道、颜色、轻按与按住</a></li>
+<li><a href="#ch4"><b>4</b>60 秒快速上手（制作一段 Beat）</a></li>
+<li><a href="#ch5"><b>5</b>单按键功能详解</a></li>
+<li><a href="#ch6"><b>6</b>键盘演奏模式</a></li>
+<li><a href="#ch7"><b>7</b>鼓轨道详解</a></li>
+<li><a href="#ch8"><b>8</b>录音与循环录制</a></li>
+<li><a href="#ch9"><b>9</b>快捷图层（按住按键）</a></li>
+<li><a href="#ch10"><b>10</b>步进序列表：Steps、微调、参数锁定、Fill 条件</a></li>
+<li><a href="#ch11"><b>11</b>调性、音阶、和弦与 CHORD+</a></li>
+<li><a href="#ch12"><b>12</b>混音：音量、静音、独奏、Fill 与打拍定速</a></li>
+<li><a href="#ch13"><b>13</b>撤销、清除、保存、工程与自动保存</a></li>
+<li><a href="#ch14"><b>14</b>Song 模式：段落、链式播放与完整歌曲</a></li>
+<li><a href="#ch15"><b>15</b>屏幕界面一览</a></li>
+<li><a href="#ch16"><b>16</b>所有参数页面与旋钮功能</a></li>
+<li><a href="#ch17"><b>17</b>音色库与 12 款合成引擎</a></li>
+<li><a href="#ch18"><b>18</b>效果器：主效果、Punch-in 效果、单轨效果</a></li>
+<li><a href="#ch19"><b>19</b>音频可视化效果器</a></li>
+<li><a href="#ch20"><b>20</b>HOME 菜单与灯光设置</a></li>
+<li><a href="#ch21"><b>21</b>MIDI 连接与控制</a></li>
+<li><a href="#ch22"><b>22</b>USB 声卡功能</a></li>
+<li><a href="#ch23"><b>23</b>自定义采样与鼓组制作</a></li>
+<li><a href="#ch24"><b>24</b>Web 网页端编辑器</a></li>
+<li><a href="#ch25"><b>25</b>备份、救砖恢复、降级与故障排查</a></li>
+<li><a href="#ch26"><b>26</b>速查表</a></li>
+</ol></nav>
+</section>
+<section id="ch1">
+<h2>安装与更新</h2>
+<p>通过浏览器安装（推荐）：使用 Chrome 或 Edge 浏览器打开安装器网页，用 USB 数据线将 FM-1 直接连接电脑（请勿使用 Hub 集线器）。点击 <kbd>INSTALL</kbd> 并授权 MIDI 访问，等待提示 Done 即可。设备会自动重启并显示 SLOOP Logo。</p>
+<p>在本地源码安装 (Windows)：双击运行 <kbd>INSTALL</kbd>-SLOOP.bat，脚本会自动编译固件并在浏览器打开 http://localhost:8766/webapp/installer/。安装完成前请勿关闭黑色的命令行窗口。运行 OPEN-EDITOR.bat 可直接打开网页编辑器。</p>
+<p>更新固件：更新不会覆盖您的工程、预设、采样、鼓组和系统设置。安装程序会自动校验固件包 (SHA-256)，SLOOP 的刷机引导程序在写入前还会再次校验 (CRC)，若包损坏则拒绝写入，确保设备安全。</p>
+<p>降级须知：若计划退回旧版固件（2.3 或更早版本），请务必先在 Web 编辑器中导出备份。2.3 版本无法读取 2.4 及以上版本的 FUN5 工程格式。</p>
+</section>
+<section id="ch2">
+<h2>面板布局</h2>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>类型</th>
+<th>核心功能</th>
+</tr></thead><tbody>
+<tr><td><kbd>PLAY</kbd></td><td>按键</td><td>启动 / 停止全部 4 个轨道的播放</td></tr>
+<tr><td><kbd>REC</kbd></td><td>按键</td><td>开始/停止录音（轻按），清空当前轨道（按住）</td></tr>
+<tr><td><kbd>SAVE</kbd></td><td>按键</td><td>打开 Song 图层（按住），打开 Song 界面 / 保存页面（轻按）</td></tr>
+<tr><td><kbd>HOME</kbd></td><td>按键</td><td>TRACKS 界面 / 切换可视化画幅（轻按），系统菜单（按住），锁定当前图层</td></tr>
+<tr><td><kbd>ENV</kbd></td><td>按键</td><td>包络线设置页面</td></tr>
+<tr><td><kbd>LFO</kbd></td><td>按键</td><td><kbd>LFO</kbd>（低频调制）设置页面</td></tr>
+<tr><td><kbd>FX</kbd></td><td>按键</td><td>Punch-in 实时效果图层（按住），效果器设置页面（轻按）</td></tr>
+<tr><td><kbd>SEL</kbd></td><td>按键</td><td>调性/和弦图层（按住），音阶设置页面（轻按）。位于顶排第二个，<kbd>FX</kbd> 与 <kbd>ENV</kbd> 之间（非 <kbd>SELECT</kbd> 旋钮）</td></tr>
+<tr><td><kbd>EDIT</kbd></td><td>按键</td><td>擦除图层（按住），音色引擎编辑页面（轻按）</td></tr>
+<tr><td><kbd>ARP</kbd></td><td>按键</td><td>连打/ Note-repeat 图层（按住），琶音器设置页面（轻按）</td></tr>
+<tr><td><kbd>SEQ</kbd></td><td>按键</td><td>步进编辑图层（按住），步进序列页面（轻按）</td></tr>
+<tr><td><kbd>GLO</kbd></td><td>按键</td><td>混音图层（按住），全局设置页面（轻按）</td></tr>
+<tr><td>OCT− / <kbd>OCT+</kbd></td><td>按键</td><td>八度切换、弱打/重打切换、撤销/重做、页面切换</td></tr>
+<tr><td><kbd>ALGORITHM</kbd></td><td>旋钮</td><td>切换当前控制的轨道 (1–4)</td></tr>
+<tr><td><kbd>PRESETS</kbd></td><td>旋钮</td><td>选择当前轨道的预设音色或鼓套组</td></tr>
+<tr><td><kbd>SELECT</kbd></td><td>旋钮</td><td>调节 Tempo 速度，或切换上/下一个参数页面</td></tr>
+<tr><td><kbd>KNOB 1</kbd>–4</td><td>旋钮</td><td>对应控制屏幕底部显示的 4 个仪表参数</td></tr>
+<tr><td>MASTER</td><td>旋钮</td><td>总输出音量控制（耳麦/线路输出）</td></tr>
+<tr><td>27 个琴键</td><td>琴键</td><td>16 个白键 (F3–G5) 与 11 个黑键</td></tr>
+</tbody></table></div>
+</section>
+<section id="ch3">
+<h2>核心概念：轨道、颜色、轻按与按住</h2>
+<h3 id="ch3.1">四个轨道</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>轨道</th>
+<th>代表颜色</th>
+<th>控制对象</th>
+<th>同色旋钮</th>
+</tr></thead><tbody>
+<tr><td>轨 1</td><td>蓝色</td><td>合成器（3 个合成器轨道共享 8 个复音）</td><td><kbd>KNOB 1</kbd></td></tr>
+<tr><td>轨 2</td><td>绿色</td><td>合成器</td><td><kbd>KNOB 2</kbd></td></tr>
+<tr><td>轨 3</td><td>黄色</td><td>合成器</td><td><kbd>KNOB 3</kbd></td></tr>
+<tr><td>轨 4</td><td>橙色</td><td>鼓机：内置 16 种鼓音色，对应 16 个白键</td><td><kbd>KNOB 4</kbd></td></tr>
+</tbody></table></div>
+<p>在任何界面下，转动 <kbd>ALGORITHM</kbd> 旋钮均可切换当前正在演奏、录制和编辑的轨道。屏幕与编辑器的色彩主题会随之切换。屏幕上的白色永远代表您当前操作的项；红色永远代表正在录音。</p>
+<h3 id="ch3.2">轻按 (Tap) 与按住 (Hold)</h3>
+<p>每个功能按键均拥有两种操作模式：</p>
+<p>轻按 (Tap)：打开对应的参数页面（用于音色调制与详细设置）。再次轻按可切换至该按键的下一页。转动 <kbd>SELECT</kbd> 旋钮也可以双向翻页。按键会记住您上次停留的页面。</p>
+<p>按住 (Hold)：进入对应的功能图层 (Layer)。按住按键时，16 个白键与 4 个旋钮将映射为快捷操作界面；按住超过 0.14 秒后，屏幕会显示由 16 个方块构成的 4x4 网格界面（对应琴键 1–4, 5–8, 9–12, 13–16）。松开按键后即刻恢复琴键演奏。</p>
+<p>包含快捷图层的按键有：<kbd>FX</kbd>（实时特效）、<kbd>EDIT</kbd>（擦除）、<kbd>ARP</kbd>（连打）、<kbd>SEQ</kbd>（步进）、<kbd>SEL</kbd>（调性与和弦）、<kbd>GLO</kbd>（混音）以及 <kbd>SAVE</kbd>（曲目结构）。<kbd>ENV</kbd> 与 <kbd>LFO</kbd> 没有图层，仅用于打开设置页。</p>
+<p>定位背光提示：在按住图层时（以及在鼓轨道下），琴键 1、5、9、13 会保持微亮。它们对应每排方块的第一个，便于盲操定位。高亮全亮的琴键代表当前处于激活状态。</p>
+<p>图层锁定 (Layer Lock)：按住任意图层按键的同时轻按 <kbd>HOME</kbd>。松开按键后该图层将保持锁定打开状态（屏幕提示 LOCK，按键灯闪烁）。这样可以解放双手，一手按键一手转旋钮。轻按其他任意页面按键（如 <kbd>HOME</kbd>、当前按键、<kbd>ENV</kbd> 等）均可解锁。在锁定状态下，<kbd>PLAY</kbd>、<kbd>REC</kbd> 以及 <kbd>OCT −</kbd> / <kbd>OCT+</kbd> 依然可以正常响应。</p>
+<p>图层内的通用逻辑：在任何图层中，<kbd>PLAY</kbd> 均可随时控制播放/停止，<kbd>SELECT</kbd> 始终用于调节速度，<kbd>ALGORITHM</kbd> 与 <kbd>PRESETS</kbd> 旋钮处于保护状态（松开图层时参数不会意外跳变）。</p>
+</section>
+<section id="ch4">
+<h2>60 秒快速上手（制作一段 Beat）</h2>
+<p>1. 将 <kbd>ALGORITHM</kbd> 旋钮转到轨道 4（橙色鼓轨道）。此时白键映射为 16 种鼓音色：F3 底鼓 (Kick)、G3 底鼓 2、A3 军鼓 (Snare)、B3 拍手 (Clap)、C4 踩镲 (Hat)、D4 开镲 (Open Hat)…… 转动 <kbd>PRESETS</kbd> 旋钮切换鼓组，推荐尝试 808 或 BOOMBAP。</p>
+<p>2. 按一下 <kbd>REC</kbd>（屏幕显示 rec ready 进入录音准备）。随意击打琴键录制一段节奏，无需关注预备拍或节拍器 —按住 <kbd>OCT −</kbd> 击打可录入弱音 (Ghost Note)，按住 <kbd>OCT+</kbd> 为重音 (Hard Hit)。</p>
+<p>3. 在您小节结束后的第一个重拍“1”上再次按下 <kbd>REC</kbd>。Loop 自动闭合：系统会根据您演奏的时长自动计算 BPM 速度，并将音符自动对齐网格（量化），随后立即开始循环播放。</p>
+<p>4. 播放过程中再次按下 <kbd>REC</kbd> 即可进行叠录 (Overdub)。按住 <kbd>ARP</kbd> 并在琴键上按住踩镲键 (C4)，即可实时录入 16 分音符的踩镲滚奏 (Ratchet)。</p>
+<p>5. 将 <kbd>ALGORITHM</kbd> 切换到轨道 1（蓝色合成器，预设为 808 BOOM），按下 <kbd>REC</kbd> 录制一段 Bassline。</p>
+<p>6. 按住 <kbd>SEL</kbd> 并在琴键上按下您这首歌的主调音符（例如 D 音）。切换到轨道 2，按住 <kbd>SEL</kbd> 并将 <kbd>KNOB 1</kbd> 旋转至 7TH：此时每一个白键都变成了该调内对应的七和弦，单指即可弹奏和声。</p>
+<p>7. 按住 <kbd>FX</kbd> 并按住任意琴键（白键或黑键）触发 Punch-in 实时特效；在按住 <kbd>FX</kbd> 的同时转动 <kbd>KNOB 2</kbd> 加入 DUST 复古质感，转动 <kbd>KNOB 3</kbd> 调节 DUCK 侧链抽气效果。</p>
+<p>8. 弹错了？按下 <kbd>EDIT</kbd> + <kbd>OCT −</kbd> 即可撤销 (Undo)。</p>
+</section>
+<section id="ch5">
+<h2>单按键功能详解</h2>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>轻按 / 旋转</th>
+<th>按住 (Hold)</th>
+</tr></thead><tbody>
+<tr><td><kbd>PLAY</kbd></td><td>启动 / 停止播放所有轨道（Song 模式下播放整首歌曲）。在所有图层内均有效</td><td>—</td></tr>
+<tr><td><kbd>REC</kbd></td><td>播放时：立即开启/停止录音·停止时：录音准备 (rec ready)·自由录音模式：闭合 Loop·预备拍模式：取消预备拍</td><td>按住约 2 秒：清空当前轨道数据（进度环填满前松开可取消操作）</td></tr>
+<tr><td><kbd>SAVE</kbd></td><td>在 TRACKS 或 DRUMS 界面：打开 SONG 界面·在 SONG 界面：保存歌曲·在其他界面：打开 <kbd>SAVE</kbd> 保存页面</td><td>Song 图层（切换 A–D 段落、链式播放、Song 模式切换、SONG <kbd>REC</kbd> 录制）</td></tr>
+<tr><td><kbd>HOME</kbd></td><td>打开 TRACKS 主界面·在 TRACKS 界面：打开可视化效果器（再按一次关闭）</td><td>按住 0.7 秒：打开设置菜单 (SCREEN, LIGHTS, AUDIO, SYSTEM)；再次按住退出</td></tr>
+<tr><td><kbd>ENV</kbd></td><td>打开 <kbd>ENV</kbd> 包络页面 (<kbd>ENV</kbd>, <kbd>ENV</kbd> DEST)</td><td>—</td></tr>
+<tr><td><kbd>LFO</kbd></td><td>打开 <kbd>LFO</kbd> 低频调制页面 (<kbd>LFO</kbd>, <kbd>LFO</kbd> DEST)</td><td>—</td></tr>
+<tr><td><kbd>FX</kbd></td><td>打开 <kbd>FX</kbd> 效果器页面 (<kbd>FX</kbd>, FILTER, SLICER, DLY, REV/CHO)</td><td>Punch-in 实时特效图层</td></tr>
+<tr><td><kbd>SEL</kbd></td><td>打开 <kbd>SEL</kbd> 音阶设置页面 (<kbd>SEL</kbd>, <kbd>SEL</kbd> 2)</td><td>调性 / 和弦控制图层</td></tr>
+</tbody></table></div>
+<p>打开 <kbd>EDIT</kbd> 引擎编辑页面 (<kbd>EDIT</kbd> 1, <kbd>EDIT</kbd> 2, VOICE, VOICE 2)·</p>
+<div class="tw"><table>
+<thead><tr>
+<th><kbd>EDIT</kbd></th>
+<th>选中鼓轨道且在 TRACKS 界面时：打开 DRUMS 鼓机界面·在 DRUMS 界面：切换网格↔垫子·在 STEP 页面：清除当前步进</th>
+<th>擦除图层 (Erase Layer)</th>
+</tr></thead><tbody>
+<tr><td><kbd>ARP</kbd></td><td>打开 <kbd>ARP</kbd> 琶音器页面 (<kbd>ARP</kbd>, <kbd>ARP</kbd> 2)</td><td>连打 / 音符重复图层 (Note-repeat)</td></tr>
+<tr><td><kbd>SEQ</kbd></td><td>打开 <kbd>SEQ</kbd> 序列页面 (STEP, PATTERN, SONG)·选中鼓轨道且在 TRACKS 界面时：打开 DRUMS 鼓机界面·在 DRUMS 界面：切换网格↔垫子</td><td>步进编辑图层 (Step Layer)</td></tr>
+<tr><td><kbd>GLO</kbd></td><td>打开 <kbd>GLO</kbd> 全局页面 (GLOBAL, MASTER, SYSTEM, DRUMS)</td><td>混音控制图层 (Mix Layer)</td></tr>
+<tr><td>OCT− / <kbd>OCT+</kbd></td><td>合成器轨道：降低 / 升高八度 (−3 … +3)·两键同按：恢复 0 八度</td><td>鼓轨道：按住时击打琴键可触发弱音 (OCT−) / 重音 (<kbd>OCT+</kbd>)</td></tr>
+<tr><td><kbd>ALGORITHM</kbd></td><td>在任意界面下切换轨道 1–4（图层内或菜单中转动会等待松开后生效；自由录音及 SONG 界面下禁止切换）</td><td>—</td></tr>
+<tr><td><kbd>PRESETS</kbd></td><td>在 TRACKS、<kbd>HOME</kbd> 及 <kbd>PRESETS</kbd> 页面：切换当前轨道的预设音色（按分类排列预设，末尾为用户预设）·鼓轨道下：切换鼓套组·在 DRUMS 界面：切换鼓套组</td><td>—</td></tr>
+<tr><td><kbd>SELECT</kbd></td><td>在 TRACKS、图层内及 <kbd>REC</kbd> 屏幕：调节 BPM 速度·在参数页面：切换上/下一页（到达边缘停止）·DRUMS 界面：切换网格↔垫子·可视化效果：切换样式·菜单：切换分类</td><td>—</td></tr>
+<tr><td><kbd>KNOB 1</kbd>–4</td><td>调节屏幕底部对应的 4 个仪表参数</td><td>—</td></tr>
+<tr><td>MASTER</td><td>控制物理输出音量（不影响可视化效果器的信号振幅）</td><td>—</td></tr>
+</tbody></table></div>
+<h3 id="ch5.1">开机与开机状态下的组合快捷键</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>按键组合</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td>开机时按住 OCT−</td><td>进入 USB 救砖模式 (SLOOP USB RESCUE)，可直接在浏览器端重新刷入固件</td></tr>
+<tr><td>开机时按住 OCT− + <kbd>OCT+</kbd></td><td>进入硬件校准模式：校准按键与旋钮响应（也可在 <kbd>HOME</kbd> 菜单→ SYSTEM 中进入）</td></tr>
+<tr><td>停止播放状态下按住 OCT− + <kbd>OCT+</kbd> 5 秒</td><td>进入固件更新模式 (UBOOT)：屏幕将出现 2 秒倒计时，中途松开可取消。系统会自动先保存当前工程</td></tr>
+</tbody></table></div>
+</section>
+<section id="ch6">
+<h2>键盘演奏模式</h2>
+<h3 id="ch6.1">合成器轨道 (1–3)</h3>
+<p>琴键用于演奏当前选中的轨道。演奏的音符会同步通过 USB MIDI 输出（对应当前轨道的通道）。</p>
+<p><kbd>OCT −</kbd> / <kbd>OCT+</kbd>：调整八度范围 (−3 … +3)；双键同按立即重置为 0。当八度偏移时，OCT 灯会亮起提示。</p>
+<p>琴键的实际响应取决于该轨道的 KEYS 设置与 CHORD 和弦模式（在 <kbd>SEL</kbd> 图层或 <kbd>SEL</kbd> 页面中配置）：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>KEYS 设置</th>
+<th>CHORD 模式</th>
+<th>琴键响应逻辑</th>
+</tr></thead><tbody>
+<tr><td>OFF</td><td>OFF</td><td>全半音阶模式（默认模式）</td></tr>
+<tr><td>SNAP</td><td>OFF</td><td>按下的音符会自动向下修正（吸附）到当前设置的音阶上</td></tr>
+<tr><td>WHITE</td><td>OFF</td><td>白键从 C4 开始映射当前音阶的音符（C4 = 当前音阶根音）；黑键不发声</td></tr>
+<tr><td>任意</td><td>开启 (On)</td><td>白键演奏当前音阶的和弦，一键触发（C4 = Ⅰ级和弦）；黑键用于改变和弦属性（详情参见 CHORD+）</td></tr>
+</tbody></table></div>
+<p>例外：当音色选用 GM KIT（属于 SAMPLE 采样引擎）时，最低音琴键固定为底鼓 (C2)，不受音阶设置影响。</p>
+<h3 id="ch6.2">鼓轨道 (4)</h3>
+<p>16 个白键分别对应 16 种鼓音色；黑键默认触发其左侧白键的音色（方便用双指交替打出极快的滚奏）。按住 <kbd>OCT −</kbd> 可以击打出弱音，按住 <kbd>OCT+</kbd> 可以击打出重音。详情见鼓轨道详解。</p>
+<h3 id="ch6.3">力度与音量分级</h3>
+<p>FM-1 的硬件琴键不支持动态力度响应。在鼓轨道中，每次击打支持 4 种音量等级：GHOST ( 弱音)、SOFT (软击)、NORM ( 标准)、HARD ( 重击)。您可以在实时演奏时通过按住 <kbd>OCT −</kbd> / <kbd>OCT+</kbd> 来指定，也可以后续在步进编辑器中修改。在合成器轨道中，步进可以设定重音 (Accent)标记（在 STEP 页面中的 FLAG 参数）。</p>
+</section>
+<section id="ch7">
+<h2>鼓轨道详解</h2>
+<h3 id="ch7.1">16 种鼓音色映射</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>琴键</th>
+<th>音色类型</th>
+<th>琴键</th>
+<th>音色类型</th>
+<th>琴键</th>
+<th>音色类型</th>
+<th>琴键</th>
+<th>音色类型</th>
+</tr></thead><tbody>
+<tr><td>1·F3</td><td>KICK (底鼓)</td><td>5·C4</td><td>HAT (闭镲)</td><td>9·G4</td><td>SNARE 2 (军鼓 2)</td><td>13·D5</td><td>RIDE (叮叮镲)</td></tr>
+<tr><td>2·G3</td><td>KICK 2 (底鼓 2)</td><td>6·D4</td><td>OPEN HAT (开镲)</td><td>10·A4</td><td>LOW TOM (低音嗵鼓)</td><td>14·E5</td><td>SHAKER (沙锤)</td></tr>
+<tr><td>3·A3</td><td>SNARE (军鼓)</td><td>7·E4</td><td>PEDAL HAT (踩镲)</td><td>11·B4</td><td>HI TOM (高音嗵鼓)</td><td>15·F5</td><td>CONGA (康加鼓)</td></tr>
+<tr><td>4·B3</td><td>CLAP (拍手)</td><td>8·F4</td><td>RIM (边击)</td><td>12·C5</td><td>CRASH (溅镲)</td><td>16·G5</td><td>COWBELL (牛铃)</td></tr>
+</tbody></table></div>
+<p>音量分级：GHOST、SOFT、NORM、HARD（演奏时按住 <kbd>OCT −</kbd> / <kbd>OCT+</kbd> 触发）。音量越弱的击打，高频听感也会越暗沉，符合真实鼓组物理特性。</p>
+<p>连打 (Ratchet)：单个步进内可触发 x1–x4 次重复击打（使用 <kbd>ARP</kbd> 滚奏录制时会自动转化为连打，也可在 <kbd>SEQ</kbd> + 步进键 + 旋钮 3 中手动设定）。</p>
+<p>互斥切音 (Choke)：闭合踩镲 (CLOSED HAT) 和踩镲 Pedal 会自动切断正在响起的开镲 (OPEN HAT)。</p>
+<p>6 发音数 (Voices)：鼓机拥有独立的 6 复音通道，不占用合成器的 8 发音数。</p>
+<h3 id="ch7.2">鼓套组 (Kits)</h3>
+<p>在鼓轨道下转动 <kbd>PRESETS</kbd>（或在 DRUMS 界面 Kit 页转动 <kbd>KNOB 1</kbd>，或在 Web 编辑器中选择）即可切换鼓组：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>序号</th>
+<th>鼓套组类型</th>
+</tr></thead><tbody>
+<tr><td>1–5</td><td>ACOUSTIC（采样自真实录音室原声鼓，CC0 协议）及其预处理版本：DEEP, TIGHT, BRIGHT, DUST</td></tr>
+<tr><td>6– 37</td><td>32 款合成鼓套组，每套包含 16 种音色：808, 909, 606, 80S, VINTAGE, TRAP, DRILL, BOOMBAP, LO-FI, PHONK, HOUSE, D.HOUSE, TECHNO, MINIMAL, ELECTRO, DISCO, GARAGE, JUNGLE, DUBSTEP, DEMBOW, AMAPIANO, AFRO, LATIN, TRIBAL, SYNTHWV, CHIP, ARCADE, GLITCH, INDUSTR, HYPER, AMBIENT, JAZZ</td></tr>
+<tr><td>38– 41</td><td>USR1, USR2, USR3, USR4：导入到单个采样槽位中的自定义鼓组（时长约 7.4 秒）</td></tr>
+<tr><td>42</td><td>USR3+4：跨两个槽位的自定义大型鼓组（时长约 15 秒）</td></tr>
+<tr><td>43– 46</td><td>SYN1, SYN2, SYN3, SYN4 (2.5 新增)：在 Web 编辑器的 Drum synth 页面中自主合成的鼓组，FM-1 屏幕会直接显示您赋予它们的名称</td></tr>
+</tbody></table></div>
+<p>所有鼓组均经过平衡对齐。鼓组设置会自动随工程和 Song 段落保存。更换鼓组绝不会破坏您已录制的节奏 Sequence。自定义鼓套组的工作逻辑与内置鼓组完全一致（支持步进、音量分级、连打、Fill 条件、互斥切音及 MIDI 控制）。</p>
+<h3 id="ch7.3">DRUMS 鼓机专属界面</h3>
+<p>在选中鼓轨道时，于 TRACKS 界面轻按 <kbd>EDIT</kbd> 或 <kbd>SEQ</kbd> 即可打开该界面。它包含两个页面，通过轻按 <kbd>EDIT</kbd> / <kbd>SEQ</kbd> 或转动 <kbd>SELECT</kbd> 旋钮进行切换。</p>
+<p>网格页 (Grid Page) — 以网格展示 16 种音色 × 16 个步进，深浅代表音量等级，缺口代表连打次数。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>KNOB 1</kbd> sound</td><td>选择音色轨道（行）— 切换时会试听该音色</td></tr>
+<tr><td><kbd>KNOB 2</kbd> step</td><td>移动光标定位步进 — 移动时会试听该步进上的内容</td></tr>
+<tr><td><kbd>KNOB 3</kbd> hit</td><td>顺时针：在当前步进写入该音色 (NORM)·逆时针：清除该步进</td></tr>
+<tr><td><kbd>KNOB 4</kbd> level</td><td>升高/降低该音步的音量等级 (GHOST, SOFT, NORM, HARD)</td></tr>
+<tr><td>16 个白键</td><td>对应 <kbd>KNOB 1</kbd> 当前选中音色的 16 个步进：按一下点亮写入（带试听），再按清除；按键灯会同步点亮该音色已被占用的步进</td></tr>
+<tr><td>前四个黑键</td><td>切换步进页码：1–16、17–32、33–48、49–64 步</td></tr>
+<tr><td><kbd>PRESETS</kbd></td><td>切换鼓套组</td></tr>
+<tr><td><kbd>SAVE</kbd></td><td>打开 SONG 歌曲界面</td></tr>
+<tr><td><kbd>HOME</kbd></td><td>返回 TRACKS 主界面</td></tr>
+</tbody></table></div>
+<p>打击垫页 (Kit Page) — 显示 16 个虚拟打击垫，触发时会闪烁；琴键可以直接击打打击垫。</p>
+<div class="tw"><table>
+<thead><tr>
+<th><kbd>KNOB 1</kbd></th>
+<th><kbd>KNOB 2</kbd></th>
+<th><kbd>KNOB 3</kbd></th>
+<th><kbd>KNOB 4</kbd></th>
+</tr></thead><tbody>
+<tr><td>kit (鼓套组)</td><td>level (鼓轨总音量)</td><td>reverb (鼓轨混响 Send 量)</td><td>pan (鼓轨声相)</td></tr>
+</tbody></table></div>
+<p>在 Song 模式播放期间，网格页的 hit 与 level 旋钮会进入保护状态（提示 <kbd>STOP</kbd> THE SONG FIRST）。</p>
+</section>
+<section id="ch8">
+<h2>录音与循环录制</h2>
+<p>SLOOP 支持实时叠加录音 (Overdub)。系统会自动补偿约 12 ms 的硬件发声延迟，使得录入的音符能够精准对齐到您耳朵听到的拍子上。合成器轨道在 VOICE 设为 POLY 时支持录入和弦（单步最多 4 个音符；若设为 MONO、LEGATO 或 UNISON，如大多数 Bass 和 Lead 音色，则一次仅响应并录入单音）；按住琴键不放会自动录入延音(Tie)。TRACKS 页面每个步进显示一个标记；STEP 页面会提示和弦包含的其他音符（如 +1, +2）。</p>
+<p>外接 MIDI 键盘录音：按下 <kbd>REC</kbd> 时固定录制到当前选中的轨道。通道为 1、2、3 的 MIDI 键盘将始终固定演奏轨 1、2、3（2.6 版本后可通过 <kbd>GLO</kbd> → MIDI 设定通道），无论当前选中的是哪一轨；若想让 MIDI 键盘自动演奏和录制当前选中的轨道，请将键盘通道设置为 4（或 4–16）。2.6 版本起，若外接键盘演奏的轨道与当前录音轨道不一致，屏幕会提示 MIDI PLAYS TRACK n 予以提醒。</p>
+<h3 id="ch8.1">REC 按键功能逻辑</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>触发场景</th>
+<th><kbd>REC</kbd> 的响应</th>
+<th>随后状态</th>
+</tr></thead><tbody>
+<tr><td>正在播放中</td><td>立即开启当前轨道的实时录音</td><td>再次按下 <kbd>REC</kbd> 停止录音，Loop 继续循环播放</td></tr>
+<tr><td>停止状态，工程内已有音符</td><td>进入录音准备状态（rec ready，<kbd>REC</kbd> 灯闪烁）</td><td>弹下第一个音符即刻启动 Loop 并作为第 1 步；按下 <kbd>PLAY</kbd> 亦可直接启动</td></tr>
+<tr><td>停止状态，全新空白工程</td><td>进入录音准备状态（rec ready·play freely）</td><td>进入自由录音模式 (Free Take)；若 MODE 设为 tempo 则按设定节拍录制</td></tr>
+</tbody></table></div>
+<p>在录音准备状态下再次按下 <kbd>REC</kbd> 可取消准备（<kbd>REC</kbd> OFF）。在 Song 模式下，<kbd>REC</kbd> 需等停止播放后方可响应（提示 <kbd>STOP</kbd> THE SONG FIRST），开启 <kbd>REC</kbd> 准备会自动切回 Loop 模式。</p>
+<p>录音进行时，<kbd>REC</kbd> 灯保持常亮，当前轨道会显示红色的 rec 标识。在录音过程中转动 <kbd>ALGORITHM</kbd> 旋钮，录音焦点会自动平滑无缝地无停顿切换到下一个轨道。</p>
+<h3 id="ch8.2">REC 准备界面（未弹下首音前）</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>旋钮</th>
+<th>参数项</th>
+<th>可选值及含义</th>
+</tr></thead><tbody>
+<tr><td><kbd>KNOB 1</kbd></td><td>mode (仅限空白工程)</td><td>free：自由录音，速度随演奏自动计算·tempo：按照设定的 BPM 速度录制</td></tr>
+<tr><td><kbd>KNOB 2</kbd></td><td>length</td><td>预设当前轨道的循环长度：1, 2 或 4 小节</td></tr>
+<tr><td><kbd>KNOB 3</kbd></td><td>start</td><td>note：弹下首音即刻开始录制·count：按下 <kbd>PLAY</kbd> 后先响 1 小节预备拍（屏幕倒数 4, 3, 2, 1），随后开始录音；预备拍期间弹奏仅发声不录入</td></tr>
+</tbody></table></div>
+<p>LENGTH 与 START 在按设定速度录音时生效（MODE 为 tempo，或工程内已有音符时）；自由录音模式则会根据实际演奏自动生成长度。MODE 与 START 为系统级全局设置（重启后保持）。在预备拍倒计时期间，按下 <kbd>REC</kbd> 可取消录音，按下 <kbd>PLAY</kbd> 会返回到 rec ready 准备状态。在此界面转动 <kbd>SELECT</kbd> 旋钮可直接调整 BPM。</p>
+<h3 id="ch8.3">自由录音模式 (Free Take)：速度随您而定</h3>
+<p>1. 在空白工程中，按下 <kbd>REC</kbd>，随后完全自由地弹奏一段乐句。屏幕会显示 free take、已录制秒数，以及当前推算的 Loop 信息（例如 2 bars·92 bpm）。</p>
+<p>2. 在您小节结束后的第一个重拍“1”上按下 <kbd>REC</kbd>。SLOOP 会自动匹配最接近的 1、2 或 4 小节长度（若与预设速度相差在 3% 以内则锁定预设速度），将音符、时值与音量精准写入，并立即开始循环播放。其余 3 个轨道会自动对齐到该小节长度。</p>
+<p>3. 在自由录音期间按下 <kbd>PLAY</kbd> 会直接放弃本次录制。若持续弹奏超过 24 秒未按 <kbd>REC</kbd>，录制会自动闭合结束。</p>
+<h3 id="ch8.4">节拍器与 Swing 摇摆感</h3>
+<p><kbd>PLAY</kbd> 键指示灯在每个拍子上闪烁：构成视觉无音节拍器。</p>
+<p>打开声音节拍器：进入 <kbd>GLO</kbd> → GLOBAL → CLICK 设置为 OFF（关闭）、<kbd>REC</kbd>（仅在轨道录音时响）或 ON（只要播放就响）。节拍器使用独立的清脆 Sound，小节首拍音高更高，即使鼓轨静音或开启了其他轨独奏也能清晰听到；音量大小受 <kbd>GLO</kbd> → DRUMS → LVL 控制。节拍器声音绝不会被录入 Sequence 中，预备拍期间始终开启节拍器。</p>
+<p>Swing (摇摆感)范围为 0（完全平直）到 100（极强摇摆：偶数步进延迟播放，最大达到 75 / 25 的比例，类似于 MPC 75% Swing）：在 <kbd>HOME</kbd> 界面转动 <kbd>KNOB 1</kbd> 或进入 <kbd>GLO</kbd> → GLOBAL → SWING 可调整全局 Swing，在 <kbd>SEQ</kbd> + <kbd>KNOB 3</kbd>（或 <kbd>SEQ</kbd> → PATTERN → SWG）中可针对单轨叠加 Swing。三连音划分不受 Swing 影响。</p>
+<h3 id="ch8.5">录制内容细则</h3>
+<p>合成器轨道：录入音符（及和弦）与时值；按住不放录入延音 (Tie)；<kbd>ARP</kbd> 滚奏录入为连打 (Ratchet)；</p>
+<p>CHORD+ 改变后的实际和弦音符。</p>
+<p>鼓轨道：录入击打位置与音量等级；<kbd>ARP</kbd> 滚奏录入为连打 Ratchet（例如在 1/16 轨上打 1/32 滚奏会录入为单步 x2 连打）。</p>
+<p>绝不被录入的内容：Punch-in 实时特效、节拍器 Click 声、以及在图层按键被按住时（琴键被挪作他用，如 <kbd>FX</kbd>、<kbd>SEQ</kbd>、<kbd>GLO</kbd> 时）弹奏的音符。</p>
+</section>
+<section id="ch9">
+<h2>快捷图层（按住按键）</h2>
+<p>七大按键图层一览：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>按住键</th>
+<th>图层名称</th>
+<th>白键功能</th>
+<th><kbd>KNOB 1</kbd></th>
+<th><kbd>KNOB 2</kbd></th>
+<th><kbd>KNOB 3</kbd></th>
+<th><kbd>KNOB 4</kbd></th>
+<th>轻按功能</th>
+</tr></thead><tbody>
+<tr><td><kbd>FX</kbd></td><td>实时特效</td><td>按住时触发对应的 Punch-in 实时特效</td><td>FILTER (主滤波)</td><td>DUST (复古质感)</td><td>DUCK (侧链抽气)</td><td>TRK FILT (当前轨滤波)</td><td>效果器设置页</td></tr>
+<tr><td><kbd>EDIT</kbd></td><td>擦除编辑</td><td>擦除当前轨道指定的鼓音色/合成音符</td><td>SHIFT (步进平移)</td><td>LENGTH (长度×2 / ½)</td><td>TRANSPOSE (变调)</td><td>—</td><td>引擎编辑页</td></tr>
+<tr><td><kbd>ARP</kbd></td><td>连打滚奏</td><td>按网格速度进行音符重复 (Note Repeat)</td><td>RATE (重复速率)</td><td>—</td><td>—</td><td>—</td><td>琶音器设置页</td></tr>
+<tr><td><kbd>SEQ</kbd></td><td>步进编辑</td><td>切换当前页 1–16 步进的状态</td><td>SOUND / NOTE (音色/音符)</td><td>DIV (时值划分)</td><td>SWING (单轨摇摆)</td><td>LENGTH (单轨长度)</td><td>步进序列页</td></tr>
+<tr><td><kbd>SEL</kbd></td><td>调性和弦</td><td>设置全曲的主调音符</td><td>CHORD (和弦模式)</td><td>SCALE (音阶类型)</td><td>KEYS (琴键映射)</td><td>TRANSPOSE (变调)</td><td>音阶设置页</td></tr>
+<tr><td><kbd>GLO</kbd></td><td>混音控制</td><td>1–4 静音·5–8 独奏·9 Fill 触发·10 满小节 Fill·16 打拍定速</td><td>轨 1 音量</td><td>轨 2 音量</td><td>轨 3 音量</td><td>轨 4 音量</td><td>全局设置页</td></tr>
+<tr><td><kbd>SAVE</kbd></td><td>曲目结构</td><td>1–4 切换 A–D 段·5–8 保存 A–D 段·13 Loop/Song 切换·14 歌曲录制·16 打开 SONG 界面</td><td>—</td><td>—</td><td>—</td><td>—</td><td>打开 SONG 界面 / 保存页</td></tr>
+</tbody></table></div>
+<h3 id="ch9.1">FX — Punch-in 实时特效图层</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>FX</kbd> + 琴键</td><td>按住琴键期间，对总混音应用对应的 Punch-in 实时特效（支持 16 个白键及 11 个黑键，2.6 新增）</td></tr>
+<tr><td><kbd>FX</kbd> + <kbd>KNOB 1</kbd></td><td>FILTER 主滤波：逆时针低通，顺时针高通，居中关闭</td></tr>
+<tr><td><kbd>FX</kbd> + <kbd>KNOB 2</kbd></td><td>DUST 采样器/黑胶降质纹理</td></tr>
+<tr><td><kbd>FX</kbd> + <kbd>KNOB 3</kbd></td><td>DUCK 底鼓侧链抽气效果 (Sidechain)</td></tr>
+<tr><td><kbd>FX</kbd> + <kbd>KNOB 4</kbd></td><td>TRK FILT 单轨滤波：仅作用于当前选中的轨道（支持所有合成轨及鼓轨）</td></tr>
+<tr><td><kbd>FX</kbd> + OCT− (按住，2.6)</td><td>REV THROW (混响爆破)：按住期间所有轨道的混响 Send 量瞬间拉满，并带有平滑过渡 (~12 ms)；可与 Punch-in 琴键叠加使用。不会修改 Song 内已保存的参数</td></tr>
+<tr><td><kbd>FX</kbd> + <kbd>OCT+</kbd> (按住，2.6)</td><td>ECHO THROW (延迟爆破)：效果同上，针对延迟 Send，且反馈量 (Feedback) 保持在 70% 以上。两键同按可同时触发混响与延迟爆破</td></tr>
+<tr><td><kbd>FX</kbd> + <kbd>HOME</kbd></td><td>锁定 <kbd>FX</kbd> 图层（解放双手）</td></tr>
+</tbody></table></div>
+<p>按住 <kbd>FX</kbd> 时弹奏琴键不会发出或录入常规音符。</p>
+<h3 id="ch9.2">EDIT — 擦除与修改图层</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>EDIT</kbd> + 琴键，播放中</td><td>在指针扫过该步进时，实时擦除对应的鼓音色或合成器音符（开启 CHORD 时擦除和弦）— MPC 式擦除：按住踩镲键扫过一小节即可擦除该小节的踩镲。屏幕闪烁提示 ERASED</td></tr>
+<tr><td><kbd>EDIT</kbd> + 琴键，停止中</td><td>从整个 Sequence 模式中一次性擦除该鼓音色或音符</td></tr>
+<tr><td><kbd>EDIT</kbd> + <kbd>KNOB 1</kbd></td><td>SHIFT：将所有步进整体右移（迟）或左移（早）— 可改变 Groove 节奏重音位置</td></tr>
+<tr><td><kbd>EDIT</kbd> + <kbd>KNOB 2</kbd></td><td>LENGTH：顺时针×2（复制当前 Pattern 接在后面，最高 64 步），逆时针½（裁切一半）</td></tr>
+<tr><td><kbd>EDIT</kbd> + <kbd>KNOB 3</kbd></td><td>TRANSPOSE：将所有音符整体升高/降低半音（合成器轨道）</td></tr>
+<tr><td><kbd>EDIT</kbd> + OCT−</td><td>撤销 (Undo)</td></tr>
+<tr><td><kbd>EDIT</kbd> + <kbd>OCT+</kbd></td><td>重做 (Redo)</td></tr>
+<tr><td><kbd>EDIT</kbd> + 黑键 (鼓轨道，2.6)</td><td>鼓音色静音模式 (MUTE Mode)：此时白键变为控制单个鼓音色的静音/取消静音，实时生效且不擦除 Sequence 数据（静音的音色显示红色的 OFF）。再次按黑键或松开 <kbd>EDIT</kbd> 可退出该模式</td></tr>
+</tbody></table></div>
+<p>在按住 <kbd>EDIT</kbd> 期间旋转旋钮的多次调整，在撤销 (Undo) 历史中均合并计为一步操作。</p>
+<p>鼓音色静音会一直保持，直到您手动解除（<kbd>EDIT</kbd> + 黑键，再按对应白键）。这是现场 Performance 工具，不随 Pattern 保存：加载或新建工程时所有鼓音色默认均处于激活发声状态。被静音的鼓音色仍可通过琴键或 MIDI 手动触发，其连打 (Ratchet) 也会同步静音。</p>
+<h3 id="ch9.3">ARP — 连打滚奏图层 (Note-repeat)</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>ARP</kbd> + 琴键 (按住)</td><td>按设定的 RATE 速率在网格上自动重复触发音符，严格锁定 BPM 速度与 Swing；松开琴键即停止</td></tr>
+<tr><td><kbd>ARP</kbd> + <kbd>KNOB 1</kbd></td><td>RATE：1/8, 1/16, 1/32, 32T, 1/64（与 <kbd>GLO</kbd> → MASTER → ROLL 同步）</td></tr>
+<tr><td><kbd>ARP</kbd> + 琴键 + OCT− / <kbd>OCT+</kbd></td><td>在鼓轨道下：按住可进行弱音 (Ghost) 或重音 (Hard) 连打</td></tr>
+</tbody></table></div>
+<p>在录音状态下，滚奏会自动转化为步进内的连打 (Ratchet)（例如在 1/16 划分的轨道上打 1/32 滚奏，单步会录入为 x2 连打）。滚奏不受 Fill 条件限制。（注：若需使用常规琶音器，请轻按 <kbd>ARP</kbd> 进入设置页。）</p>
+<h3 id="ch9.4">SEQ — 步进编辑图层</h3>
+<p>16 个白键映射为当前步进页面的 16 个步进；亮起的代表该步进有音符触发。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>SEQ</kbd> + 空白步进</td><td>立即激活该步进 — 鼓轨：使用当前选中的音色（<kbd>KNOB 1</kbd> 或上次击打的垫子）；合成轨：使用您上次弹奏的音符或和弦（支持键盘或外接 MIDI 键盘：2.6）</td></tr>
+<tr><td><kbd>SEQ</kbd> + 已有步进 (轻按)</td><td>清除该步进（同步清除其微调、参数锁定及 Fill 条件）</td></tr>
+<tr><td><kbd>SEQ</kbd> + 同时按住多个步进键</td><td>批量编辑选中的多个步进</td></tr>
+<tr><td><kbd>SEQ</kbd> + 前四个黑键或 <kbd>SEQ</kbd> + OCT− / <kbd>OCT+</kbd> (不按步进)</td><td>切换步进页码：1–16、17–32、33–48、49–64 步（最大到当前轨道设定的长度）</td></tr>
+<tr><td><kbd>SEQ</kbd> + <kbd>KNOB 1</kbd> (不按步进)</td><td>切换写入用的音色（鼓轨，带试听）/ 音符</td></tr>
+<tr><td><kbd>SEQ</kbd> + <kbd>KNOB 2</kbd></td><td>DIV (时值划分)：1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/2, 1BAR, 2BAR</td></tr>
+<tr><td><kbd>SEQ</kbd> + <kbd>KNOB 3</kbd></td><td>当前轨道的 SWING 摇摆量</td></tr>
+<tr><td><kbd>SEQ</kbd> + <kbd>KNOB 4</kbd></td><td>当前轨道的 LENGTH 长度：1–64 步</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>KNOB 1</kbd></td><td>鼓轨：指定该步进上 LEVEL 与 RATCHET 所编辑的音色（带试听）·合成轨：修改该步进的音符（和弦的所有音符会同步整体平移）</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>KNOB 2</kbd></td><td>鼓轨：LEVEL 音量等级 (ghost, soft, norm, hard)·合成轨 (2.6)：VEL 步进力度 1–127（作用于该步进的所有音符；若设为 127 相当于开启 Accent 重音）</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>KNOB 3</kbd></td><td>RATCHET (连打)：x1–x4</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>KNOB 4</kbd></td><td>NUDGE (微调)：−32 … +31（单位为 1/64 步进）</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>PRESETS</kbd></td><td>在该步进上添加参数锁定 (Parameter Lock)：转动第一格会将该参数锁定在偏离轨道默认值 1 格的位置，继续转动可调整锁定值</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>ALGORITHM</kbd></td><td>切换当前参数锁定所控制的参数项</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>OCT+</kbd></td><td>切换该步进的 Fill 条件：常规 (normal) → FILL ONLY → NO FILL →常规</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + OCT−</td><td>清除该步进的微调、参数锁定及 Fill 条件</td></tr>
+</tbody></table></div>
+<p>按住步进键并用旋钮调整过参数后，松开时该步进会被保留（只有纯轻按才会清除步进）。详情见步进序列表。</p>
+<h3 id="ch9.5">SEL — 调性与和弦图层</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>SEL</kbd> + 任意琴键</td><td>设置全曲的主调 (Key)：同步作为 3 个合成器轨道的根音（例如 KEY D）</td></tr>
+<tr><td><kbd>SEL</kbd> + <kbd>KNOB 1</kbd></td><td>当前合成轨的 CHORD (和弦模式)：OFF, TRIAD, 7TH, 9TH, SUS4, POWER</td></tr>
+<tr><td><kbd>SEL</kbd> + <kbd>KNOB 2</kbd></td><td>3 个合成轨同步施加的 SCALE (音阶类型)：内置 16 种音阶</td></tr>
+<tr><td><kbd>SEL</kbd> + <kbd>KNOB 3</kbd></td><td>KEYS (琴键映射)：OFF, SNAP, WHITE</td></tr>
+<tr><td><kbd>SEL</kbd> + <kbd>KNOB 4</kbd></td><td>TRANSPOSE (变调)：对当前轨道进行 ±24 半音移调</td></tr>
+</tbody></table></div>
+<p>详情见调性、音阶、和弦与 CHORD+。</p>
+<h3 id="ch9.6">GLO — 混音控制图层</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>GLO</kbd> + 琴键 1–4</td><td>Mute (静音) / 取消静音轨道 1–4（带有几毫秒的平滑淡出；后台 Sequence 依然保持对齐运行）</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 5–8</td><td>Solo (独奏)轨道 1–4（支持多轨同时 Solo 叠加）</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 9 (按住)</td><td>按住期间实时触发 Fill 段落</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 10</td><td>满小节 Fill：整个下一个小节将作为 Fill 段落播放（小节结束前再按一次可取消）</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 16</td><td>Tap Tempo (打拍定速)（连续敲击两次以上）</td></tr>
+<tr><td><kbd>GLO</kbd> + F#3 (第一个黑键，2.6)</td><td>开启 / 关闭 MIDI LEARN 功能；参见 MIDI LEARN</td></tr>
+<tr><td><kbd>GLO</kbd> + <kbd>KNOB 1</kbd>–4</td><td>分别调节轨道 1–4 的音量平衡 (Level)</td></tr>
+<tr><td><kbd>GLO</kbd> + <kbd>SELECT</kbd></td><td>调节 BPM 速度（在可视化界面下亦有效）</td></tr>
+</tbody></table></div>
+<p>方块高亮代表当前能听到的轨道；fill 与 bar 方块在触发期间会点亮。</p>
+<h3 id="ch9.7">SAVE — Song 曲目图层</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>SAVE</kbd> + 琴键 1–4</td><td>播放 A–D 段落：播放中按下会在下一个小节重拍无缝切入（所有轨道从第 1 步开始）；停止时按下会立即将该段落设为当前循环 Loop</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 1–4，按住 <kbd>SAVE</kbd> 的同时依次敲击</td><td>组合快速链式播放 (Quick Chain)（例如 A B B C…，最多 8 段，可重复）：松开按键后会按顺序循环播放</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 5–8</td><td>将当前 Loop 保存到 A–D 段落槽位中（若槽位已有数据，需在 3 秒内再次敲击确认覆盖）</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 13</td><td>切换 Loop / Song 播放模式</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 14</td><td>SONG <kbd>REC</kbd> (歌曲录制)：从下一小节开始，您切换的所有段落及停留时长都会被实时录入为 Song 结构；再次按键（或按 <kbd>STOP</kbd>）结束录制</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 16</td><td>打开 SONG 歌曲编辑界面</td></tr>
+</tbody></table></div>
+<p>详情见 Song 模式。</p>
+</section>
+<section id="ch10">
+<h2>步进序列表：Steps、微调、参数锁定、Fill 条件</h2>
+<p>每个轨道最高支持 64 个步进，并拥有独立的长度 (Length) (1–64) 与时值划分 (Division)（从 1/32 到两小节）。不同长度的轨道会自动各自循环并保持相位对齐（多套复节拍 Polymeter）。合成器步进单步最多包含 4 个音符（和弦），并附带音量、连打、延音 /休止、重音与滑音标记；鼓步进可包含 16 种音色中的任意组合，每种音色拥有独立的音量与连打。</p>
+<p>录入步进有三种方式：</p>
+<p>1. 实时录音 — 按 <kbd>REC</kbd> 边听边弹（参见录音与循环录制）。</p>
+<p>2. <kbd>SEQ</kbd> 图层 — 按住 <kbd>SEQ</kbd>，在白键上点亮步进（全轨通用；参见 <kbd>SEQ</kbd> — 步进编辑图层）。</p>
+<p>3. STEP 设置页 (合成器轨) — 轻按 <kbd>SEQ</kbd>：通过琴键在光标所在位置写入步进，类似于经典的 Acid 步进输入逻辑：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>STEP 页面控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td>琴键</td><td>同时按下的琴键会被写入光标所在的步进（POLY 模式下最多 4 音；MONO、LEG 与 UNI 模式下记录最后一个音）；在和弦模式下按下单键会直接写入包含 CHORD+ 属性的完整和弦；松开所有琴键后光标自动后移一步·支持外接 MIDI 键盘 (2.6)：在选中轨道对应的 MIDI 通道上同时弹奏的音符会直接按实际听到的音高写入步进；若通道属于其他轨，在停止播放时屏幕会提示 MIDI PLAYS TRACK n（录音状态下详见 <kbd>REC</kbd> 说明）</td></tr>
+<tr><td><kbd>KNOB 1</kbd> STEP</td><td>移动编辑光标的位置</td></tr>
+<tr><td><kbd>KNOB 2</kbd> NOTE</td><td>对当前步进进行移调（若步进为空，则填入您上次弹奏的音符）</td></tr>
+<tr><td><kbd>KNOB 3</kbd> TIME / LEN</td><td>在空白步进、延音 (TIE) 或休止 (REST) 上：切换为 NOTE (音符)、TIE (延音，接续上一音符)或 REST (休止)·在音符步进上 (2.6)：调节 LEN (音符跨越步长)，指定音符持续多少个步进：拉长会自动将后续的步进转化为 TIE 延音（遇到后续已有音符的步进或 Pattern 结尾会自动停止：提示 NOTE AHEAD 或 END OF PATTERN），缩短则会将末尾的 TIE 变回 REST</td></tr>
+<tr><td><kbd>KNOB 4</kbd> FLAG</td><td>– (无)、ACC (Accent 重音)、SLD (Slide 滑音，平滑过渡至下一音符)、A+S (重音+滑音)</td></tr>
+<tr><td><kbd>EDIT</kbd> (轻按)</td><td>清除光标所在步进的内容并自动后移一步</td></tr>
+</tbody></table></div>
+<p>录音或准备状态下无法使用该页面（此时琴键优先响应实时录音）。在鼓轨道下，STEP 页面会提示 DRUM TRACK，请使用 DRUMS 网格或 <kbd>SEQ</kbd> 图层进行编辑。</p>
+<p>轻按 <kbd>SEQ</kbd> 再次翻页可进入 PATTERN 页面，设置轨道的 LEN (长度)、DIV (划分)、SWG ( 摇摆量)与 GATE ( 音符门限时长)。</p>
+<h3 id="ch10.1">Nudge ( 微调 / 微观时序)</h3>
+<p><kbd>SEQ</kbd> + 步进键 + <kbd>KNOB 4</kbd> 可以将某个步进偏离标准网格，调节范围为 −32 到 +31（单位为 1/64 步进）：负值 = 提前（在前一步进的时值范围内提前触发），正值 = 推迟。该步进上的连打 (Ratchet) 会随之偏移；实时录音与 Swing 摇摆依然基于网格对齐。在鼓轨道上，微调作用于该步进上的所有鼓音色。被微调过的步进，其屏幕方块右上角会显示一个小圆点。</p>
+<h3 id="ch10.2">参数锁定 (Parameter Locks)</h3>
+<p>参数锁定允许您仅在某个特定步进上覆盖修改声音参数（类似 Elektron 独家的 Parameter Lock 机制）。</p>
+<p>1. 在对应的参数页面转动您想要锁定的参数旋钮（例如 <kbd>FX</kbd> → DLY send，或 <kbd>LFO</kbd> → RATE）。该参数即被设为当前的目标锁定参数（在您未操作过任何旋钮前，默认目标为 <kbd>ENV</kbd> DEST → FLT）。</p>
+<p>2. 按住 <kbd>SEQ</kbd>，同时按住目标步进键。</p>
+<p>3. 转动 <kbd>PRESETS</kbd> 旋钮：转动第一格即可创建锁定（参数在默认值基础上偏离 1 格），继续转动可调整锁定值。</p>
+<p>屏幕标题栏会显示锁定状态（如 lock dst 14；显示 lock flt --代表尚未建立锁定）。</p>
+<p>4.（保持按住步进键）按下 <kbd>ALGORITHM</kbd> 可以循环切换并选择其他参数进行锁定。</p>
+<p>当播放指针扫过下一个没有设置该参数锁定的步进时，声音会自动恢复为轨道的默认基准值（先前音符的尾音会平滑过渡）。在参数页面转动旋钮调整基础值不会破坏已建立的参数锁定。单个步进上可以叠加多个不同参数的锁定，每条轨道最多支持 24 个参数锁定。可被锁定的包括轨道的全部声音参数（以及 PATTERN 页面的 GATE）；</p>
+<p>Arp 琶音、音阶 /和弦、STRUM/VLEAD、发音数模式、静音、LEN/DIV/SWG 以及全局设置页面无法被锁定（会提示 NOT LOCKABLE；若 24 个额度用尽则提示 NO LOCK LEFT）。包含参数锁定的步进同样会在方块右上角显示小圆点；通过 <kbd>SEQ</kbd> + 步进键 + <kbd>OCT −</kbd> 可以同步清除微调与参数锁定。撤销功能 (<kbd>EDIT</kbd> + OCT−) 仅作用于步进音符本身的增删，不会复原微调与锁定。</p>
+<h3 id="ch10.3">Fill 条件 (Fill Conditions)</h3>
+<p><kbd>SEQ</kbd> + 步进键 + <kbd>OCT+</kbd> 可以循环切换步进的触发条件：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>条件类型</th>
+<th>屏幕方块标记</th>
+<th>触发逻辑</th>
+</tr></thead><tbody>
+<tr><td>常规 (normal)</td><td>—</td><td>始终触发</td></tr>
+<tr><td>FILL ONLY</td><td>左上角小 F</td><td>仅在手动触发 Fill 时才会发声</td></tr>
+<tr><td>NO FILL</td><td>左上角×</td><td>平时正常发声，在触发 Fill 时自动静音</td></tr>
+</tbody></table></div>
+<p>在演奏时触发 Fill 的方式：<kbd>GLO</kbd> + 琴键 9（按住期间触发）或 <kbd>GLO</kbd> + 琴键 10（预定下一个整小节触发）。您可以借此编排极为生动的 Groove：把滚奏、镲片加花和前奏过渡音符设为 FILL ONLY，把常规踩镲设为 NO FILL，现场只需按一下即可无缝切入精彩的节奏加花。未被触发的步进会被完全跳过（不发出音符、不发送 MIDI、不触发连打与参数锁定）。在鼓轨道上，条件作用于该步进上的所有鼓音色。按下 <kbd>STOP</kbd> 会立即终止任何正在运行的 Fill。琶音器与连打滚奏不受 Fill 条件影响。</p>
+<h3 id="ch10.4">时值划分 (Divisions)</h3>
+<p>DIV (划分选项)：1/4, 1/8, 1/16 (默认值), 1/32, 8T, 16T (三连音), 1/2, 1BAR ( 单小节), 2BAR ( 两小节)。一条设定为 2BAR 划分的 64 步轨道，总时长可达 128 个小节：非常适合编排环境长音 (Drone)、长和弦走势或慢板曲目。</p>
+</section>
+<section id="ch11">
+<h2>调性、音阶、和弦与 CHORD+</h2>
+<h3 id="ch11.1">调性与音阶</h3>
+<p><kbd>SEL</kbd> + 任意琴键即可设置全曲的主调 (Key)，同步作用于 3 个合成器轨道（例如屏幕显示 KEY D）。（也可在 <kbd>SEL</kbd> 页面中针对单轨单独设置 ROOT）。</p>
+<p>SCALE (音阶类型)（在 <kbd>SEL</kbd> + <kbd>KNOB 2</kbd> 下可同步设置 3 个合成轨；在 <kbd>SEL</kbd> 页面下仅设置当前轨道）：CHR (半音阶)、MAJ (自然大调)、MIN (自然小调)、DOR ( 多利亚)、MIX (混合多利亚/混合拉丁)、PEN (大调五声)、MPEN ( 小调五声)、HARM ( 和声小调)、PHRY (弗里吉亚)、LYD (利底亚)、LOC (洛克里亚)、MEL (旋律小调)、BLUES (布鲁斯)、WHOLE ( 全音阶)、DIMHW ( 减音阶半-全) 与 DIMWH ( 减音阶全-半)。</p>
+<p>KEYS (琴键映射)：OFF (全半音阶)、SNAP (自动吸附修正到音阶音符)、WHITE (白键从 C4 开始顺序映射音阶音符，黑键静音 )。</p>
+<p>TRANSPOSE ( 移调)：针对单轨进行 ±24 半音范围的移调。</p>
+<p>更换音色（通过 <kbd>PRESETS</kbd> 或用户预设）绝不会覆盖您已设定的调性、和弦模式、Sequence 内容或混音比例。</p>
+<h3 id="ch11.2">和弦模式：单指一键触发和弦</h3>
+<p>按住 <kbd>SEL</kbd> 并转动当前合成轨的 <kbd>KNOB 1</kbd> CHORD：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>和弦模式 (CHORD)</th>
+<th>音符构成</th>
+</tr></thead><tbody>
+<tr><td>OFF</td><td>单音演奏</td></tr>
+<tr><td>TRIAD</td><td>三和弦 (1-3-5)</td></tr>
+<tr><td>7TH</td><td>七和弦 (1-3-5-7)</td></tr>
+<tr><td>9TH</td><td>九和弦 (1-3-7-9，经典的 Lo-Fi / R&amp;B 叠置和声)</td></tr>
+<tr><td>SUS4</td><td>挂四和弦 (1-4-5)</td></tr>
+<tr><td>POWER</td><td>强力和弦 (1-5-8，根音-五音-八度)</td></tr>
+</tbody></table></div>
+<p>当开启和弦模式后，白键会自动从 C4 开始按照音阶映射级数和弦：C4 触发当前调性的 Ⅰ级和弦，D4 触发 Ⅱ 级，E4 触发 Ⅲ 级……C4 左侧的琴键则依次向下递减。所有和弦均基于当前设置的音阶自动生成，确保弹出的和声永远在调内。若 SCALE 设为 CHR，和弦将默认基于自然小调生成。只需单指即可弹奏极其丰富的和声走势，并能完整录入为和弦 Sequence。</p>
+<h3 id="ch11.3">CHORD+：黑键修改和弦属性</h3>
+<p>在开启和弦模式的状态下，按住任意黑键的同时弹奏白键 — 或者在按住白键保持和弦响起的过程中按下黑键，和弦属性会在您的手指下实时发生变化：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>黑键位置</th>
+<th>和弦属性改变效果</th>
+</tr></thead><tbody>
+<tr><td>F#</td><td>大和弦↔小和弦互换</td></tr>
+<tr><td>G#</td><td>叠加 7 度音（转化为七和弦）</td></tr>
+<tr><td>A#</td><td>转化为 Sus4 挂四和弦</td></tr>
+<tr><td>C#</td><td>叠加 9 度音（转化为九和弦）</td></tr>
+<tr><td>D#</td><td>切换和弦转位 (Inversion)</td></tr>
+</tbody></table></div>
+<p>高低两个八度的黑键均可触发，且支持同时按住多个黑键进行组合。叠加的 7 度与 9 度音均严格遵循当前音阶：在 C 大调下，G4 默认触发 G 大三和弦 (Ⅴ 级)，按住 G# 会变成 G7，同时按住 F# + G# 则会变成 Gm7；在 C4 上，同时按住 F# + G# 会得到 C-E♭-G-B。您所弹奏并听到的改变会如实录入到 Sequence 中。</p>
+<h3 id="ch11.4">SEL 2：扫弦 (STRUM) 与声部导向 (VLEAD)</h3>
+<p>轻按 <kbd>SEL</kbd> 两次（或轻按 <kbd>SEL</kbd> 后转动 <kbd>SELECT</kbd> 旋钮）即可进入 <kbd>SEL</kbd> 2 参数页：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>旋钮</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>KNOB 1</kbd> TRN</td><td>轨道移调，范围 ±24 半音</td></tr>
+<tr><td><kbd>KNOB 2</kbd> STRUM</td><td>将和弦内的音符错开依次触发，模拟吉他拨弦扫弦效果，错开时间为 1–60 ms：顺时针 = 从低音到高音扫，逆时针 = 从高音到低音扫，居中 = 关闭。对实时琴键演奏与 Sequence 播放的和弦步进均生效</td></tr>
+<tr><td><kbd>KNOB 3</kbd> VLEAD</td><td>ON (开启)：平滑声部导向 (Voice Leading) — 自动将当前和弦的转位调整至离上一个和弦最近的位置，使和弦连接极为平滑自然，避免音高剧烈跳跃</td></tr>
+</tbody></table></div>
+</section>
+<section id="ch12">
+<h2>混音：音量、静音、独奏、Fill 与打拍定速</h2>
+<div class="tw"><table>
+<thead><tr>
+<th>操作位置</th>
+<th>控制内容</th>
+</tr></thead><tbody>
+<tr><td><kbd>GLO</kbd> + <kbd>KNOB 1</kbd>–4</td><td>分别调节轨道 1–4 的音量大小</td></tr>
+<tr><td>TRACKS 界面，<kbd>KNOB 2</kbd></td><td>调节当前选中轨道的音量（若该轨处于静音状态，转动会自动解除静音）</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 1–4 / 5–8</td><td>控制轨道的 Mute (静音) / Solo (独奏)</td></tr>
+<tr><td>VOICE 2 页面</td><td>调节合成轨道的 PAN (声相) 与 MUTE (静音)</td></tr>
+<tr><td>TRACKS 界面，<kbd>KNOB 4</kbd></td><td>调节当前选中轨道的声相</td></tr>
+<tr><td><kbd>GLO</kbd> → DRUMS</td><td>控制鼓轨道的 LVL (总音量)、混响 Send 量、(2.5) 延迟 Send 量以及鼓轨 MIDI 通道</td></tr>
+<tr><td>MASTER 旋钮</td><td>调节硬件物理输出的总音量</td></tr>
+</tbody></table></div>
+<p>被静音的轨道会在几毫秒内平滑淡出，且不再触发新音符；后台 Sequence 依然保持精准对齐运行。支持多个轨道同时开启 Solo 独奏。</p>
+<p>BPM 速度控制：在 TRACKS 界面（或任意图层内）转动 <kbd>SELECT</kbd> 旋钮；使用 <kbd>GLO</kbd> + 琴键 16 进行 Tap Tempo 打拍定速；或者进入 <kbd>GLO</kbd> → GLOBAL → BPM 手动设定 (40–240)。当开启 MIDI SYNC 同步时，速度将自动跟随主控设备。</p>
+</section>
+<section id="ch13">
+<h2>撤销、清除、保存、工程与自动保存</h2>
+<div class="tw"><table>
+<thead><tr>
+<th>操作类型</th>
+<th>具体方法</th>
+</tr></thead><tbody>
+<tr><td>撤销 / 重做 (Undo / Redo)</td><td><kbd>EDIT</kbd> + OCT− / <kbd>EDIT</kbd> + <kbd>OCT+</kbd>。支持单级撤销：可撤销上一次的录音过载、擦除、清空轨、步进修改或 Pattern 长度调节</td></tr>
+<tr><td>清空当前轨道数据</td><td>按住 <kbd>REC</kbd> 约 2 秒（0.7 秒后屏幕会出现填充进度环；环未填满前松开可取消）。清空后可通过 Undo 恢复</td></tr>
+<tr><td>清空当前 Pattern</td><td>进入 <kbd>SAVE</kbd> → TOOLS →执行 CLRSQ (二次确认 GO)</td></tr>
+<tr><td>重置音色参数</td><td>进入 <kbd>SAVE</kbd> → TOOLS →执行 INIT (二次确认 GO)：将当前音色引擎复位至默认初始状态及首个预设</td></tr>
+<tr><td>新建工程 (New Project)</td><td>进入 <kbd>SAVE</kbd> → TOOLS →执行 NEW (二次确认 GO)：4 个轨道全部复位至开机默认音色，清空所有 Pattern，速度恢复 90 BPM（若在 Song 模式下需先停止播放；Undo 仅能撤销上一轨的 Sequence，不确定时请先将数据保存至段落）</td></tr>
+<tr><td>将当前 Loop 保存为段落/工程</td><td><kbd>SAVE</kbd> + 琴键 5–8（对应 A–D 段落，同时对应工程槽位 1–4）</td></tr>
+<tr><td>保存 / 加载工程</td><td>进入 <kbd>SAVE</kbd> → PROJECT 页面：选择 SLOT 1–4，对 LOAD 或 <kbd>SAVE</kbd> 执行二次确认 (GO)</td></tr>
+<tr><td>删除已保存的工程/段落 (2.6)</td><td>进入 <kbd>SAVE</kbd> → PROJECT：选择 SLOT 1–4 (= 段落 A–D)，对 <kbd>KNOB 2</kbd> 的 ERASE 执行二次确认 (GO)。须在 Song 停止时操作：对应槽位变回 EMPTY，段落按键灯熄灭。Song 结构中引用该段落的步进会被自动移除（其余步进保持原顺序；若全部被删则恢复默认 A B C D）。当前正在编辑的 Loop 不受影响。该操作不可撤销：不确定时请先保存到其他槽位</td></tr>
+<tr><td>保存自定义音色</td><td>进入 <kbd>SAVE</kbd> → USER 页面：选择 SLOT (1–32)，对 <kbd>SAVE</kbd> 执行二次确认 (GO)</td></tr>
+<tr><td>自动保存 (Autosave)</td><td>自动静默触发：当停止播放且超过 2.5 秒未进行任何面板操作时（最多每 20 秒触发一次），系统会自动将当前工作工程写入 Flash 闪存；再次开机时 SLOOP 会完美还原您离线前的完全状态</td></tr>
+</tbody></table></div>
+<p>一个工程 (Project)包含 4 个轨道的全部信息（音色参数、Pattern 序列、鼓套组、参数锁定、微调、Fill 条件、单轨滤波）以及当前曲目的全局设置（BPM、Swing、Key 调性等）。FM-1 系统级设置 — 如 SYNC 同步、MIDI OUT、IN、灯光亮度、菜单设置、<kbd>REC</kbd> 界面的 MODE 与 START — 不属于工程内容：加载工程或新建工程绝不会改变它们。</p>
+<h3 id="ch13.1">SAVE 保存设置页面（轻按 SAVE 翻页）</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>页面名称</th>
+<th><kbd>KNOB 1</kbd></th>
+<th><kbd>KNOB 2</kbd></th>
+<th><kbd>KNOB 3</kbd></th>
+<th><kbd>KNOB 4</kbd></th>
+</tr></thead><tbody>
+<tr><td><kbd>PRESETS</kbd></td><td>音色预设（按分类排列，末尾为用户预设）</td><td>音色引擎（快速切换上/ 下一个引擎）</td><td>—</td><td>—</td></tr>
+<tr><td>USER</td><td>选择用户音色 SLOT (1–32)</td><td>LOAD (二次确认 GO)</td><td>ERASE (二次确认 GO)</td><td><kbd>SAVE</kbd> (二次确认 GO)</td></tr>
+<tr><td>PROJECT</td><td>选择工程 SLOT (1–4)</td><td>ERASE (2.6，二次确认 GO)</td><td>LOAD (二次确认 GO)</td><td><kbd>SAVE</kbd> (二次确认 GO)</td></tr>
+<tr><td>TOOLS</td><td>CLRSQ 清空当前轨 Sequence (GO)</td><td>INIT 重置当前轨音色 (GO)</td><td>—</td><td>NEW 新建工程 (GO)</td></tr>
+</tbody></table></div>
+<p>二次确认 (GO) 逻辑：顺时针转动一格显示 AGAIN: <kbd>SAVE</kbd>（或 LOAD…），约 1.5 秒内再次转动一格方可真正执行写入。预设与工程仅在停止播放时允许写入 Flash 闪存。</p>
+</section>
+<section id="ch14">
+<h2>Song 模式：段落、链式播放与完整歌曲</h2>
+<p>一首完整的 Song 最多可包含 16 个步骤，由 A–D 4 个段落 (Sections)编排而成。每个段落完整保存 4 个轨道的全部状态（音色、Pattern、鼓套组），并独立占用 4 个工程槽位之一。</p>
+<h3 id="ch14.1">现场实时编排与录制</h3>
+<p>1. 制作一段 Loop（如主歌段落）。按下 <kbd>SAVE</kbd> + 琴键 5：提示 save A。修改节奏 /和声制作副歌段落，按下 <kbd>SAVE</kbd> + 琴键 6 保存至 B；同理将桥段保存至 C (琴键 7)，将 Outro 尾奏保存至 D (琴键 8)。覆盖已有数据的段落需要在 3 秒内再次敲击按键确认。</p>
+<p>2. 现场手动切换段落：按住 <kbd>SAVE</kbd> + 琴键 1–4。播放中切换：新段落会在当前小节结束后无缝切入，所有轨道从第 1 步开始同步对齐播放。停止时切换：立即将该段落载入为当前编辑 Loop。</p>
+<p>3. 快速链式播放 (Quick Chain)：保持按住 <kbd>SAVE</kbd>，依次快速敲击多个段落键 — 例如 A B B C，顺序任意，支持重复，最多 8 段 — 随后松开。第一个段落会在下一小节切入，随后每个段落会在播放完自身的 Pattern 长度（由最长的一轨决定）后自动切入下一段，循环往复。屏幕标题栏会显示 chain A B B C；正在播放的段落键保持常亮，下一个待播放的段落键闪烁框选。单按一次段落键、按 <kbd>STOP</kbd> 或在 Song 模式下按 <kbd>PLAY</kbd> 均可随时终止链式播放。</p>
+<p>4. 实时录制 Song 结构：按下 <kbd>SAVE</kbd> + 琴键 14。从下一小节开始，您切换的所有段落以及每个段落播放的完整小节数都会被实时录入为 Song 数据。再次按下 <kbd>SAVE</kbd> + 琴键 14（或按 <kbd>STOP</kbd>）完成录制（提示 SONG PARTS 5）。停止播放后系统会自动保存 Song 数据。SONG <kbd>REC</kbd> 也会同步录下链式播放 (Chain) 的自动切换过程。</p>
+<p>5. 回放整首歌曲：按下 <kbd>SAVE</kbd> + 琴键 13 将播放模式切至 song。在 Song 模式下按下 <kbd>PLAY</kbd> 会从头完整播放整首歌曲，并在结尾自动停止（停止后会自动恢复至您之前的 Working Loop 状态）。</p>
+<h3 id="ch14.2">SONG 歌曲编辑界面</h3>
+<p>在 TRACKS（或 DRUMS）界面轻按 <kbd>SAVE</kbd>，或按下 <kbd>SAVE</kbd> + 琴键 16 即可打开。该界面直观展示段落链条并支持手动微调编辑：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>KNOB 1</kbd></td><td>移动 Song 步骤光标 (Cursor)</td></tr>
+<tr><td><kbd>KNOB 2</kbd></td><td>指定该步骤调用的段落 (A–D)</td></tr>
+<tr><td><kbd>KNOB 3</kbd></td><td>指定该步骤重复播放的小节数 (1–64 小节)</td></tr>
+<tr><td><kbd>KNOB 4</kbd></td><td>设定整首 Song 的总步骤数 (1–16 步)</td></tr>
+<tr><td><kbd>REC</kbd></td><td>将当前编辑中的 Loop 强制覆盖写入该步骤对应的段落槽位中（若槽位已有数据，需在 3 秒内再按一次）</td></tr>
+<tr><td><kbd>SAVE</kbd> (轻按)</td><td>手动保存当前 Song 数据</td></tr>
+<tr><td>OCT−</td><td>切换 Loop / Song 播放模式</td></tr>
+<tr><td><kbd>OCT+</kbd>连续敲击两次 (3 秒内)</td><td>将该步骤对应的段落强行加载到工作区（未保存的当前修改会被覆盖）</td></tr>
+<tr><td><kbd>PLAY</kbd></td><td>启动 / 停止歌曲播放</td></tr>
+<tr><td><kbd>SEQ</kbd></td><td>切换至 <kbd>SEQ</kbd> 步进设置页</td></tr>
+<tr><td><kbd>HOME</kbd></td><td>返回 TRACKS 主界面</td></tr>
+</tbody></table></div>
+<p>Song 的结构参数仅在停止播放时允许编辑（提示 <kbd>STOP</kbd> FIRST）。未保存任何数据的空白段落无法播放（提示 EMPTY SECTION: <kbd>REC</kbd>）。</p>
+</section>
+<section id="ch15">
+<h2>屏幕界面一览</h2>
+<div class="tw"><table>
+<thead><tr>
+<th>界面名称</th>
+<th>进入方式</th>
+<th>界面展示内容·旋钮映射功能</th>
+</tr></thead><tbody>
+<tr><td>TRACKS 主界面</td><td>轻按 <kbd>HOME</kbd></td><td>演出核心视图：显示 BPM、Swing、传输状态、小节.拍数；4 个轨道的音色名、步进柱状图、播放指针、Mute/Solo/Rec 状态徽章及音量。旋钮：<kbd>KNOB 1</kbd> swing (全局摇摆)·<kbd>KNOB 2</kbd> level (当前轨音量；静音轨转动可解禁)·<kbd>KNOB 3</kbd> steps (当前轨步长)·<kbd>KNOB 4</kbd> pan (当前轨声相)</td></tr>
+<tr><td>Visualiser 可视化</td><td>在 TRACKS 界面轻按 <kbd>HOME</kbd></td><td>12 款全屏动态音频可视化样式；详见音频可视化效果器</td></tr>
+<tr><td>Layer 图层界面</td><td>按住任意图层按键</td><td>以图层代表色展示 16 个方块网格（对应白键）与 4 个仪表</td></tr>
+<tr><td>DRUMS 鼓机界面 (网格 / 打击垫)</td><td>在选中鼓轨时，于 TRACKS 界面轻按 <kbd>EDIT</kbd> 或 <kbd>SEQ</kbd></td><td>详见 DRUMS 鼓机专属界面</td></tr>
+<tr><td><kbd>REC</kbd> READY / FREE TAKE / COUNT- IN</td><td>停止播放时按下 <kbd>REC</kbd></td><td>显示轨道状态，<kbd>KNOB 1</kbd>–3 控制 mode·length·start（预备拍时倒数 4-3- 2-1）；自由录音模式下显示实时秒数与推算 Loop</td></tr>
+<tr><td>Hold 按住进度环</td><td>按住 <kbd>REC</kbd> 不放</td><td>屏幕出现圆形进度环，提示 clear track（清空轨道）进度</td></tr>
+<tr><td>SONG 界面</td><td>在 TRACKS 界面轻按 <kbd>SAVE</kbd>，或 <kbd>SAVE</kbd> + 琴键 16</td><td>段落链条编辑视图；详见 SONG 歌曲编辑界面</td></tr>
+<tr><td>Pages 参数设置页</td><td>轻按 <kbd>ENV</kbd>, <kbd>LFO</kbd>, <kbd>FX</kbd>, <kbd>SEL</kbd>, <kbd>EDIT</kbd>, <kbd>ARP</kbd>, <kbd>SEQ</kbd>, <kbd>GLO</kbd>, <kbd>SAVE</kbd></td><td>以图表形式呈现 4 个同色参数（如 <kbd>ENV</kbd>、<kbd>LFO</kbd>、<kbd>ARP</kbd>、<kbd>SEL</kbd>、<kbd>FX</kbd>、SLICER 等），或以大字号 2x2 网格展示 4 个旋钮数值 (1 2 / 3 4)</td></tr>
+<tr><td>Menu 系统菜单</td><td>按住 <kbd>HOME</kbd> 0.7 秒</td><td>分 4 个板块呈现 FM-1 系统级硬件设置；详见 <kbd>HOME</kbd> 菜单与灯光设置</td></tr>
+</tbody></table></div>
+<p>所有界面的顶部标题栏均会实时显示简短的状态提示文本：如 KEY D、ERASED、AGAIN: <kbd>SAVE</kbd>、NEXT: B、chain A B B C、lock flt 12 等。</p>
+<p>在 2.6 版本中，屏幕字体全面升级为 Terminus Bold（粗体全大写）：笔画更粗更醒目，即使在一臂之外看小屏幕也极为清晰；布局保持原有的 8 × 16 单元格架构不变。</p>
+</section>
+<section id="ch16">
+<h2>所有参数页面与旋钮功能</h2>
+<p>轻按任意按键即可打开其首个参数页（或上次停留的页面）；再次轻按该键可切换至该按键的下一个页面，转动 <kbd>SELECT</kbd> 旋钮亦可前后翻页。在鼓轨道下，不适用鼓机的参数页会直接显示 DRUM TRACK。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>按键</th>
+<th>页面名称</th>
+<th><kbd>KNOB 1</kbd></th>
+<th><kbd>KNOB 2</kbd></th>
+<th><kbd>KNOB 3</kbd></th>
+<th><kbd>KNOB 4</kbd></th>
+</tr></thead><tbody>
+<tr><td><kbd>ENV</kbd></td><td><kbd>ENV</kbd></td><td>ATK (起音时间)</td><td>DEC (衰减时间)</td><td>SUS (延音音量)</td><td>REL (释音时间)</td></tr>
+<tr><td></td><td><kbd>ENV</kbd> DEST</td><td>FLT：包络→滤波亮度 (±)</td><td>PIT：包络→音高 (±，808 冲击感核心)</td><td>SHP：包络→引擎 Shape 形状 (±)</td><td>ESYNC (2.6)：OFF / ON，将 ATK/DEC/REL 切换为节拍音符时值</td></tr>
+<tr><td><kbd>LFO</kbd></td><td><kbd>LFO</kbd></td><td>RATE (调制速率 Hz)</td><td>WAVE (波形)：SIN, TRI, SAW, SQR, S&amp;H</td><td>PHS (初始相位)</td><td>FADE (渐入时间)</td></tr>
+<tr><td></td><td><kbd>LFO</kbd> 2 (2.6)</td><td>SYNC：OFF, 4BAR, 2BAR, 1BAR, 1/2, 1/4, 1/8, 8T, 1/16, 16T, 1/32</td><td>TRIG：NOTE (每音符重置) / FREE (自由运行)</td><td>POL：BI (双极) / UNI (单极)</td><td>—</td></tr>
+<tr><td></td><td><kbd>LFO</kbd> DEST</td><td>PIT：颤音 (Vibrato)</td><td>FLT：滤波扫频 (Wobble)</td><td>SHP：波形塑造</td><td>AMP：音量震音 (Tremolo)</td></tr>
+<tr><td><kbd>FX</kbd></td><td><kbd>FX</kbd> ( Send 发送量)</td><td>DST (过载 Send)</td><td>CHO (合唱 Send)</td><td>DLY (延迟 Send)</td><td>REV (混响 Send)</td></tr>
+<tr><td></td><td>FILTER</td><td>FILT：单轨一键滤波 — 逆时针低通，顺时针高通，居中 OFF</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td></td><td>SLICER</td><td>SLCR：OFF, GATE (切音), STUT (口吃 stutter)</td><td>PAT：预设切音节奏型 1–16</td><td>RATE：1/8, 1/16, 1/32, 8T, 16T, 32T</td><td>DEPTH (切音深度)</td></tr>
+<tr><td></td><td>INSERT (2.6)</td><td>INSRT：OFF, SOFT, HARD, FOLD, FUZZ, CRUSH, PHASR, FLANG, CHOR</td><td>A</td><td>B</td><td>C（ABC 参数随效果类型不同而变：详见单轨效果）</td></tr>
+<tr><td></td><td>INSERT 2 (2.6)</td><td>MIX：干湿比 (Dry / Wet)</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td></td><td>DLY (全局延迟)</td><td>TIME：1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/8D, 1/16D, 1/4D (2.6；在 60 BPM 及更低速度时最大上限为 1.49s)</td><td>FDBK (反馈量)</td><td>COLR (音色色彩/ 滤音)</td><td>MIX (总延迟干湿比)</td></tr>
+<tr><td></td><td>REV/CHO (全局)</td><td>SIZE (混响空间大小)</td><td>DAMP (混响高频阻尼)</td><td>CRT (合唱速率)</td><td>CDP (合唱深度)</td></tr>
+<tr><td><kbd>SEL</kbd></td><td><kbd>SEL</kbd></td><td>ROOT (当前轨根音/调性)</td><td>SCL：当前轨音阶（<kbd>SEL</kbd>+<kbd>KNOB 2</kbd> 可同步设 3 轨）</td><td>QNT 琴键：OFF, SNAP, WHITE</td><td>CHORD：OFF, TRIAD, 7TH, 9TH, SUS4, POWER</td></tr>
+<tr><td></td><td><kbd>SEL</kbd> 2</td><td>TRN (移调 ±24)</td><td>STRUM (扫弦 ±60 ms)</td><td>VLEAD (平滑声部导向)：OFF / ON</td><td>—</td></tr>
+<tr><td><kbd>EDIT</kbd></td><td><kbd>EDIT</kbd> 1</td><td>引擎特有参数 1</td><td>2</td><td>3</td><td>4（详见 12 款合成引擎）</td></tr>
+<tr><td></td><td><kbd>EDIT</kbd> 2</td><td>引擎特有参数 5</td><td>6</td><td>7</td><td>8</td></tr>
+<tr><td></td><td>FILTER (ANALOG 专享，2.6)</td><td>TYPE：LP (低通), BP (带通), HP (高通)</td><td>CUT (截止频率)</td><td>RES (共鸣)</td><td>KTR (键盘跟踪)</td></tr>
+<tr><td></td><td>VOICE</td><td>VCE：POLY (复音), MONO (单音), LEG (连音), UNI (合奏)</td><td>GLD (滑音时间)</td><td>GLMOD：RATE / TIME</td><td>PRIO：LAST (后优先), LOW (低音优先), HIGH (高音优先)</td></tr>
+<tr><td></td><td>VOICE 2</td><td>ALLOC：ROT (通道轮替) / REUSE (通道复用)</td><td>DTUNE (Unison 细解调)</td><td>PAN (声相)</td><td>MUTE (静音)</td></tr>
+<tr><td><kbd>ARP</kbd></td><td><kbd>ARP</kbd></td><td>MODE：OFF, UP, DN, UPDN, RND, ORD</td><td>RATE：1/4 … 16T</td><td>OCT：1–4 个八度跨度</td><td>GATE (音符门限长度)</td></tr>
+<tr><td></td><td><kbd>ARP</kbd> 2</td><td>SWG (琶音摇摆量)</td><td>PROB (音符触发概率)</td><td>HOLD：OFF / ON (保持/锁存)</td><td>ORD：NOTE (音高顺序) / <kbd>PLAY</kbd> (演奏按下的顺序)</td></tr>
+<tr><td><kbd>SEQ</kbd></td><td>STEP</td><td>STEP (编辑光标)</td><td>NOTE (音符音高)</td><td>TIME：NOTE, TIE, REST·在音符步进上：LEN (2.6)</td><td>FLAG：–, ACC (重音), SLD (滑音), A+S</td></tr>
+<tr><td></td><td>PATTERN SONG</td><td>LEN：1–64 步进长度 打开 SONG 编辑界面</td><td>DIV：1/4 … 2BAR 划分</td><td>SWG：单轨摇摆量</td><td>GATE：音符门限长度</td></tr>
+<tr><td><kbd>GLO</kbd></td><td>GLOBAL</td><td>BPM：40–240</td><td>SWING (全局摇摆量)</td><td>CLICK：OFF, <kbd>REC</kbd> (仅录音响), ON (常响)</td><td>TUNE (全局细调 ±50 cents)</td></tr>
+<tr><td></td><td>MASTER</td><td>DUST (质感降质)</td><td>DUCK (侧链抽气)</td><td>FILT (DJ 式双向滤波)</td><td>ROLL (连打重复速率)</td></tr>
+<tr><td></td><td>SYSTEM</td><td>OUT (MIDI 输出)：KEYS / <kbd>SEQ</kbd> (MIDI 2 同步)</td><td>SYNC：INT (内同步), USB, TRS</td><td>IN：NOTES / CLOCK / CH 1–16 (MIDI 2 同步)</td><td>CPU 负载（未连电脑时显示 USB 连接状态）</td></tr>
+<tr><td></td><td>DRUMS</td><td>CH4：鼓轨 MIDI 通道 (OFF, 1–16，默认 10；与 <kbd>GLO</kbd> → MIDI → CH4 同步；2.6 为系统级设置)</td><td>LVL (鼓轨音量)</td><td>REV (鼓轨混响 Send)</td><td>DLY (鼓轨延迟 Send) (2.5)：鼓轨送入总延迟，随工程保存</td></tr>
+<tr><td></td><td>TEXTURE (2.6)</td><td>SRC：OFF, VINYL (黑胶), TAPE (磁带), RAIN (下雨), WIND (风声), RADIO (收音机), ROOM (房间), USR1–4</td><td>LEVEL (音量)</td><td>TONE (低通 LP ← 居中 OFF →高通 HP)</td><td>MOVE (动态呼吸感)</td></tr>
+<tr><td></td><td>TEXTURE 2 (2.6)</td><td>RATE：动态周期 1–16 小节</td><td>WHEN：<kbd>PLAY</kbd> (仅播放时响) / ALWAYS (常响)</td><td>DUCK：OFF / ON (跟随底鼓抽气)</td><td>—</td></tr>
+<tr><td></td><td>MIDI (2.6)</td><td>CH1：轨 1 MIDI 通道 (OFF, 1–16)</td><td>CH2：轨 2 MIDI 通道</td><td>CH3：轨 3 MIDI 通道</td><td>CH4：鼓轨 MIDI 通道 (默认 10)</td></tr>
+<tr><td></td><td>MIDI 2 (2.6)</td><td>IN：NOTES / CLOCK / CH 1–16</td><td>OTHER：非轨道专属通道映射：<kbd>SEL</kbd> (演奏当前轨) / OFF</td><td>OUT：KEYS / <kbd>SEQ</kbd></td><td>BEND：弯音轮弯音范围 1–12 半音</td></tr>
+<tr><td><kbd>SAVE</kbd></td><td><kbd>PRESETS</kbd></td><td>预设音色选择</td><td>音色引擎（上/下快速切换）</td><td>—</td><td>—</td></tr>
+<tr><td></td><td>USER</td><td>选择用户音色 SLOT (1–32)</td><td>LOAD (二次确认 GO)</td><td>ERASE (二次确认 GO)</td><td><kbd>SAVE</kbd> (二次确认 GO)</td></tr>
+<tr><td></td><td>PROJECT</td><td>选择工程 SLOT (1–4)</td><td>GO)</td><td>GO)</td><td><kbd>SAVE</kbd> (二次确认 GO)</td></tr>
+<tr><td></td><td>TOOLS</td><td>CLRSQ：清空 Sequence (GO)</td><td>INIT：重置音色 (GO)</td><td>—</td><td>NEW：新建工程 (GO)</td></tr>
+</tbody></table></div>
+<p>补充说明：</p>
+<p>全局页面 (Global)（DLY, REV/CHO, GLOBAL, MASTER, SYSTEM, DRUMS）无论当前选中哪条轨道，修改的均是全局参数。</p>
+<p>SYNC、MIDI 与 IN 属于 FM-1 设备级设置，加载工程时不会被覆盖。</p>
+<p>在鼓轨道下，有效的参数页包括 SLICER、PATTERN (<kbd>SEQ</kbd>)、SONG 界面与所有全局页面；鼓组、音量、混响与声相请在 DRUMS 鼓机界面调节，单轨滤波请使用 <kbd>FX</kbd> + <kbd>KNOB 4</kbd>。</p>
+<p>FM6 引擎轨道会忽略 <kbd>ENV</kbd> 页面与 <kbd>ENV</kbd> DEST 设置（因为 FM6 的 6 个算子拥有各自独立的四段包络）。</p>
+<p><kbd>ENV</kbd> SYNC (<kbd>ENV</kbd> DEST → ESYNC ON，2.6)：ATK、DEC 与 REL 会切换为跟随 BPM 的节拍音符时值，范围从 0 到 1/64T … 1/4, 1/2 … 直至 4BAR（包含三连音与附点）；在 120 BPM 下，1/4 时值的 ATK 为半秒，在 60 BPM 下则为 1 秒。修改 BPM 速度时包络时长会自动按比例缩放。设为 OFF 时恢复为毫秒 (ms) 固定时长。</p>
+<p><kbd>LFO</kbd> 2 (2.6)：SYNC 可将 <kbd>LFO</kbd> 调制周期严格锁定至节拍音符时值（此时 RATE 忽略；设为 OFF 时恢复 Hz 速率控制）·TRIG 设为 NOTE 时每当弹奏新乐句会从 PHS 相位重置 <kbd>LFO</kbd>，设为 FREE 时保持自由运行·POL 设为 BI 时呈双极上下摆动，设为 UNI 时呈单极单向摆动（如仅向下压低音量的 Tremolo 或仅向上打开的 Wobble）。</p>
+<p>FILTER (<kbd>EDIT</kbd> 页面，仅限 ANALOG 引擎，2.6)：ANALOG 引擎的滤波器可切换为低通 (LP)、带通 (BP)或高通 (HP)；CUT、RES 与 KTR 参数与 <kbd>EDIT</kbd> 2 页面完全同步。</p>
+<p>在屏幕上，<kbd>EDIT</kbd> 1 与 <kbd>EDIT</kbd> 2 会直接显示各个引擎专属的页面名称：如 ANALOG OSC / FLT、DIGITAL OPS /MOD、PHASE PHS / LINE、LOFI CHIP / MOTN、SAMPLE SET / TONE、VOICE VOWL / TONE、TRIO OSC /TONE、WHEEL BARS / TONE、GRAIN GRAN / SPRY、FM6 OPS / PATCH、PHYS BODY / EXCT、NOISE SRC /MOVE。</p>
+<p>上述页面中的所有声音参数均可在步进上进行参数锁定 (Parameter Lock)（参见参数锁定），Pattern、Arp、音阶调性与 VOICE 模式参数除外。</p>
+</section>
+<section id="ch17">
+<h2>音色库与 12 款合成引擎</h2>
+<h3 id="ch17.1">内置音色库</h3>
+<p>153 款厂牌出厂音色，每一款均基于 12 款引擎之一精心调制，且全库经过严格的响度对齐（相同的 LEVEL 对应完全相同的听感响度）。转动 <kbd>PRESETS</kbd> 旋钮可按乐器分类进行浏览 — 包含 Bass、Keys、Organs、Pads、Leads、Plucks &amp; Bells、Stabs、<kbd>FX</kbd> — 分类名称会直接显示在音色名旁；后半部分为您的 32 个自定义用户预设(User Presets)。新建工程时默认速度为 90 BPM，轨 1 为 808 BOOM，轨 2 为 RHODES，轨 3 为 LOFI FLUTE，轨 4 为 808 鼓组。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>乐器分类</th>
+<th>音色列表（括号内为所用引擎）</th>
+</tr></thead><tbody>
+<tr><td>Bass (低音)</td><td>808 BOOM, 808 DIRTY, 808 SLIDE, SUB BASS, PLUGG BASS（支持按住音符平滑滑音，音高比琴键低两个八度）·REESE, WOBBLE, ACID 303, FUNK BASS, MONO BASS (ANALOG)·FM BASS, BASS GTR (DIGITAL)·CZ BASS (PHASE)·ROUND BASS (FM6)·FAT BASS (TRIO)·WOW BASS (VOICE)·GB BASS (LOFI)·UP BASS, DEEP BASS (SAMPLE)·PLUCK BASS (PHYS)·NES BASS (LOFI)·SAW BASS (ANALOG)</td></tr>
+<tr><td>Keys (键盘/ 钢琴)</td><td>RHODES, DX RHODES, WURLI, M1 PIANO, AFRO KEYS, CLAV (DIGITAL)·GRAND PNO, DUSTY PNO, LOFI KEYS (SAMPLE)·SOFT KEYS (PHASE)·TINE EP (FM6)·FM GRAND (DIGITAL)</td></tr>
+<tr><td>Organ (风琴)</td><td>SOUL ORGAN, GOSPEL, JAZZ ORGAN, DIRTY B3, HOUSE ORGN (WHEEL)·DRAWBARS (FM6)·ACCORDION (TRIO)·ROCK ORGAN, CHAPEL, REGGAE ORG (WHEEL)</td></tr>
+<tr><td>Pad (铺底柔音)</td><td>WARM PAD, DARK STR, ATMOS PAD (ANALOG)·SAW PAD, ENSEMBLE (TRIO)·GLASS PAD (DIGITAL)·SOFT PAD (FM6)·CZ STRING (PHASE)·LOFI CLOUD, VIBE HAZE, STR CLOUD, SHIMMER, DRONE (GRAIN)·CHOIR AAH, SOUL OOH (VOICE)·BOWED MTL, CELLO BOW, GLASS BOWL (PHYS)·WIND, OCEAN (NOISE)·CZ PAD (PHASE)·VOX PAD (VOICE)·PNO FREEZE, HORN CLOUD (GRAIN)·SINE PAD (ANALOG)·PULSE PAD (TRIO)</td></tr>
+<tr><td>Lead (主音)</td><td>SUPERSAW, G-FUNK LD, FAT LEAD, PAN FLUTE (ANALOG)·SYNC LEAD, HOOVER (TRIO)·TALKBOX, HARMONICA (VOICE)·GAME LEAD (LOFI)·LOFI FLUTE (SAMPLE)·FLUTE DUST (GRAIN)·NZ ARCADE (NOISE)·WAVE LEAD (LOFI)·CZ LEAD (PHASE)·ROBOT (VOICE)·PWM LEAD (ANALOG)·SQR LEAD (TRIO)</td></tr>
+<tr><td>Pluck &amp; bell (拨弦/ 钟音)</td><td>TRAP PLUCK (ANALOG)·RESO PLUCK (PHASE)·PLUGG BELL, TRAP BELL, MUSIC BOX, KALIMBA, MARIMBA, XYLOPHONE, GLOCKEN, CELESTA, STEEL DRUM, HARP (DIGITAL)·VIBES (SAMPLE)·8BIT <kbd>ARP</kbd> (LOFI)·GLASS BELL, WOOD BARS, NYLON PICK (FM6)·STR PLUCK, SITAR, PHYS HARP, BELL TREE, MODAL BAR, THUMB PNO, NYLON GTR, STEEL GTR, MUTED GTR, KOTO, BANJO, TANPURA, CHIMES, BIG BELL, VIBRA BAR, STEEL PAN, WOOD BLOCK (PHYS)·1BIT BEEP (LOFI)·CZ RESO (PHASE)·TUBE BELL, FM PLUCK (DIGITAL)</td></tr>
+<tr><td>Stab (切音/ 和声切音)</td><td>MIN STAB, MIN7 STAB, RAVE STAB, DUB CHORD (TRIO: 单键直接触发对应和弦)·SYN BRASS (ANALOG)·CZ BRASS (PHASE)·BRASS SECT (FM6)·80S POLY (TRIO)·HORN STAB, STRING STB (SAMPLE)·CHIP CHORD (LOFI)·POWER STAB (TRIO)</td></tr>
+<tr><td><kbd>FX</kbd> (音效)</td><td>SCRATCH (刮盘音效，沿琴键拉动可触发搓盘、倒带特效)·GM KIT (SAMPLE)·HAND DRUM, MEMB TOMS, TABLA, CONGA, TIMPANI (PHYS)·RAIN, NZ METAL, VINYL, HISS, RISER, NZ SNARE, BITCRUSH, RADIO (NOISE)·CHIP NOISE (LOFI)</td></tr>
+</tbody></table></div>
+<p>若需直接切换合成引擎：进入 <kbd>SAVE</kbd> → <kbd>PRESETS</kbd> → 转动 <kbd>KNOB 2</kbd>。若需从某个引擎的默认状态开始调制音色：进入 <kbd>SAVE</kbd> → TOOLS → 执行 INIT。</p>
+<h3 id="ch17.2">12 款合成引擎</h3>
+<p>每款引擎的 8 个核心调制参数分布在 <kbd>EDIT</kbd> 1 (<kbd>KNOB 1</kbd>–4) 与 <kbd>EDIT</kbd> 2 (<kbd>KNOB 1</kbd>–4) 页面中，轻按 <kbd>EDIT</kbd> 键一到两次即可进入；屏幕会显示该引擎专属的参数名称（例如 DIGITAL 引擎显示 OPS 与 MOD）。横线代表未被占用的旋钮。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>引擎名称</th>
+<th>声学特性</th>
+<th><kbd>EDIT</kbd> 1：<kbd>KNOB 1</kbd>·2·3·4</th>
+<th><kbd>EDIT</kbd> 2：<kbd>KNOB 1</kbd>·2·3·4</th>
+</tr></thead><tbody>
+<tr><td>ANALOG</td><td>虚拟模拟合成：双振荡器 + 滤波器</td><td>WAVE (波形：锯齿波、方波、三角波、正弦波、PWM)·DTN (解调)·MIX (振荡器混合)·NOIS (噪声)</td><td>CUT (截止频率)·RES (共鸣)·DRV (过载)·KTR (键盘跟踪)</td></tr>
+<tr><td>DIGITAL</td><td>4 算子 FM 调频合成</td><td>ALG (FM 算法 1–8)·R2·R3·R4 (算子 2/3/4 的倍频比)</td><td>IDX (FM 调制深度)·MDEC (调制算子衰减)·FB (反馈量)·—</td></tr>
+<tr><td>PHASE</td><td>相位畸变合成 (CZ 经典风格)</td><td>WAVE (波形 1)·WAVE2 (第二波形或关闭 –)·DCW (相位畸变深度)·<kbd>ENV</kbd> (畸变包络量)</td><td>DTN (解调)·LINE：MIX / RING (环形调制)·SUB (副振荡器)·—</td></tr>
+<tr><td>LOFI</td><td>8-bit 复古芯片音效</td><td>CHIP (精度：4BIT, 4B/2, 8BIT, 1BIT, STEP)·WAVE (波形：脉冲、三角、锯齿、噪声、波表)·DUTY (脉宽/波表位置)·CRSH (降比特，STEP 模式下为 DCY)</td><td>SWP (音高扫频)·VIB (颤音)·<kbd>ARP</kbd> (芯片硬件琶音：OFF, OCT, MAJ, MIN)·TONE (音色明暗)</td></tr>
+<tr><td>SAMPLE</td><td>采样器引擎</td><td>SET (采样集：PIANO, BASS, VIBES, HORNS, STRGS, FLUTE, SCRCH, PERC, USR1–USR4)·TUNE (移调 ±24)·BITS (位深度降低)·LOOP (循环开关)</td><td>CUT (滤波明暗)·—·DRV (过载)·—</td></tr>
+<tr><td>VOICE</td><td>共鸣峰人声合成 (合唱、Talkbox 谈话箱)</td><td>VOWL (元音 1)·VOWL2 (元音 2)·TALK (元音过渡时间)·SHIFT (共鸣峰平移 ±12)</td><td>BUZZ (声带嗡鸣感)·BRTH (气息声)·Q (品质因数)·RAND (随机扰动)</td></tr>
+<tr><td>TRIO</td><td>三振荡器合成</td><td>WAVE (16 种振荡器组合)·INT2·INT3 (振荡器 2 和 3 的音程音高，±24)·DTN (微调解调)</td><td>MODE (滤波类型：LP, BP, HP, NOT)·CUT·RES·PW (脉冲宽度)</td></tr>
+<tr><td>WHEEL</td><td>齿轮风琴 (Tonewheel Organ)</td><td>REG (16 种拉杆预设组合：FLUTE, MELLO, HOLLW, SMOOT, 3BAR, BLUES, GOSPL, ROCK…)·SUB·BODY·TOP (拉杆组微调 ±8)</td><td>PERC (打击感选通：OFF, 2ND, 3RD, 2SOFT, 3SOFT, 2SLOW, 3SLOW)·CLICK (按键咔哒声)·DRV·ROTR (旋转喇叭效果：OFF, SLOW, FAST)</td></tr>
+<tr><td>GRAIN</td><td>粒子合成 (Granular)</td><td>SRC (任意采样集，包含自定义 USR1–USR4)·POS (采样指针位置)·SIZE (粒子大小)·DENS (粒子密度)·TONE</td><td>PTCH (音高 ±24)·SPRD (粒子声相扩散)·RAND (随机性)</td></tr>
+<tr><td>FM6</td><td>6 算子 FM 合成，兼容 DX7 预设</td><td>ALG：PAT (使用 Preset 原设置) 或 1–32 算法·FB (反馈)·MLVL (调制算子电平/明亮度)·MRAT (调制算子倍频比)</td><td>MEG (调制包络放慢/加快)·VMOD (力度敏感度→明亮度)·DTUN (载波扩散)·PTCH：F1–F8 出厂或 B1– B27 自定义音色库</td></tr>
+<tr><td>PHYS</td><td>物理建模合成：琴弦、打击棒/钟体、鼓皮、共鸣弦（基于 DaisySP 和 Rings 移植；每轨 3 发音数，SYMP 模式下 2 发音数）</td><td>MODEL (模型类型：MODAL 钟体, STRNG 琴弦, MEMB 鼓膜, SYMP 共鸣弦)·STRC (物理结构，MEMB 下为谐音，SYMP 下为共鸣和弦)·BRIT (表面明亮度)·DAMP (物理阻尼)</td><td>POS (击打/拨弦位置，SYMP 下为共鸣衰减时长)·ACC (击打重音)·BOW (拉弓摩擦感，MEMB 下为音高弯曲，SYMP 下为蜂鸣感)·EXC (激发源混合比例)</td></tr>
+<tr><td>NOISE</td><td>噪声合成：从模拟到数字，涵盖色彩噪声、碎裂声、移位寄存器与金属音色</td><td>MODE (噪声类型：ANLG 模拟, DUST 尘埃, LFSR 数字移位, META 金属)·COLR (白噪声→粉红→棕色)·FREQ·RES</td><td>TRK (键盘跟踪)·DENS (脉冲密度，LFSR/META 下为寄存器长度 LEN)·DRFT (漂移)·CRSH (降质，LFSR/META 下为时钟频率 CLK)</td></tr>
+</tbody></table></div>
+<p>SAMPLE 采样集素材均属于自由版权（CC0 协议，采样自 Versilian Studios VSCO-2 CE、VCSL 及 Sonic Pi），经过复古采样器过载染色处理。GRAND PNO 为 Steinway 斯坦威三角钢琴逐音采样，长音音符会像真实钢琴一样自然衰减。</p>
+<h3 id="ch17.3">FM6 引擎与 DX7 音色文件</h3>
+<p>FM6 引擎底层采用 msfa（即 Dexed 的核心 FM 合成内核）：包含 6 个拥有独立四段包络的算子、键盘跟踪、力度响应、倍频比 /固定频率与解调；内置 32 种 FM 算法、反馈、<kbd>LFO</kbd> 及音高包络；每轨支持 6 个复音。上述 8 个 <kbd>EDIT</kbd> 参数是作用于音色之上的宏控制 (Macros)：轨道的 FLT 会联动调节 MLVL（因此 <kbd>LFO</kbd> → FLT 依然能产生明暗扫频效果），SHP 联动 FB 反馈，PIT 联动音高。</p>
+<p>您可以在 Web 编辑器的 FM6 面板（Sound 页面中选中 FM6 轨）中编辑完整的音色细节：独立调整每一个算子、Send to track (发送至设备)、Store in bank (存入设备 Bank B1–B27)、Import SysEx (导入 SysEx 文件)（支持导入单音色或包含 32 个音色的预设包，互联网上数以万计的 DX7/Dexed 音色均可在 FM-1 上完美播放；也可直接将 .syx 文件拖入面板）以及 Export SysEx (导出 SysEx)。使用 Store cartridge in bank (2.5) 功能可以一次性将包含 32 个音色的完整预设包导入 FM-1：选中的音色（默认前 27 个）会按顺序一次性写入 B1, B2… 槽位中；</p>
+<p>覆盖前编辑器会弹窗二次确认。在保存前，您还可以选择同时将它们添加至 User Presets 用户预设中（自动填入空槽位或指定的起始槽位）：每个音色会按其原有名称生成一个关联至对应 B 槽位的用户预设，这样您在 FM-1 上只需转动 <kbd>PRESETS</kbd> 或 <kbd>SELECT</kbd> 旋钮即可直接按名称选择 DX7 音色；编辑器会明确提示将覆盖哪些用户预设。（用户预设仅记录 PTCH 索引编号，音色本身保存在 Bank 中。）之后在 FM-1 的 PTCH 参数项（<kbd>EDIT</kbd> 页面 2：出厂 F1–F8 之后即为 B1–B27）中选择即可。工程只会记录轨道的 PTCH 编号，不会保存音色本身：如对 FM 音色进行了修改，请务必保存至 Bank 中。</p>
+</section>
+<section id="ch18">
+<h2>效果器：主效果、Punch-in 效果、单轨效果</h2>
+<h3 id="ch18.1">信号流走向</h3>
+<p>合成器单轨信号流：音色引擎 → 过载 (DST) → 插入效果器 INSERT (2.6) → 切音器 SLICER → 单轨滤波器 FILTER→ 单轨音量 (及 DUCK 侧链) → 声相与发送量 Sends (送入立体声合唱、BPM 延迟与混响)。鼓轨道拥有独立的 INSERT (2.6)、SLICER、FILTER、音量、声相、混响 Send 及 (2.5) 延迟 Send。随后所有轨道与效果器返回信号（以及 2.6 新增的 TEXTURE 质感铺底）汇入总混音 Bus：DUST 复古质感 → Punch-in 实时特效 → FILT (DJ 滤音器)→ MASTER 总音量 → 前瞻限幅器 Limiter (2.6：包含 0.7 ms 的前瞻预测，即使极大动态的突发重音也能在到达前被平滑压低，绝不会触发输出端的硬剪切失真 )。</p>
+<h3 id="ch18.2">主混音效果：DUST, DUCK, FILT, ROLL</h3>
+<p>通过 <kbd>FX</kbd> + <kbd>KNOB 1</kbd>–3，或进入 <kbd>GLO</kbd> → MASTER 进行控制：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>效果名称</th>
+<th>作用与听感表现</th>
+</tr></thead><tbody>
+<tr><td>DUST 0– 100 %</td><td>将总混音送入复古采样器与黑胶模拟通道：带来平滑的过载剪切、降低采样率（最低降至 ~11 kHz）、降低位深度（最低降至 8-bit）、低通滤波收窄至 ~3 kHz，并在播放期间伴有轻微的黑胶底噪与炒豆声（播放停止时保持绝对静音）</td></tr>
+<tr><td>DUCK 0– 100 %</td><td>每次底鼓敲击均会将合成器轨道按照 1/8 音符的律动压低并平滑回升：呈现出极具律动感与呼吸感的 Sidechain 侧链抽气效果，在任意 BPM 下均可自动对齐</td></tr>
+<tr><td>FILT</td><td>DJ 式双向滤波器：逆时针转动为低通截止，顺时针转动为高通截止，居中为 OFF；切入平滑无拉链噪声</td></tr>
+<tr><td>ROLL</td><td>控制 <kbd>ARP</kbd> + 琴键时的连打重复速率 (Rate)</td></tr>
+</tbody></table></div>
+<h3 id="ch18.3">Punch-in 实时特效</h3>
+<p><kbd>FX</kbd> + 白键：按住琴键期间，效果会实时作用于整个总混音上，松开琴键效果立即干净利落地消失。Loop 循环与 Gate 切音严格锁定曲目 BPM 并从网格重拍开始对齐。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>琴键</th>
+<th>特效名称与类型</th>
+<th>琴键</th>
+<th>特效名称与类型</th>
+</tr></thead><tbody>
+<tr><td>1·F3</td><td>1/4 节拍 Loop 循环</td><td>9·G4</td><td>低通扫频 (Low-pass Sweep)</td></tr>
+<tr><td>2·G3</td><td>1/8 节拍 Loop 循环</td><td>10·A4</td><td>高通扫频 (High-pass Sweep)</td></tr>
+<tr><td>3·A3</td><td>1/16 节拍 Loop 循环</td><td>11·B4</td><td>电话音色滤音 (Phone Effect)</td></tr>
+<tr><td>4·B3</td><td>1/32 节拍 Loop 循环</td><td>12·C5</td><td>Bit Crush 位深度降质</td></tr>
+<tr><td>5·C4</td><td>Stutter 口吃 (1/16 三连音)</td><td>13·D5</td><td>Alias (降采样率走音)</td></tr>
+<tr><td>6·D4</td><td>Reverse 倒放特效</td><td>14·E5</td><td>1/16 节拍 Gate 门限切音</td></tr>
+<tr><td>7·E4</td><td>Tape Stop 磁带停转降调</td><td>15·F5</td><td>Echo 延迟 (附点 1/8)</td></tr>
+<tr><td>8·F4</td><td>Half Speed 半速播放</td><td>16·G5</td><td>Tape Wobble 磁带抖晃</td></tr>
+</tbody></table></div>
+<p><kbd>FX</kbd> + 黑键 (2.6)：从最低的 F# 到最高的 F#，新增 11 款黑键专属实时特效。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>琴键</th>
+<th>特效名称与类型</th>
+<th>琴键</th>
+<th>特效名称与类型</th>
+</tr></thead><tbody>
+<tr><td>F#3</td><td>KILL LOW：瞬间切除低频（~250 Hz 以下，24 dB/oct 陡峭切除，DJ 必备）</td><td>F#4</td><td>FLANGER：极具穿透力的喷气式扫频，左右声道交错摆动</td></tr>
+<tr><td>G#3</td><td>KILL MID：瞬间切除中频 (~250 Hz – 2.5 kHz)</td><td>G#4</td><td>AUTO-PAN：总混音转为单声部，并在左右声道间按拍子快速交替摆动</td></tr>
+<tr><td>A#3</td><td>KILL HIGH：瞬间切除高频 (~2.5 kHz 以上)</td><td>A#4</td><td>FREEZE：将瞬间的总混音灌入无限混响中并保持冻结；松开琴键后随混响的 SIZE 自然平滑衰减</td></tr>
+<tr><td>C#4</td><td>REWIND：模拟搓盘倒带：音乐迅速减速停转并加速倒放（取约 0.3 秒的历史音频），松开前保持静音</td><td>C#5</td><td>LOOP 8T：1/8 三连音 Loop 循环</td></tr>
+<tr><td>D#4</td><td>OCT UP：总混音整体升高一个八度</td><td>D#5</td><td>MONO：左右声道实时合并为单声道</td></tr>
+<tr><td></td><td></td><td>F#5</td><td>FADE OUT：总混音在两拍时间内平滑淡出至静音</td></tr>
+</tbody></table></div>
+<p>在屏幕上，27 个琴键会以键盘形态呈现：16 个白键分为 4x4 网格，黑键位于对应白键的上方，与 FM-1 物理键盘的位置完全一致。当前按住的特效键会高亮显示为白色。</p>
+<h3 id="ch18.4">Texture 质感铺底 (2.6)</h3>
+<p>通过 <kbd>GLO</kbd> → TEXTURE（及 TEXTURE 2）设置：在总混音下方叠加一层连续循环的环境质感音轨，是打造 Lo-Fi 与 Ambient 风格的灵魂所在，且完全不占用 4 个主轨道通道。它直接进入 Dry 干信号混音 Bus（不经过 Send 效果器），位于 DUST、Punch-in 特效与主滤波器之前。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>旋钮</th>
+<th>TEXTURE 页面参数</th>
+<th>TEXTURE 2 页面参数</th>
+</tr></thead><tbody>
+<tr><td>1</td><td>SRC (音源选择)：OFF (关闭), VINYL (黑胶底噪/炒豆声), TAPE (暗沉磁带噪声/抖晃), RAIN (雨声与雨滴击打), WIND (共鸣风声), RADIO (收音机电信号杂音), ROOM (房间环境采样), USR1–USR4 (自定义采样槽位，取首个音音高循环)</td><td>RATE：MOVE 参数的动态呼吸周期：可设为 1, 2, 4, 8 或 16 个小节</td></tr>
+<tr><td>2</td><td>LEVEL (音量大小)</td><td>WHEN：<kbd>PLAY</kbd> (仅在播放时随传输状态淡入淡出) / ALWAYS (常响)</td></tr>
+<tr><td>3</td><td>TONE (音色明暗)：逆时针低通，顺时针高通，居中全开</td><td>DUCK：ON (开启时同步跟随底鼓侧链抽气，受 <kbd>GLO</kbd> → MASTER → DUCK 联动)</td></tr>
+<tr><td>4</td><td>MOVE (动态呼吸感)：控制音量与明亮度随 RATE 周期的摆动幅度</td><td>—</td></tr>
+</tbody></table></div>
+<p>Texture 设置随工程保存，且每个 Song 段落 (A–D) 均可拥有独立的 Texture 设置。算法生成的音源完全不占用内存；当 SRC 设为 OFF 时不消耗任何 CPU 资源。</p>
+<h3 id="ch18.5">单轨专属效果</h3>
+<p>FILTER (单轨滤波器)（<kbd>FX</kbd> → FILTER 页面，或通过 <kbd>FX</kbd> + <kbd>KNOB 4</kbd> 控制当前轨）：一键式滤波器，逆时针低通，顺时针高通，居中关闭。更换音色时该滤波参数会被保留，支持步进参数锁定，随工程保存。</p>
+<p>Sends 发送量（<kbd>FX</kbd> 页面）：包含 DST 过载、CHO 合唱、DLY 延迟、REV 混响。延迟与混响 /合唱的全局参数在 DLY 与 REV/CHO 页面配置。延迟的 TIME 包含附点 1/8 与附点 1/16。</p>
+<p>SLICER 节拍切音器（<kbd>FX</kbd> → SLICER）：提供门限切音 (GATE) 或口吃 (STUT) 效果，内置 16 种节奏 Pattern，划分支持 1/8 到 32T，可调切音深度 Depth。</p>
+<p>INSERT 插入效果器（<kbd>FX</kbd> → INSERT 与 INSERT 2，2.6 新增，基于 Felucca 1.5）：作用于单轨音色过载之后的独立效果器；鼓轨道同样拥有一套独立的 INSERT，作用于整个鼓组及其 Sends。MIX 控制干湿比。ABC 3 个参数随效果类型不同而切换：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>效果类型</th>
+<th>A 参数</th>
+<th>B 参数</th>
+<th>C 参数</th>
+</tr></thead><tbody>
+<tr><td>SOFT (软剪切过载), HARD (硬剪切失真), FOLD (波形折叠), FUZZ (绒音失真)</td><td>DRIVE (驱动度)</td><td>TONE (音色明暗)</td><td>LEVEL (输出音量)</td></tr>
+<tr><td>CRUSH (比特降质)</td><td>BITS (1– 16 bit)</td><td>RATE (采样率，689 Hz – 44 kHz)</td><td>LPF (低通滤波)</td></tr>
+<tr><td>PHASR (相位器), FLANG (法兰效果), CHOR (合唱效果)</td><td>RATE (摆动速率)</td><td>DEPTH (调制深度)</td><td>FDBK (反馈量)</td></tr>
+</tbody></table></div>
+<p>A、B、C 与 MIX 参数均支持在步进上进行参数锁定。当 TYPE 设为 OFF（或 MIX 设为 0）时完全不消耗 CPU，轨道音色与未开启时完全一致。</p>
+</section>
+<section id="ch19">
+<h2>音频可视化效果器</h2>
+<p>在 TRACKS 主界面下轻按 <kbd>HOME</kbd>：整个屏幕会切换为炫酷的全屏动态音频可视化效果器，实时呈现 SLOOP 演奏的音乐。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>控制件</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>SELECT</kbd></td><td>切换上/下一个可视化样式（样式名称会显示 1 秒；最后选中的样式会自动随配置保存）</td></tr>
+<tr><td><kbd>HOME</kbd> 或任意页面键</td><td>关闭可视化效果器返回主界面</td></tr>
+<tr><td>琴键、<kbd>PLAY</kbd>、<kbd>REC</kbd>、图层按键</td><td>保持正常响应（按住图层时会临时显示图层界面，松开后自动恢复可视化）</td></tr>
+<tr><td><kbd>KNOB 1</kbd>–4</td><td>暂停响应（此时调节 BPM 请使用 <kbd>GLO</kbd> + <kbd>SELECT</kbd>）</td></tr>
+</tbody></table></div>
+<div class="tw"><table>
+<thead><tr>
+<th>序号</th>
+<th>样式名称</th>
+<th>视觉呈现效果</th>
+</tr></thead><tbody>
+<tr><td>1</td><td>OSCILLOSCOPE</td><td>总混音的波形示波器，波形平稳驻留</td></tr>
+<tr><td>2</td><td>SPECTRUM</td><td>32 频段频谱柱，带有下落峰值电平块</td></tr>
+<tr><td>3</td><td>SPECTROGRAM</td><td>频谱瀑布图，由上至下滚动，颜色沿黑→蓝→绿→黄→白渐变</td></tr>
+<tr><td>4</td><td>LISSAJOUS</td><td>声相相位图（李萨如图形）：云雾摆动越宽，代表立体声声场越宽广</td></tr>
+<tr><td>5</td><td>VU METERS</td><td>以各自代表色展示 1–4 轨及总混音的 VU 电平表，带峰值保持</td></tr>
+<tr><td>6</td><td>CIRCLE</td><td>圆环波形，每次底鼓敲击圆环都会随之震荡扩张</td></tr>
+<tr><td>7</td><td>TAPE</td><td>模拟磁带盘随音乐转动，同屏显示电平、小节数与 BPM 速度</td></tr>
+<tr><td>8</td><td>LCD</td><td>复古七段数码管风格显示 BPM 速度、小节/拍数，以及 4 轨电平表</td></tr>
+<tr><td>9</td><td>BOUNCE</td><td>弹球模式：每轨对应一个弹球，每次触发音符球体会被弹起</td></tr>
+<tr><td>10</td><td>ORBIT</td><td>四颗行星分别以 1、2、4、8 拍为周期围绕恒星公转，恒星随混音律动脉冲</td></tr>
+<tr><td>11</td><td>WIRES</td><td>琴弦模式：每轨对应一条悬挂的琴弦，触发音符时琴弦会产生物理震荡</td></tr>
+<tr><td>12</td><td>SLOOP</td><td>动态 SLOOP Logo：船帆的 4 条色带代表 4 个轨道，小船在波浪间迎风摇曳</td></tr>
+</tbody></table></div>
+<p>可视化效果器分析的是 MASTER 设为最大时的总混音信号：因此即使将物理 MASTER 旋钮关小甚至调至 0，可视化画面依然能以满幅动态正常跳动。该功能完全不占用或损耗合成音质。</p>
+</section>
+<section id="ch20">
+<h2>HOME 菜单与灯光设置</h2>
+<p>按住 <kbd>HOME</kbd> 键 0.7 秒即可打开系统菜单；再次按住可退出。菜单包含 4 个板块：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>板块名称</th>
+<th><kbd>KNOB 1</kbd></th>
+<th><kbd>KNOB 2</kbd></th>
+<th><kbd>KNOB 3</kbd></th>
+</tr></thead><tbody>
+<tr><td>SCREEN (屏幕)</td><td>COLOR：屏幕配色方案 (GREEN 绿, AMBER 琥珀, CYAN 青, RED 红, MONO 单色…)</td><td>ZOOM：设为 ON 时，触碰任意旋钮屏幕均会以大字号白色突出显示当前值</td><td>—</td></tr>
+<tr><td>LIGHTS (灯光)</td><td>LIGHTS：按键背光亮度 (OFF, LOW, MID, HIGH)</td><td>KEYS：琴键背光模式 (OFF, C KEYS 仅 C 音亮, WHITE KEYS 仅白键亮, ALL KEYS 全亮)</td><td>NOTES：音符指示灯 (OFF / ON)</td></tr>
+<tr><td>AUDIO (音频)</td><td>SPEAKER LOWCUT：ON 开启低切，切除板载微型喇叭无法发出的低频 (~110 Hz)</td><td>USB AUDIO：USB 音频输出模式 (MASTER / FULL)</td><td>USB SERIAL：串口调试 (OFF / ON，开发者选项；下次启动生效)</td></tr>
+<tr><td>SYSTEM (系统)</td><td>HARDWARE CALIBRATION 硬件校准（旋钮选中，按 <kbd>OCT+</kbd> 进入）</td><td>MIDI LEARN CLEAR (2.6)：显示已学习的 CC 数量；按 <kbd>OCT+</kbd> 可全部清除</td><td>ABOUT 固件版本信息（旋钮选中，按 <kbd>OCT+</kbd> 打开）</td></tr>
+</tbody></table></div>
+<div class="tw"><table>
+<thead><tr>
+<th>菜单内的控制操作</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>SELECT</kbd></td><td>切换上/下一个菜单板块</td></tr>
+<tr><td><kbd>KNOB 1</kbd>, 2, 3</td><td>直接调节当前板块对应行的参数（每行颜色与旋钮同色）</td></tr>
+<tr><td><kbd>PRESETS</kbd></td><td>移动选中光标</td></tr>
+<tr><td><kbd>OCT+</kbd></td><td>循环切换光标所在项的设置，或进入二次菜单 (CALIBRATION, ABOUT)</td></tr>
+<tr><td>OCT−</td><td>返回退出（在 ABOUT 界面：返回板块列表）</td></tr>
+<tr><td>按住 <kbd>HOME</kbd></td><td>保存并退出系统菜单</td></tr>
+</tbody></table></div>
+<p>上述所有选项均属于 FM-1 设备级系统设置，加载工程或新建工程时不会被覆盖。</p>
+<h3 id="ch20.1">背光灯光逻辑</h3>
+<p>LIGHTS — 所有按键会以此亮度保持基础背光，方便在暗光环境下看清面板字符（在黑色版 FM-1 上无背光时字符难以辨认）。激活状态的项 — 如当前页面按键、<kbd>PLAY</kbd>、<kbd>REC</kbd>、八度指示等 — 会保持最高亮或闪烁。</p>
+<p>KEYS — 琴键会按照 LIGHTS 的亮度设定点亮 C 音、所有白键或全部琴键（若 LIGHTS 之前为 OFF，开启 KEYS 会自动将 LIGHTS 设为 LOW）。</p>
+<p>NOTES — 设为 ON 时：当前选中的合成器轨道发声时，对应的琴键会被实时点亮，无论是实时弹奏还是 Sequence 播放均会响应（每个音符至少点亮 0.1 秒，确保微短的步进音符也能清晰视觉呈现）。鼓轨道始终会点亮其击打的音色键。在所有参数页与图层内均有效。</p>
+<p>恒定提示灯：<kbd>PLAY</kbd> 灯在每个拍子上闪烁；<kbd>REC</kbd> 灯在准备时闪烁，录音中常亮；当前打开页面的按键灯常亮；</p>
+<p>在图层内，琴键 1、5、9、13 微亮用于定位，激活项全亮；八度偏离 0 时 <kbd>OCT −</kbd> / <kbd>OCT+</kbd> 点亮；图层被锁定时其按键灯闪烁。</p>
+<h3 id="ch20.2">硬件校准 (Hardware Calibration)</h3>
+<p>若发现某个按键或旋钮响应异常或数值跳变，请进入 <kbd>HOME</kbd> 菜单 → SYSTEM → HARDWARE CALIBRATION（或在开机时按住 <kbd>OCT −</kbd> + <kbd>OCT+</kbd>）：按照屏幕文字提示，依次按下每个按键并将每个旋钮向右旋转到底。若 30 秒内无操作将自动取消并保留原有校准数据。</p>
+</section>
+<section id="ch21">
+<h2>MIDI 连接与控制</h2>
+<h3 id="ch21.1">MIDI 信号输入途径</h3>
+<p>物理 MIDI IN 接口（FM-1 上的 3.5 mm TRS 接口）：通过 3.5mm 转 DIN 5 针 MIDI 转接线连接带有 MIDI 输出的键盘或打击垫控制器。若连接后无响应，请尝试更换另一种接法标准（Type A / Type B 转接线）。</p>
+<p>USB 接口：连接电脑或手机 /平板（运行 DAW、MIDI 路由软件），或使用 USB MIDI Host 转换盒。注意：将 USB 键盘直接用数据线对连 FM-1 是无法工作的，因为两者均属于 USB 从设备 (Device)，USB 通信必须依赖主设备 (Host)。</p>
+<p>两路输入支持同时工作。</p>
+<h3 id="ch21.2">完整 MIDI 参数配置：GLO → MIDI 与 MIDI 2 (2.6)</h3>
+<p>所有 MIDI 设置分布在 <kbd>GLO</kbd> 的两个参数页中（多次轻按 <kbd>GLO</kbd> 直至切换至 MIDI）。它们均属于 FM-1 设备级设置：</p>
+<p>关机自动保存，不受工程加载影响，且会自动包含在 Web 编辑器的备份文件中。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>页面名称</th>
+<th><kbd>KNOB 1</kbd></th>
+<th><kbd>KNOB 2</kbd></th>
+<th><kbd>KNOB 3</kbd></th>
+<th><kbd>KNOB 4</kbd></th>
+</tr></thead><tbody>
+<tr><td>MIDI：配置各轨道的输入输出通道</td><td>CH1 轨 1 通道（默认 1）</td><td>CH2 轨 2 通道（默认 2）</td><td>CH3 轨 3 通道（默认 3）</td><td>CH4 鼓轨通道（默认 10）</td></tr>
+<tr><td>MIDI 2：MIDI 进出控制逻辑</td><td>IN (输入过滤)</td><td>OTHER (未匹配通道)</td><td>OUT (输出源)</td><td>BEND (弯音范围)</td></tr>
+</tbody></table></div>
+<p>CH1–CH4：可设为 OFF 或 1–16 通道。轨道的通道决定了外部 MIDI 控制该轨的响应（音符、CC 控制器、延音踏板、弯音轮、Program Change 切音色），且该轨的琴键与 Sequence 也会从该通道输出。设为 OFF 代表该轨不接收也不发送任何 MIDI 信号。两个轨道绝不会强行共享同一个通道：若将某个通道分配给已被占用的轨道，原先占用该通道的轨道会自动递增切至下一个空闲通道，屏幕会弹窗提示（如 CH 3 = TRACK 3）。</p>
+<p>切换通道会自动切断该通道上正在响起的尾音。CH4 与 <kbd>GLO</kbd> → DRUMS 中的设置完全同步。</p>
+<p>IN：NOTES（接收音符、CC 控制器与 MIDI Clock 时钟：正常模式）·CLOCK（仅接收 MIDI Clock 及 START / CONTINUE / <kbd>STOP</kbd> 传输指令；忽略所有音符与 CC）·CH 1 … CH 16（仅接收指定的单通道信号，且始终作用于当前选中的轨道；CH1–CH4 与 OTHER 设置会被临时旁路，MIDI Clock 依然响应）。当 IN 设为非 NOTES 模式时打开 <kbd>GLO</kbd> → MIDI，屏幕会弹窗提示（如 IN CH 5: <kbd>SEL</kbd> TRK ONLY 或 IN = CLOCK: NO NOTES）。</p>
+<p>OTHER：当收到的 MIDI 通道不属于 1–4 轨的任何一轨时的响应逻辑：<kbd>SEL</kbd> 代表自动演奏当前选中的轨道（例如将 MIDI 键盘通道设为 4，它就会跟随 <kbd>ALGORITHM</kbd> 自动切换控制焦点）·OFF 代表直接忽略（适合单根 MIDI 线连接多台设备时忽略其他设备的通道）。</p>
+<p>OUT：KEYS 代表仅将您在硬件琴键上弹奏的音符输出·<kbd>SEQ</kbd> 代表将内置 Sequencer、琶音器与连打滚奏的音符同步输出。</p>
+<p>BEND：设置弯音轮的响应范围，可调 1–12 个半音（默认 2）。</p>
+<p>IN 与 OUT 设置同样呈现在 <kbd>GLO</kbd> → SYSTEM 页面中 SYNC 参数旁，与 2.6 版本前的布局保持兼容。</p>
+<p>常见应用配置举例：MIDI 键盘设为通道 1 控制轨 1；若想通过通道 4 自动控制当前选中的轨道，请将 OTHER 设为 <kbd>SEL</kbd>。使用外接 Sequencer 编排：鼓轨设为 10，Bass 设为 2，Pad 设为 11，Lead 设为 8：设置 CH1 = 2, CH2= 11, CH3 = 8, CH4 = 10, OTHER = OFF。使用 KeyStep Pro 编排且其他通道控制外部硬件：设置 IN = CH n，该通道即可专注控制当前选中轨。</p>
+<h3 id="ch21.3">MIDI 输出与 Clock 时钟同步 (GLO → SYSTEM)</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>旋钮</th>
+<th>参数项</th>
+<th>可选值及含义</th>
+</tr></thead><tbody>
+<tr><td><kbd>KNOB 1</kbd></td><td>OUT (MIDI 输出)</td><td>同 MIDI 2 页面</td></tr>
+<tr><td><kbd>KNOB 2</kbd></td><td>SYNC (时钟同步源)</td><td>INT：使用 SLOOP 内置 BPM 速度·USB 或 TRS：跟随外部 MIDI Clock 时钟同步</td></tr>
+<tr><td><kbd>KNOB 3</kbd></td><td>IN (输入模式)</td><td>同 MIDI 2 页面</td></tr>
+<tr><td><kbd>KNOB 4</kbd></td><td>CPU</td><td>呈现处理器 CPU 负载率（未连接电脑时呈现 USB 链路状态）</td></tr>
+</tbody></table></div>
+<p>MIDI OUT：每个轨道从各自设定的通道 (CH1–CH4) 发送信号。设为 <kbd>SEQ</kbd> 时，可在 DAW 中开启录音直接将 SLOOP 的 Sequence 录制为 MIDI 音符，或让 SLOOP 驱动其他硬件合成器。所有音符均有明确的 Note Off，按下 <kbd>STOP</kbd> 会自动切断所有残留尾音，且外部输入的 MIDI 音符绝不会被重新转发出去（彻底避免 MIDI Loop 回路）。</p>
+<p>Clock 外部时钟同步：响应外部 START（从头播放）、CONTINUE（继续播放）、<kbd>STOP</kbd>（停止）；BPM 速度会严格按照每拍 24 个 Tick 脉冲与主控设备保持绝对同步，绝不漂移。当外部时钟中断超过半秒时，在 FM-1 上按下 <kbd>PLAY</kbd> 会自动恢复为内置 BPM 速度。在 <kbd>REC</kbd> 预备拍期间收到 MIDI START 指令会立即启动并开始录音。</p>
+<p>切换 IN 模式或更改通道会自动释放所有挂起的音符，避免出现悬挂长音。</p>
+<p>不支持蓝牙 MIDI (Bluetooth MIDI)：SLOOP 固件出于性能与稳定性考虑已永久关闭无线无线电模块。</p>
+<h3 id="ch21.4">MIDI CC 控制器映射 (2.5)</h3>
+<p>您可以使用 MIDI 控制器的旋钮直接控制声音参数（完全继承 Felucca 1.1.5 标准 CC 映射表）。CC 作用于其通道对应的轨道（合成轨通道控制对应轨，鼓通道控制鼓轨，其他通道控制当前选中轨），调节范围为 0–127，64 对应声相与滤波的中点。通过 CC 修改会真正改变音色参数本身（如同旋转物理旋钮，保存工程时会被一同保存）；</p>
+<p>屏幕与 Web 编辑器会实时同步变化。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>CC 编号</th>
+<th>控制的音色参数</th>
+</tr></thead><tbody>
+<tr><td>5</td><td>GLIDE (滑音时间)</td></tr>
+<tr><td>7</td><td>LEVEL (轨音量；在鼓通道上对应 <kbd>GLO</kbd> → DRUMS → LVL)</td></tr>
+<tr><td>10</td><td>PAN (声相)</td></tr>
+<tr><td>71</td><td>音色引擎的共鸣度 (RES 或 Q：作用于 ANALOG, TRIO, VOICE, NOISE；其他引擎忽略)</td></tr>
+<tr><td>72·73·75</td><td>Release 释音·Attack 起音·Decay 衰减</td></tr>
+<tr><td>74</td><td>单轨 FILTER：64 为关闭，低于 64 为低通，高于 64 为高通（作用于所有引擎及鼓轨）</td></tr>
+<tr><td>91·93·94</td><td>混响、合唱与延迟的 Send 发送量（在鼓通道上 91 与 94 对应 <kbd>GLO</kbd> → DRUMS → REV 和 DLY）</td></tr>
+</tbody></table></div>
+<p>延音踏板与弯音轮 (2.6)：延音踏板 (Sustain Pedal) (CC 64，作用于通道对应轨 )：踩下踏板期间，松开琴键音符仍会保持发声，直至踏板抬起（琶音器会保持响应，录音会完整录下您听到的延音效果；期间再次弹奏同一音符会在抬键时正常终止）。弯音轮 (Pitch Bend)可对通道对应轨进行平滑弯音，弯音极限范围由 BEND 参数指定(<kbd>GLO</kbd> → MIDI 2：1–12 半音，默认 2)；鼓轨道忽略弯音轮。其他 CC（如调制轮等）默认忽略，除非您使用 MIDI LEARN 进行自定义映射。</p>
+<p>Program Change 音色切换 (2.6，基于 Felucca 1.5.1 及 @renebohne 的 PR #179)：在轨道对应的通道上发送 Program Change 指令可直接加载音色：在合成轨上，编号 n 代表 <kbd>PRESETS</kbd> 列表中的第 n 款音色（0 代表首个：</p>
+<p>808 BOOM；按分类排列的 153 款出厂音色，随后为您的用户预设），在鼓通道上编号 n 代表第 n 套鼓组。超出范围的编号会被直接忽略。屏幕会弹窗提示 T2 PROG 5。当 IN 设为 CLOCK 时忽略该指令；当 IN 设为 CH n 时指令作用于当前选中轨。</p>
+<h3 id="ch21.5">MIDI LEARN 自定义映射 (2.6)</h3>
+<p>您可以将控制器的任意物理旋钮映射至轨道的任意参数上（基于 Felucca 1.5）：</p>
+<p>1. 按下 <kbd>GLO</kbd> + F#3（第一个黑键）：屏幕提示 LEARN: TURN A KNOB；顶部显示 LEARN 标识。</p>
+<p>2. 转动 SLOOP 上您想要被控制的物理旋钮（当前轨的任意参数页，或 TRACKS 界面上的 LEVEL / PAN）：屏幕提示 T1 CUT: SEND A CC。</p>
+<p>3. 转动 MIDI 控制器上的目标物理旋钮：屏幕提示 CC 21 = T1 CUT。您可以继续旋转其他旋钮进行批量学习映射。</p>
+<p>4. 再次按下 <kbd>GLO</kbd> + F#3：提示 LEARN DONE，完成映射。</p>
+<p>学习后的自定义 CC 会直接控制该轨道的对应参数，无论从哪个通道传入均可响应，且不再触发原有的标准 CC 映射（若某个 CC 之前已被占用，会自动解除原有映射；最多支持自定义 16 个 CC）。具备特定系统含义的 CC 无法被学习映射：如 Bank Select (0, 32)、Mod Wheel (1)、Data Entry (6, 38)、Expression (11)、Sustain (64)、96–101 以及 Channel Mode 指令 (120–127)。MIDI LEARN 的学习映射属于 FM-1 设备级系统设置，关机不丢失，不受工程切换影响，且会自动打包在 Web 编辑器的备份中；通过 <kbd>HOME</kbd> 菜单 → SYSTEM → MIDI LEARN CLEAR（按 <kbd>OCT+</kbd> 确认）可一键清空所有学习映射。</p>
+</section>
+<section id="ch22">
+<h2>USB 声卡功能</h2>
+<p>通过 USB 数据线连接时，FM-1 会被电脑/手机识别为名为 Felucca 的标准免驱 USB 音频输入设备：支持 44.1 或 48 kHz 采样率（由电脑 /手机/平板自动协商；2.5 版本起升级支持 48 kHz，完美兼容仅支持 48kHz 的手机与应用）、16-bit 立体声、符合 USB Audio Class 规范，无需安装任何驱动。在 DAW、Audacity 或手机采样 App 中（使用 USB-C 数据线或转接头）选择该输入源即可直接录音：录入的声音为总混音 Master 输出，与您在耳机里听到的完全一致（包含 DUST、DUCK 与 FILT 效果；若开启了 Click 节拍器与预备拍也会一并录入）。同一根 USB 数据线可同时传输 MIDI、连接 Web 编辑器与刷机更新。</p>
+<p><kbd>HOME</kbd> 菜单 → AUDIO → USB AUDIO 参数设置：</p>
+<p>MASTER (默认模式)：录音音量严格跟随硬件 MASTER 音量旋钮。录音时请保持 MASTER 旋钮处于较大位置。</p>
+<p>FULL (满幅模式)：输出固定电平，相当于将 MASTER 转到底的音量（内置 Limiter 会确保绝不爆音剪切）；</p>
+<p>此时物理 MASTER 旋钮仅用于调节耳机监听音量。非常适合连接无法单独调节输入增益的电脑系统。</p>
+<p>初次切换该模式时，电脑会将 FM-1 识别为复合设备（MIDI + Audio）并重新加载驱动。在 macOS 13–15 系统上，请保持 USB SERIAL 处于 OFF 关闭状态（默认值），否则 USB 声卡输入可能无法被系统正确识别。</p>
+</section>
+<section id="ch23">
+<h2>自定义采样与鼓组制作</h2>
+<p>FM-1 硬件内置 4 个采样槽位（USR1–USR4），每个槽位容量约 7.4 秒（22 kHz 单声道规格）。单个槽位可被配置为以下两种用途之一：</p>
+<p>旋律乐器，供合成器轨道调用：将引擎设为 SAMPLE，SET 选为 USR1 … USR4（或 GRAIN 粒子引擎的 SRC），或者鼓套组，供鼓轨道调用：将 KIT 选为 USR1 … USR4，或选择 USR3+4 组合槽位（跨两个槽位构成约 15 秒容量的大型鼓组）。</p>
+<p>推荐的高效配置方案：USR1 和 USR2 作为旋律采样乐器，USR3+4 组合作为一个大型自定义鼓套组。所有采样槽位的内容均需在 Web 编辑器中进行灌录导入。</p>
+<h3 id="ch23.1">制作旋律乐器 (编辑器 → Samples 页面)</h3>
+<p>1. 选择目标槽位。页面会通过 4 个卡片直观呈现每个槽位的内容与已用容量；若本次导入会覆盖原有采样（或覆盖 USR3+4 鼓组的一半），页面会自动弹窗警告提示。</p>
+<p>2. 生成乐器音色，提供两种快捷途径：</p>
+<p>导入切音文件 (一文件一音符)：拖入最多 16 个 WAV 音频文件（采样率不限，单 /立体声均可）。每个文件会绑定到指定的音符上，中间未绑定的琴键会自动以最近的音符进行变速变调变阶重采样。音符会自动从文件名中提取（例如 KEYS_C4.wav 对应 C4 = 60）或在列表中手动指定；虚拟键盘会直观展示每个文件覆盖的琴键范围；点击 ▶ 可在线试听；容量仪表盘会实时计算已用时长。每个文件均支持单独调节 Gain 增益（0 到 −24 dB，2.6 新增）；点击 Match levels 可以自动平衡所有文件的响度（自动将过响的文件拉低，确保所有切音以满幅动态均匀输出），随后可凭听觉微调。</p>
+<p>长采样切割 (CHOP)：打开或拖入一段完整的录音文件（WAV, MP3, AIFF…），将其精准切割为最多 16 个 Chop 切块，分别映射至各个琴键。</p>
+<p>3. 发送并试听：为乐器命名，点击 Send to USRn，随后点击 Play this slot on track 1, 2 or 3：目标合成器轨道会自动切换为 SAMPLE 引擎并将 SET 设为该 USRn 槽位。</p>
+<p>CHOP 切断工具详细控制功能：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>按钮 / 操作</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td>播放时按下 TAP (或空格键)</td><td>在当前播放瞬间插入一个切割标记（开启 snap to the hit 会自动吸附至起始瞬态波形）</td></tr>
+<tr><td>Find hits (带灵敏度调节), Grid, Equal parts</td><td>智能自动寻找瞬态、按网格或按等分自动生成切割标记</td></tr>
+<tr><td>选块复选框, Keep all, Keep none, K</td><td>勾选保留或舍弃指定的切块（被舍弃的切块既不会写入槽位，也不会被导出）</td></tr>
+<tr><td>长度滑动条，或波形底部的拖拽手柄</td><td>缩短某个切块的尾部时长；点击 Up to the next marker 可撤销恢复</td></tr>
+<tr><td>Fit to slot</td><td>智能自动按比例缩短最长的切块，使其恰好完整塞入 7.4 秒的槽位中</td></tr>
+<tr><td>Download WAVs</td><td>将保留的切块打包导出为独立的 WAV 音频文件</td></tr>
+<tr><td>键盘数字键 1–9, 0</td><td>快速试听对应的切块</td></tr>
+<tr><td>双击波形 / 拖拽标记 / 左箭头右箭头 / Del 键</td><td>新增标记 / 移动标记 / 步进微调 / 删除标记</td></tr>
+<tr><td>鼠标滚轮</td><td>放大 / 缩小波形</td></tr>
+</tbody></table></div>
+<p>导入任意时长的录音均可：筛选保留您最满意的切块，槽位会自动装载前 7.4 秒精华部分。</p>
+<h3 id="ch23.2">制作鼓套组 (编辑器 → Drum kit 页面)</h3>
+<p>1. 配置鼓音色。将 WAV 音频文件分别拖入 16 个鼓打击垫之中（KICK, KICK 2, SNARE, CLAP, HAT, OPEN HAT, PEDAL, RIM, SNARE 2, LOW TOM, HI TOM, CRASH, RIDE, SHAKER, CONGA, COWBELL），或点击 Choose files 批量导入：系统会自动根据文件名关键字（如 kick, bd, snare, hh, open, crash…；第二个 Kick 会自动分配至 KICK 2）智能分发至对应的打击垫。点击打击垫的波形可实时试听。每个打击垫均可独立调节 Pitch (音高 ±12 半音)、Gain (增益)与 Length (时长，剪裁尾部会自动施加平滑淡出）。点击 Match levels（2.6 新增，位于打击垫下方）可以根据人声听觉曲线自动平衡所有鼓垫的响度（低频能量自动折算，将过响的鼓垫降至与最弱鼓垫平齐），随后可凭听觉微调。</p>
+<p>2. 选择目标槽位。可选择 USR3+4（大型鼓组，容量约 15 秒；编辑器会自动将 16 个音色智能打散平铺至两个槽位中），或选择单槽位 USR1–USR4（容量约 7.4 秒）。每个选项均会明确提示当前槽位的内容及覆盖后果。仪表盘会实时计算已用容量；若超长可手动缩短长音色或点击 Fit the slot 自动适应。</p>
+<p>3. 发送至设备。为鼓组命名，点击 Send，随后点击 Use … on the drum track：系统会自动选中轨道 4 并将其 KIT 设为该鼓组（也可在 FM-1 鼓轨上转动 <kbd>PRESETS</kbd> 选择：USR3+4 位于鼓组列表的最末尾）。</p>
+<p>点击 Save as ZIP 可将鼓组的 16 个 WAV 文件打包保存以便分享；点击 Open ZIP（或直接拖入 .zip 包）可一键加载已有鼓组包。</p>
+<p>在 FM-1 上，您的自定义鼓套组与内置鼓组的使用体验完全一致：支持步进、音量分级、连打、Fill 条件、DRUMS 网格、琴键触发、MIDI 通道 10 控制（音符触发对应音色）、单轨滤波、切音器及 Mute 静音。闭合踩镲会自动切断开镲。未配置采样的空通道保持静音，未导入数据的空槽位亦同。</p>
+<h3 id="ch23.3">自定义合成鼓组 (SYN1–SYN4)</h3>
+<p>SLOOP 2.5 新增：Web 编辑器的 Drum synth 页面支持逐音色、逐参数地实时调制合成鼓组的所有细节，FM-1 硬件会实时响应该调制变化。SYN1–SYN4 属于内置 Flash 预设，默认分别为 808, 909, TRAP 与 TECHNO 的副本。</p>
+<p>1. 选择目标鼓组 (SYN1 到 SYN4)，并赋予其一个名称（最多 8 个字符：DRUMS 界面会同步显示该名称）。点击 Start from + Copy 可以从 32 款内置鼓组中的任意一款复制作为调制起点。</p>
+<p>2. 选择要调制的鼓音色（KICK, SNARE, CLAP, HAT, OPEN HAT, LOW TOM, HI TOM, CRASH, RIDE, SHAKER,CONGA, RIM, COWBELL, CLAVE, KICK 2, SNARE 2）：选择时会自动触发试听（也可点击 Play 按钮；开启 Play on change 会在每次修改参数后自动触发试听）。</p>
+<p>3. 调制参数。每个参数项均表现为可上下拖拽的方块或拉杆；双击参数可瞬间复位至初始鼓组的默认值。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>参数分组</th>
+<th>包含的调制参数项</th>
+</tr></thead><tbody>
+<tr><td>Tone (音调)</td><td>WAVE (波形：OFF, SINE 正弦, TRI 三角, SQUARE 方波, FM 调频, BELL 钟音)·PITCH (基础音高/Hz) 与 FINE (细调)·BEND (击打瞬间音高下潜半音数) 与 B.TIME (下潜速度)·HOLD (峰值保持时长) 与 DECAY (衰减时长)·LEVEL (音量)·2ND (第二泛音倍频比，模拟真实鼓皮二次泛音) 与 2ND LVL·CLICK (击打起音瞬态咔哒声，模拟鼓槌/鼓槌头击打感)</td></tr>
+<tr><td>Noise (噪声)</td><td>NOISE (噪声波形：OFF, WHITE 白噪声, METAL 808 式六方波金属噪声, CYM 镲片金属白噪声, CHIP 8-bit 芯片噪声)·CLAP (拍手三次突发脉冲及尾迹)·LEVEL, HOLD, DECAY·HPF (噪声高通滤波)·CHIP (芯片噪声的时钟频率)</td></tr>
+<tr><td>Filter (滤波)</td><td>FILTER (滤波类型：OFF, LP 低通, BP 带通, HP 高通)·ON (作用目标：仅 NOISE 或 ALL 全部信号)·CUTOFF (截止频率), RES (共鸣)·<kbd>ENV</kbd> (滤波包络偏移量，随音高一同衰减)</td></tr>
+<tr><td>Out (输出)</td><td>DRIVE (音色过载)·LEVEL (输出音量 dB)</td></tr>
+</tbody></table></div>
+<p>CRUSH (比特降质) 与 S&amp;H (降采样率 Hold) 属于作用于整套鼓组的全局效果。</p>
+<p>4. 点击 Store on the FM-1 可将修改后的 4 套鼓组永久写入硬件 Flash 闪存中（须在 Song 停止时操作）；在此之前页面会提示 not stored yet（若未写入即关机，下次开机时 FM-1 会恢复至上次保存的鼓组状态）。点击 Use on the drum track 可将鼓轨的 KIT 设为该合成鼓组。点击 Save file / Open file 可以将单套鼓组导出为文件分享或备份。执行全局备份时也会同步打包这 4 套合成鼓组。</p>
+</section>
+<section id="ch24">
+<h2>Web 网页端编辑器</h2>
+<p>您可以通过安装器网页、编辑器直连链接，或者双击 OPEN-EDITOR.bat，在 Chrome 或 Edge 浏览器中打开 Web 编辑器。确保 FM-1 已通过 USB 数据线连接，点击 Connect 并授权 MIDI 访问。编辑器会与 FM-1 硬件保持完全双向实时同步：转动 FM-1 上的物理旋钮，编辑器的 UI 画面会同步跳动。UI 设计完美复刻了 FM-1 的硬件美学：黑底屏幕、4 轨代表色以及 FM-1 原汁原味的像素字体。点击语言切换按钮可自由切换中文 / 英文 / 日文。</p>
+<p>离线单文件版 (2.6)：点击 Download the editor（位于 Connect 按钮下方，或在安装器页面），即可将整个编辑器下载保存为单文件 sloop-editor-2.6.html（每个 GitHub Release 发布页亦有提供）。双击该文件即可直接在 Chrome 或 Edge 中打开，无需连接互联网（Chrome 仅在首次打开时询问授权 MIDI 权限），功能与在线版完全一致。离线版的音色预设库（保存在浏览器本地）与在线版相互独立：您可以通过 Export / Import 导入导出，或通过全局备份文件在两者之间迁移数据。</p>
+<p>作为 PWA 应用安装，支持 Android 手机 (2.6)：在连网状态下打开一次在线编辑器或安装器页面，随后点击 Install the app（位于 Connect 下方，或点击 Chrome 菜单 → 安装应用 / 添加到主屏幕）。之后 SLOOP 即可作为独立 App 运行，完全脱机离线使用，且内置的固件安装器链接同样支持离线刷机。它与在线版共享浏览器存储，因此会同步使用同一个音色预设库；当您再次连网打开时，App 会自动无感更新至最新版本。在 Android 手机上，请优先使用 PWA 应用形式：因为 Android 版 Chrome 安全策略限制在直接打开本地 HTML 文件时调用 Web MIDI 权限。</p>
+<p>UI 布局：左侧边栏包含 3 个分组的页面导航 — Track (轨道功能) (Sound, Sequencer, Tracks, Song)、Sounds(音色采样) (Library, Samples, Drum kit, Drum synth)、Device (设备管理) (Projects, Settings) — 以及设备连接状态。顶部栏显示当前页面标题、状态提示文本，以及在 Track 页面下呈现的 4 个轨道标签卡（显示轨道号、音色名与引擎）：点击标签卡可直接切换焦点轨道。当焦点处于侧边栏时，使用键盘上下方向键可快速切换页面。</p>
+<p>参数调节逻辑：每个参数项均呈现为可像旋钮一样上下拖拽的方块（按住 Shift 为微调），或滑动条：点击参数后可使用鼠标滚轮或方向键进行调整（按住 Shift 调整步幅为 10）；双击参数即可瞬间复位。</p>
+<div class="tw"><table>
+<thead><tr>
+<th>页面名称</th>
+<th>页面核心功能与操作说明</th>
+</tr></thead><tbody>
+<tr><td>Sound</td><td>呈现在硬件上可调的所有音色参数：按按键分为独立卡片 (<kbd>ENV</kbd>, <kbd>LFO</kbd>, <kbd>EDIT</kbd>, VOICE, <kbd>FX</kbd>, <kbd>SEL</kbd>, <kbd>ARP</kbd>)，每一页以 4 个同色参数展示。包含 Engine (引擎)与 Presets (预设)选择器、Init sound (重置音色)、Copy to library (复制至音色库)、Save to file / Load file (音色文件导入导出)。在 FM6 轨道下会开启 FM6 专属面板：直观调制 6 个算子、Read from track (读取设备)、Send to track (发送至设备)（开启 Send while editing 可实现实时边调边听）、Store in bank (存入 Bank B1–B27)、Import SysEx (导入 SysEx 文件)（或拖入.syx 文件）、Store cartridge in bank (2.5：一键将预设包中勾选的音色批量导入 B1…，并可自动生成关联的用户预设)、Export SysEx、Export bank as SysEx</td></tr>
+<tr><td>Sequencer</td><td>调制 Pattern 设置 (LEN, DIV, SWG, GATE)，并以图块形式展现各个步进；步进列表支持直接键盘输入音符名称（如 C4 E4 G4）。在鼓轨道下呈现 16 种音色×步进的网格视图及鼓组面板：选择音量等级 (GHOST, SOFT, NORM, HARD) 与连打次数 (x1–x4)，随后点击网格单元格即可写入打点；再次点击（相同音量连打）清除；Shift+点击可将该步音量提升一级。点击步进可进入单步详情：Nudge 微调、Parameter locks 参数锁定（+ lock，选择参数，设置或删除）、Fill 条件 (normal, fill only, no fill)。Reload (重载)、Clear sequence (清空)。Length (长度)：点击− / + 或输入 1–64。包含 Grid / Piano roll 与 Export MIDI / Import MIDI（详情见下文）</td></tr>
+<tr><td>Tracks</td><td>4 个通道条视图：音量平衡、声相、静音、选择；SOLO 与 <kbd>REC</kbd> 状态与硬件同步呈现</td></tr>
+<tr><td>Song</td><td>对应硬件 SONG 界面的歌曲编排：每行对应一个段落步骤 (A–D)，可设置其重复小节数 (1– 64) 及循环次数；点击▲▼调整步骤顺序，点击✕✕✕✕删除步骤，点击 Add 新增步骤；设置 At the end (结尾响应)：停止或重新循环。若引用的段落槽位为空会标记提示：请先在硬件上保存段落 (<kbd>SAVE</kbd> + 琴键 5–8)</td></tr>
+<tr><td>Library</td><td>保存在浏览器本地的个人音色库：Save current sound (保存当前音色)、按名称或标签搜索、按引擎筛选、排序、Audition (在线试听)、To device slot (发送至设备槽位)、Rename (重命名)、Tags (标签)、Duplicate (克隆)、Delete (删除)、Export / Import / Export library (音色库导出导入)；可将出厂预设复制进来。旁边展示硬件上的 32 个用户预设：Load (加载)、Store current sound (保存至该槽位)、To library (存至本地库)、Erase (擦除)、Export bank (导出预设包)。支持在本地库与硬件槽位之间直接拖拽音色</td></tr>
+<tr><td>Samples</td><td>自定义 USR1–USR4 采样乐器制作，分三步完成（详见前文说明），内置 CHOP 算切音工具</td></tr>
+<tr><td>Drum kit</td><td>自定义鼓套组制作，分三步完成（详见前文说明）</td></tr>
+<tr><td>Drum synth</td><td>自定义 SYN1–SYN4 合成鼓组制作：精细调制每个鼓音色的每一个物理/合成参数（详见前文说明）</td></tr>
+<tr><td>Projects</td><td>4 个工程槽位管理 (Load, Save) 与 Backup 全局备份（详见下文）</td></tr>
+<tr><td>Settings</td><td>GLOBAL 全局设置 (BPM, SWING, CLICK, TUNE)、MASTER (DUST, DUCK, FILT, ROLL)、DRUMS (CH, LVL, REV, DLY)，以及硬件系统信息展示（固件版本、同步状态、槽位占用）</td></tr>
+</tbody></table></div>
+<h3 id="ch24.1">钢琴卷帘窗与 MIDI 文件导入导出 (Sequencer)</h3>
+<p>Piano roll 钢琴卷帘窗 (合成器轨)：从左至右为步进，从下至上为音高音符（点击 Octave up / down 可滚动八度视图）。选择音符写入长度（小节的 1/1 到 1/16，步幅受轨道的 DIV 约束），随后：</p>
+<p>点击空白处：写入一个对应长度的音符。若点击已有和弦的第 1 步：可追加和弦音符（单步最多 4 音，和弦音符共享长度，与硬件逻辑一致）；</p>
+<p>点击已有音符：直接删除该音符（删除和弦的最后一个音符会自动将该步变回 Rest 休止）；</p>
+<p>拖拽音符右侧边缘：拉伸或缩短音符长度（自动生成 /消除 Tie 延音），最长可拉伸至下一个和弦步进前。</p>
+<p>所有的修改均会实时无缝同步至 FM-1 硬件，网格视图也会同步更新。</p>
+<p>Export MIDI 功能可将当前轨道的 Pattern 导出为标准的 MIDI 音频文件 (sloop-track1.mid …)：完整保留音符时值、长度、音量等级与 Accent 重音，且严格匹配曲目的 BPM；鼓轨道会自动导出为标准的 MIDI 通道 10 GM 鼓音符。</p>
+<p>Import MIDI 功能可将外部 MIDI 文件导入读取至当前轨道，并根据轨道的 DIV 进行网格吸附。导入前会先弹窗预览：展示 MIDI 文件包含的轨道、音符数、步进数，以及导入过程中将发生的自动修正提示：不在网格上的音符会自动平移吸附至最近的步进、单步超过 4 个音符时会自动保留音量最大的前 4 音、被后续音符截断的长音、超过 64 步的截断部分。点击 Import 会覆盖当前轨道的 Pattern（若勾选对应选项，会自动将轨道长度设为 MIDI 的实际长度）；点击 Cancel 放弃导入保留原样。在鼓轨道下，标准 GM 鼓音符会自动精准映射至对应的鼓音色通道（36 底鼓、38 军鼓、42 踩镲…），MIDI 力度值会自动精细转化为 GHOST 至 HARD 4 个音量等级。</p>
+<p>与 FM-1 硬件逻辑一致，编辑器仅在 Song 停止播放时才允许将预设、FM6 Bank 与备份文件写入 Flash 闪存（若在播放中，编辑器会弹窗提示您先停止播放）。您可以在没有连接 FM-1 硬件的情况下直接体验编辑器：只需在编辑器网址末尾加上 ?mock=1 即可开启虚拟仿真模式。详细的数据通信协议文档参阅 web/EDITOR_PROTOCOL.md。</p>
+</section>
+<section id="ch25">
+<h2>备份、救砖恢复、降级与故障排查</h2>
+<h3 id="ch25.1">备份与还原</h3>
+<p>打开编辑器 → Projects 页面 → 点击 Backup：</p>
+<p>Save a backup ( 导出全局备份)：一键将 FM-1 硬件上的所有数据完整打包导出为一个独立的 JSON 文件(SLOOP-backup- 日期.json )：包含您当前正在制作的音乐、工程槽位 1–4（即 Song 段落 A–D）、用户预设音色库 1–32、FM6 音色 Bank B1–B27、自定义采样槽位 USR1–USR4、自定义合成鼓组 SYN1–SYN4、MIDI LEARN 学习映射，以及所有的 FM-1 系统级硬件设置。建议在更新固件或出厂重置前导出备份。</p>
+<p>Restore a backup ( 还原备份)：选择一个备份文件并恢复至 FM-1 硬件上。还原前编辑器会弹窗复选框，允许您自定义勾选需要恢复的具体数据板块（例如仅恢复工程，或仅恢复用户预设）。还原会将硬件上的对应数据完全覆盖：如有疑问，请在还原前先导出当前数据的备份。请在 Song 停止状态下执行还原。</p>
+<h3 id="ch25.2">硬件救砖模式 (USB Rescue Mode)</h3>
+<p>若更新固件中途意外断电、数据线拔出，导致 FM-1 开机黑屏、卡在 Logo 界面或按键无响应：</p>
+<p>1. 拔下 USB 数据线，关机。</p>
+<p>2. 按住 <kbd>OCT −</kbd> 键不放，同时插上 USB 数据线（或开启电源）。</p>
+<p>3. 屏幕会显示 SLOOP USB RESCUE 救砖提示字样。</p>
+<p>4. 在电脑上使用 Chrome 或 Edge 浏览器打开安装器网页，点击 <kbd>INSTALL</kbd> 重新刷入固件。刷机完成后设备即可恢复正常。</p>
+<p>无论硬件处于何种卡死状态，救砖引导程序 (Bootloader) 均保存在只读保护区内，绝不会被损坏，您可以随时通过此方法救砖。</p>
+<h3 id="ch25.3">固件更新模式 (UBOOT)</h3>
+<p>若浏览器端安装器无法自动切入刷机模式：在停止播放状态下，同时按住 <kbd>OCT −</kbd> + <kbd>OCT+</kbd> 5 秒。屏幕会出现 2 秒倒计时；倒计时结束前松开可随时取消。倒计时结束后 FM-1 会先将当前工作工程自动保存，随后强制重启进入 UBOOT 刷机模式，此时安装器网页即可正常识别并刷入固件。</p>
+<h3 id="ch25.4">降级至旧版固件 (如 2.3 或更早)</h3>
+<p>1. 在 Web 编辑器中导出当前硬件数据的全局备份。</p>
+<p>2. 在安装器页面选择旧版固件文件（.bin 或 .hex）刷入设备。</p>
+<p>3. 旧版固件 (2.3) 无法读取 2.4 及以上版本的工程格式 (FUN5)：若降级后工程显示为空，此属于正常现象。若日后重新升级回 2.6，再次导入您的备份文件即可完整还原所有工程。</p>
+<h3 id="ch25.5">常见故障排查 (Troubleshooting)</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>异常现象</th>
+<th>可能的原因</th>
+<th>排查与解决方法</th>
+</tr></thead><tbody>
+<tr><td>琴键弹奏没有声音</td><td>轨道音量为 0、轨道被静音、或者音色 Cutoff 闭合</td><td>检查 <kbd>GLO</kbd> + 旋钮音量；检查 <kbd>GLO</kbd> + 琴键 1–4 是否静音；检查 <kbd>FX</kbd> + <kbd>KNOB 4</kbd> 单轨滤波；按 <kbd>PLAY</kbd> 确认 Sequencer 是否正常运行</td></tr>
+<tr><td>外接 MIDI 键盘弹奏无响应</td><td>MIDI 通道不匹配，或 IN 模式被修改</td><td>进入 <kbd>GLO</kbd> → MIDI 检查通道设置（详见 MIDI 配置）；进入 <kbd>GLO</kbd> → SYSTEM 检查 IN 是否误设为了 CLOCK（屏幕会提示 IN = CLOCK: NO NOTES）</td></tr>
+<tr><td>MIDI 控制器旋钮无法控制参数</td><td>CC 编号不匹配，或已被 MIDI LEARN 覆盖</td><td>查看 MIDI CC 表确认 CC 编号；或进入 <kbd>HOME</kbd> 菜单→ SYSTEM → 执行 MIDI LEARN CLEAR 重置映射</td></tr>
+<tr><td>按键或旋钮数值乱跳/ 响应错乱</td><td>硬件电位器或按键未校准</td><td>进入 <kbd>HOME</kbd> 菜单→ SYSTEM →执行 HARDWARE CALIBRATION 硬件校准（或开机按住 OCT− + <kbd>OCT+</kbd>）</td></tr>
+<tr><td>macOS 上无法识别 USB 声卡</td><td>系统串口驱动冲突</td><td>进入 <kbd>HOME</kbd> 菜单→ AUDIO →将 USB SERIAL 保持为 OFF 关闭状态</td></tr>
+<tr><td>Web 编辑器无法连接设备</td><td>浏览器权限受限，或有其他 Web 页面占用了 MIDI</td><td>请使用原生 Chrome 或 Edge 浏览器；关闭其他可能占用 MIDI 的网页或 DAW；重新拔插 USB 线并刷新页面点击 Connect</td></tr>
+</tbody></table></div>
+</section>
+<section id="ch26">
+<h2>速查表</h2>
+<h3 id="ch26.1">快捷键组合速查</h3>
+<div class="tw"><table>
+<thead><tr>
+<th>按键组合</th>
+<th>功能作用</th>
+</tr></thead><tbody>
+<tr><td><kbd>PLAY</kbd></td><td>启动 / 停止播放（所有界面与图层内均有效）</td></tr>
+<tr><td><kbd>REC</kbd> (轻按)</td><td>开启/停止实时录音·停止时进入录音准备状态 (rec ready)</td></tr>
+<tr><td>按住 <kbd>REC</kbd> (约 2 秒)</td><td>清空当前轨道的 Sequence 数据</td></tr>
+<tr><td><kbd>EDIT</kbd> + OCT− / <kbd>EDIT</kbd> + <kbd>OCT+</kbd></td><td>撤销 (Undo) / 重做 (Redo)</td></tr>
+<tr><td>按住图层键 + 轻按 <kbd>HOME</kbd></td><td>锁定当前图层（解放双手，再次轻按任意页面键解锁）</td></tr>
+<tr><td>OCT− + <kbd>OCT+</kbd> (合成轨)</td><td>瞬间复位八度偏移至 0</td></tr>
+<tr><td>OCT− / <kbd>OCT+</kbd> (鼓轨)</td><td>按住时击打琴键触发弱音 (Ghost) / 重音 (Hard)</td></tr>
+<tr><td><kbd>EDIT</kbd> + 琴键 (播放中)</td><td>实时擦除指针扫过步进上的对应鼓音色或音符</td></tr>
+<tr><td><kbd>EDIT</kbd> + 琴键 (停止中)</td><td>一键从整个 Sequence 中彻底擦除该鼓音色或音符</td></tr>
+<tr><td><kbd>EDIT</kbd> + 黑键 (鼓轨，2.6)</td><td>开启/关闭鼓音色 Mute 静音模式（白键切换单个鼓音色静音）</td></tr>
+<tr><td><kbd>EDIT</kbd> + <kbd>KNOB 1</kbd> / 2 / 3</td><td>SHIFT (步进平移) / LENGTH (长度×2 / ½) / TRANSPOSE (整体移调)</td></tr>
+<tr><td><kbd>FX</kbd> + 琴键 (白键/黑键)</td><td>实时触发对应的 Punch-in 实时特效</td></tr>
+<tr><td><kbd>FX</kbd> + <kbd>KNOB 1</kbd> / 2 / 3 / 4</td><td>FILTER (主滤波) / DUST (复古质感) / DUCK (侧链抽气) / TRK FILT (单轨滤波)</td></tr>
+<tr><td><kbd>FX</kbd> + OCT− / <kbd>FX</kbd> + <kbd>OCT+</kbd> (按住，2.6)</td><td>REV THROW (混响爆破) / ECHO THROW (延迟爆破)</td></tr>
+<tr><td><kbd>ARP</kbd> + 琴键 (按住)</td><td>按设定的 RATE 速率触发连打滚奏 (Note Repeat)</td></tr>
+<tr><td><kbd>SEQ</kbd> + 白键</td><td>激活 / 清除对应的步进 (Step 1–16)</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>KNOB 1</kbd> / 2 / 3 / 4</td><td>调节该步进的 Sound/Note / Level/Vel / Ratchet 连打 / Nudge 微调</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>PRESETS</kbd></td><td>在该步进上添加/修改参数锁定 (Parameter Lock)</td></tr>
+<tr><td><kbd>SEQ</kbd> + 步进键 + <kbd>OCT+</kbd> / OCT−</td><td>切换该步进的 Fill 条件 (normal / FILL ONLY / NO FILL) / 清除微调与锁定</td></tr>
+<tr><td><kbd>SEL</kbd> + 琴键</td><td>设置全曲的主调 (Key)</td></tr>
+<tr><td><kbd>SEL</kbd> + <kbd>KNOB 1</kbd> / 2 / 3 / 4</td><td>CHORD (和弦模式) / SCALE (音阶类型) / KEYS (琴键映射) / TRANSPOSE (移调)</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 1–4 / 5–8</td><td>控制轨道的 Mute (静音) / Solo (独奏)</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 9 / 10</td><td>实时触发 Fill (按住) / 下一个满小节 Fill</td></tr>
+<tr><td><kbd>GLO</kbd> + 琴键 16</td><td>Tap Tempo (打拍定速)</td></tr>
+<tr><td><kbd>GLO</kbd> + F#3 (2.6)</td><td>开启 / 关闭 MIDI LEARN 模式</td></tr>
+<tr><td><kbd>GLO</kbd> + <kbd>KNOB 1</kbd>–4</td><td>调节 1–4 轨的音量平衡 (Level)</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 1–4</td><td>切换播放 A–D 段落</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 1–4 (按住 <kbd>SAVE</kbd> 连续敲击)</td><td>组合快速链式播放 (Quick Chain)（如 A B B C）</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 5–8</td><td>将当前 Loop 保存至 A–D 段落</td></tr>
+<tr><td><kbd>SAVE</kbd> + 琴键 13 / 14 / 16</td><td>切换 Loop / Song 模式 / SONG <kbd>REC</kbd> 歌曲录制 / 打开 SONG 界面</td></tr>
+<tr><td>按住 <kbd>HOME</kbd> (0.7 秒)</td><td>打开 / 退出系统菜单</td></tr>
+<tr><td>轻按 <kbd>HOME</kbd> (在 TRACKS 界面)</td><td>打开 / 关闭音频可视化效果器</td></tr>
+</tbody></table></div>
+<h3 id="ch26.2">全局参数页面结构速查</h3>
+<p>[<kbd>ENV</kbd>] ─── <kbd>ENV</kbd> (ATK, DEC, SUS, REL) ─── <kbd>ENV</kbd> DEST (FLT, PIT, SHP, ESYNC)[<kbd>LFO</kbd>] ─── <kbd>LFO</kbd> (RATE, WAVE, PHS, FADE) ─── <kbd>LFO</kbd> 2 (SYNC, TRIG, POL) ─── <kbd>LFO</kbd> DEST (PIT,FLT, SHP, AMP)[<kbd>FX</kbd>] ─── <kbd>FX</kbd> (DST, CHO, DLY, REV) ─── FILTER (FILT) ─── SLICER (SLCR, PAT, RATE,DEPTH)└── INSERT (INSRT, A, B, C) ─── INSERT 2 (MIX) ─── DLY (TIME, FDBK, COLR, MIX)─── REV/CHO (SIZE, DAMP, CRT, CDP)[<kbd>SEL</kbd>] ─── <kbd>SEL</kbd> (ROOT, SCL, QNT, CHORD) ─── <kbd>SEL</kbd> 2 (TRN, STRUM, VLEAD)[<kbd>EDIT</kbd>] ─── <kbd>EDIT</kbd> 1 ( 引擎参数 1-4) ─── <kbd>EDIT</kbd> 2 ( 引擎参数 5-8) ─── FILTER (TYPE, CUT, RES,KTR)└── VOICE (VCE, GLD, GLMOD, PRIO) ─── VOICE 2 (ALLOC, DTUNE, PAN, MUTE)[<kbd>ARP</kbd>] ─── <kbd>ARP</kbd> (MODE, RATE, OCT, GATE) ─── <kbd>ARP</kbd> 2 (SWG, PROB, HOLD, ORD)[<kbd>SEQ</kbd>] ─── STEP (STEP, NOTE, TIME/LEN, FLAG) ─── PATTERN (LEN, DIV, SWG, GATE) ─── SONG(歌曲编辑)[<kbd>GLO</kbd>] ─── GLOBAL (BPM, SWING, CLICK, TUNE) ─── MASTER (DUST, DUCK, FILT, ROLL)└── SYSTEM (OUT, SYNC, IN, CPU) ─── DRUMS (CH4, LVL, REV, DLY) ─── TEXTURE (SRC,LEVEL, TONE, MOVE)└── TEXTURE 2 (RATE, WHEN, DUCK) ─── MIDI (CH1, CH2, CH3, CH4) ─── MIDI 2 (IN,OTHER, OUT, BEND)[<kbd>SAVE</kbd>] ─── <kbd>PRESETS</kbd> ( 音色选择) ─── USER ( 用户预设管理) ─── PROJECT ( 工程管理) ─── TOOLS(CLRSQ, INIT, NEW)</p>
+<p>SLOOP 固件基于 GPL-3.0 开源协议发布。指南版本对应 SLOOP 2.6。祝您创作愉快！</p>
+</section>
+    </article>
+  </div>
+  <footer>
+    <p>SLOOP 固件以 GPL-3.0 发布，基于 Leo Kuroshita / Hügelton Instruments 的 Felucca 项目。本页为其中文手册的网页版，内容对应 SLOOP 2.6。</p>
+    <p class="top"><a href="#intro">↑ 回到顶部</a></p>
+  </footer>
+</main>
+<script>
+(function () {
+  var links = [].slice.call(document.querySelectorAll('.toc a'));
+  var targets = links.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  });
+  function mark() {
+    var best = -1;
+    for (var i = 0; i < targets.length; i++) {
+      var el = targets[i];
+      if (!el) continue;
+      if (el.getBoundingClientRect().top <= 96) best = i;
+    }
+    links.forEach(function (a, i) { a.classList.toggle('here', i === best); });
+  }
+  mark();
+  window.addEventListener('scroll', mark, { passive: true });
+  window.addEventListener('hashchange', mark);
+})();
+</script>
+</body>
+</html>
