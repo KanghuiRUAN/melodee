@@ -1913,7 +1913,7 @@ static void notes_bulk_sheet_open(void){sheet_open("Selected notes","",SHEET_NOT
 /* SELECT on HOME (both its pages): the menu's HOME SELECT (ui.c home_select); with GLO held, on any page, its GLO SELECT
  * (glo_select): BPM (the header shows it), the selected track's MOD WHEEL (as MIDI CC1 on its channel: the matrix's MW, FM6's and the Prophet's wheel; sent to MIDI OUT as
  * its keys are), LEVEL, the song's SWING, TRANSPOSE, the CHORD its keys play (SCL > CHORD's CHRD: a name a detent),
- * ARP RATE, its next PATTERN (as SEQ held + SELECT), or nothing.
+ * ARP RATE, its next PATTERN (as SEQ held + SELECT), the keys' OCTAVE (as OCT- / OCT+ on Stage), or nothing.
  * What it set: a header message ("MOD WHEEL 64") */
 static void select_turn(uint32_t hs, int32_t s)
 {
@@ -1975,6 +1975,14 @@ static void select_turn(uint32_t hs, int32_t s)
         fmt_int(v, x + 1);
         ui_say(song.playing ? "NEXT PATTERN " : "PATTERN ", v);
         ui.force = 1;
+        return;
+    }
+    case HS_OCT: {
+        int8_t *o = octave_control();                   /* (MPC: the bank's own) */
+        *o = (int8_t)clamp(*o + s, -3, 3);              /* (every detent an octave, no acceleration) */
+        v[0] = '+';
+        fmt_int(v + (*o > 0), *o);
+        ui_say("OCTAVE ", v);
         return;
     }
     default:

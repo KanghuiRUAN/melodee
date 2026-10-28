@@ -5719,6 +5719,35 @@ static int test_seq_keys(void)
     ui_power_on();
     return bad;
 }
+/* HOME SELECT / GLO SELECT OCTAVE (last in main: its frames move the breathing lights' clock phase) */
+static int test_select_octave(void)
+{
+    int bad = 0;
+    ui_power_on();
+    go_home(); frame();
+    HOME_SELECT = HS_OCT;
+    song.octave = 0;
+    turn(EN_SELECT, 2);
+    bad += check("HOME SELECT OCTAVE: the keys' octave, every detent, said in the header", song.octave == 2 &&
+                 !memcmp(ui.msg, "OCTAVE +2", 10));
+    turn(EN_SELECT, 5);
+    bad += check("  .. held at +3", song.octave == 3);
+    turn(EN_SELECT, -4);
+    bad += check("  .. and down to -1", song.octave == -1 && !memcmp(ui.msg, "OCTAVE -1", 10));
+    HOME_SELECT = 0;
+    glo_select_set(HS_OCT);
+    go_title("ENV"); frame();
+    uint32_t pg = ui.page;
+    btn_down(B_GLO); frame(); turn(EN_SELECT, 1); btn_up(B_GLO); frame();
+    bad += check("  GLO SELECT OCTAVE on a page: up one, the page stays", song.octave == 0 && !ui.home && ui.page == pg);
+    glo_select_set(0);
+    song.octave = 0;
+    bad += check("  the menu lists OCTAVE beside TRANSPOSE, OFF still last, the saved numbers kept",
+                 hs_step(HS_TRANS, 1) == HS_OCT && hs_step(HS_OCT, 1) == HS_CHORD && hs_step(HS_PATTERN, 1) == HS_OFF &&
+                 hs_step(HS_OFF, 1) == HS_OFF && hs_step(HS_OFF, 0) == HS_BPM && HS_OFF == 8);
+    ui_power_on();
+    return bad;
+}
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -5794,6 +5823,7 @@ int main(void)
     bad += test_piano_roll();
     bad += test_fm6_charts();
     bad += test_stage_knobs_after_drum();
+    bad += test_select_octave();
 
     if (getenv("UI_SCREEN_DIR")) chain_screens(getenv("UI_SCREEN_DIR"));
     printf(bad ? "ui: %d FAILED\n" : "ui: all passed\n", bad);
