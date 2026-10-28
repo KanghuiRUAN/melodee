@@ -24,8 +24,9 @@ Manual screenshots are generated into web/manual/ and are not stored in git. A f
 publish and web/quick-host.sh run tools/manual_shots.py first — see BUILDING.md "Local site".
 The figure names are the <img src> values in web/manual/index.html. A full publish checks
 every one of them before it writes the output site, then replaces webapp/manual/ with the
-manual page and those screenshots. Other PNGs and older version folders are removed; nightly/ is preserved. An
-installer-only update does not read or replace the published manual.
+manual page and those screenshots, together with every locale edition (a subdirectory beside the guide that
+carries its own index.html, such as zh/). Other PNGs and older version folders are removed; nightly/ is preserved.
+An installer-only update does not read or replace the published manual.
 """
 import json
 import hashlib
@@ -167,11 +168,18 @@ def require_manual(manual):
         raise SystemExit(f"{manual}: {len(missing)} screenshot(s) missing: {', '.join(missing)}")
 
 
+def manual_locales(manual):
+    """Locale editions: subdirectories beside the guide that carry their own index.html."""
+    return sorted(p.name for p in manual.iterdir()
+                  if p.is_dir() and p.name != "nightly" and (p / "index.html").is_file())
+
+
 def publish_manual(src, dest, version=None, preserve_nightly=False):
-    """Publish the guide and embedded screenshots, optionally retaining its nightly child."""
+    """Publish the guide, its screenshots and its locale editions, optionally retaining its nightly child."""
     embedded = set(manual_figures(src))
     keep = {p.name for p in src.iterdir()
             if p.is_file() and (p.suffix.lower() != ".png" or p.name in embedded)}
+    locales = manual_locales(src)
     dest.mkdir(parents=True, exist_ok=True)
     for old in list(dest.iterdir()):
         if preserve_nightly and old.name == "nightly" and old.is_dir():
@@ -184,6 +192,8 @@ def publish_manual(src, dest, version=None, preserve_nightly=False):
             old.unlink()
     for name in sorted(keep):
         shutil.copy(src / name, dest / name)
+    for name in locales:                      # a locale edition mirrors the guide, screenshots excluded
+        shutil.copytree(src / name, dest / name, dirs_exist_ok=True)
     if version is not None:
         page = dest / "index.html"
         text = page.read_text(encoding="utf-8").replace(
