@@ -2499,8 +2499,8 @@ static void ui_input(void)
         if (!seq_erase_active(TSEL)) grid_keys(notes);
         else seq_midi_events(0);
     } else if (song.seq_mode && cur_page()->graph == GR_ROLL) {   /* NOTES */
-        if (live_rec_sel()) {                           /* armed and playing: the keys and MIDI record live, */
-            ui.entry_open = 0;                          /* not into the cursor step too */
+        if (live_rec_sel() || song.playing) {           /* armed: the keys and MIDI record live; playing: they only */
+            ui.entry_open = 0;                          /* play. Neither enters the cursor step */
             seq_midi_events(0);
         } else if (!chain_busy() && notes_selected(TSEL) >= RECORD_MAX && !(TSEL->step[ui.cursor].flags & SF_RECORDED)) {
             seq_entry(notes);

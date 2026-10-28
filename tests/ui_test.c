@@ -517,7 +517,8 @@ static int test_rec(void)
     frame();
     fm1_in.notes = 0;
     frame();
-    bad += check("STEP, not armed: the key writes the cursor step (and moves on)", trk[0].step[0].n == 1 && ui.cursor == 1);
+    bad += check("STEP, playing, not armed: a key only plays (no step, no STOP TO EDIT)", !trk[0].step[0].n && ui.cursor == 0 &&
+                 !msg_is("STOP TO EDIT"));
     /* ARP: the arp's notes are recorded, not the key */
     ui_power_on();
     {
